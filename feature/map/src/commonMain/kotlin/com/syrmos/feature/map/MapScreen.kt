@@ -51,6 +51,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -130,7 +131,10 @@ fun MapScreen(
 
         // The map canvas with its header, pills, controls and (single column
         // only) the selection overlays. One map instance in every arrangement.
-        val canvas: @Composable (Modifier) -> Unit = { canvasModifier ->
+        // Movable content: an arrangement change without a recreation (Ariadne
+        // docking, a window resize) moves the same map instance between slots.
+        val canvas = remember {
+            movableContentOf { canvasModifier: Modifier, paired: Boolean ->
         // Clip: the platform map view must never paint over the inspector pane.
         Box(canvasModifier.clipToBounds()) {
         if (uiState.isLoading) {
@@ -369,6 +373,7 @@ fun MapScreen(
         }
         }
         }
+        }
 
         when (ws.arrangement) {
             WorkspaceArrangement.SIDE_BY_SIDE -> {
@@ -383,14 +388,14 @@ fun MapScreen(
                         modifier = Modifier.width(taskW.dp).fillMaxHeight(),
                     )
                     VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                    canvas(Modifier.weight(1f).fillMaxHeight())
+                    canvas(Modifier.weight(1f).fillMaxHeight(), paired)
                 }
             }
             WorkspaceArrangement.STACKED -> {
                 // Canvas above, inspector below where the hands are.
                 val mapH = ws.pane(PaneRole.COMPANION)?.rect?.height ?: (maxHeight.value.toInt() * 45 / 100)
                 Column(Modifier.fillMaxSize()) {
-                    canvas(Modifier.fillMaxWidth().height(mapH.dp))
+                    canvas(Modifier.fillMaxWidth().height(mapH.dp), paired)
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                     MapInspectorPane(
                         uiState = uiState,
@@ -401,7 +406,7 @@ fun MapScreen(
                     )
                 }
             }
-            WorkspaceArrangement.SINGLE -> canvas(Modifier.fillMaxSize())
+            WorkspaceArrangement.SINGLE -> canvas(Modifier.fillMaxSize(), paired)
         }
     }
 }

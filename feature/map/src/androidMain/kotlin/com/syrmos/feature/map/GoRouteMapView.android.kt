@@ -7,6 +7,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,8 +55,14 @@ actual fun GoRouteMapView(
     var currentMarker by remember { mutableStateOf<Marker?>(null) }
     // Camera bookkeeping outside Compose state: writing state from `update`
     // would recompose in a loop, and the map is the only reader.
+    // The camera survives an activity recreation (fold, rotation): centre and
+    // zoom are saved as the rider moves, restored in the factory, and a restored
+    // camera skips the first fit so a manual view is not thrown away by reflow.
+    val camLat = rememberSaveable { mutableStateOf(Double.NaN) }
+    val camLng = rememberSaveable { mutableStateOf(Double.NaN) }
+    val camZoom = rememberSaveable { mutableStateOf(Double.NaN) }
     class CameraMemo { var firstFitDone = false; var lastCommandTick = Int.MIN_VALUE; var lastCurrent: LatLng? = null }
-    val memo = remember { CameraMemo() }
+    val memo = remember { CameraMemo().also { it.firstFitDone = !camZoom.value.isNaN() } }
     val panCallback by rememberUpdatedState(onUserPan)
 
     DisposableEffect(context) {
@@ -69,9 +79,24 @@ actual fun GoRouteMapView(
                 zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
                 minZoomLevel = 9.0
                 maxZoomLevel = 18.0
-                controller.setZoom(12.0)
-                controller.setCenter(GeoPoint(37.98, 23.73))
+                if (camZoom.value.isNaN()) {
+                    controller.setZoom(12.0)
+                    controller.setCenter(GeoPoint(37.98, 23.73))
+                } else {
+                    controller.setZoom(camZoom.value)
+                    controller.setCenter(GeoPoint(camLat.value, camLng.value))
+                }
                 overlays.add(CopyrightOverlay(ctx))
+                addMapListener(object : MapListener {
+                    private fun remember(source: org.osmdroid.api.IMapView?) {
+                        source ?: return
+                        camLat.value = source.mapCenter.latitude
+                        camLng.value = source.mapCenter.longitude
+                        camZoom.value = source.zoomLevelDouble
+                    }
+                    override fun onScroll(event: ScrollEvent?): Boolean { remember(event?.source); return false }
+                    override fun onZoom(event: ZoomEvent?): Boolean { remember(event?.source); return false }
+                })
                 // A finger moving on the map is the rider exploring: report it so
                 // the intent turns manual. Programmatic moves never fire this.
                 setOnTouchListener { _, ev ->

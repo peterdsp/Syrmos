@@ -684,6 +684,32 @@ put the network context above the next-train answer.
   relaunch; the launcher now toggles the flag (also closing the docked
   inspector from the content side).
 
+## Landed: polish round 16 (Android GO map continuity across a fold)
+
+Source: master plan GO contract ("Respect manual pan/zoom/bearing/pitch across
+reflow"; "Folding, rotating ... must not ... create a second location
+subscription") and D05/D12 continuity. `MainActivity` has no `configChanges`,
+so a fold or rotation recreates the activity and every osmdroid view with it.
+
+- **Camera persistence** (`GoRouteMapView.android.kt`): centre and zoom are
+  saved in `rememberSaveable` from a `MapListener` as the rider moves, restored
+  in the `AndroidView` factory, and a restored camera skips the first fit. The
+  camera intent is saved by name in `GoJourneyScreenRoute`
+  (`cameraIntentName`), so a manual view stays manual after the fold.
+- **Movable content**: the GO route map (`movableContentOf` with the legs,
+  current stop and accent passed as parameters, the intent read through its
+  state) and the Network Map canvas (`movableContentOf` with the modifier and
+  the paired flag) move between pane slots when the arrangement changes
+  without a recreation, instead of being rebuilt.
+- **Verified**: Pixel emulator: GO at 841x673, pan the map (Follow appears),
+  switch to 673x841 (activity recreation, stacked layout): Follow is still
+  offered and the map shows the panned view rather than a refit. Restored to
+  841x673.
+- iOS: `GoRouteMapView` is a `UIViewRepresentable` whose `MKMapView` is
+  recreated when `SyrmosArrangement` changes its structure; the shipped
+  behaviour refits on creation. Parity for a persisted camera on iOS is a
+  follow-up (needs the camera in a `@SceneStorage` and a fit skip).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

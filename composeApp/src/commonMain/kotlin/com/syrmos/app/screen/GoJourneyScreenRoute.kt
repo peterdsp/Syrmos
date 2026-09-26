@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.movableContentOf
 import com.syrmos.core.domain.go.GoTimelineFocus
 import kotlin.math.roundToInt
 import androidx.compose.material3.FilledTonalButton
@@ -201,22 +202,32 @@ class GoJourneyScreenRoute(
         // current stop by default, keep the whole route on Fit route, and leave
         // the rider's manual view alone until they ask again.
         var showCompactMap by rememberSaveable { mutableStateOf(false) }
-        var cameraIntent by remember { mutableStateOf(GoCameraIntent.FOLLOW) }
+        // The intent survives recreation too (a fold must not turn a manual view
+        // back into follow); stored by name, enums are not always bundle-safe.
+        var cameraIntentName by rememberSaveable { mutableStateOf(GoCameraIntent.FOLLOW.name) }
+        val cameraIntent = GoCameraIntent.valueOf(cameraIntentName)
         var cameraCommand by remember { mutableStateOf(GoCameraAction.NONE) }
         var cameraTick by remember { mutableStateOf(0) }
         fun camera(event: GoCameraEvent) {
-            val step = GoCamera.reduce(cameraIntent, event)
-            cameraIntent = step.intent
+            val step = GoCamera.reduce(GoCameraIntent.valueOf(cameraIntentName), event)
+            cameraIntentName = step.intent.name
             if (step.action != GoCameraAction.NONE) { cameraCommand = step.action; cameraTick++ }
         }
         val routeAccent = lineColors[journey.legs.getOrNull(position.legIndex)?.lineId] ?: primaryColor
         // The route map card: rounded, with the camera controls.
-        val routeMap: @Composable (Modifier) -> Unit = { m ->
+        // Movable content: when the arrangement changes without a recreation (for
+        // example Ariadne docking beside GO) the same map instance moves between
+        // pane slots instead of being rebuilt. Per-composition values are passed
+        // as parameters so the remembered content never reads a stale capture.
+        val routeMap = remember {
+            movableContentOf { m: Modifier, legs: List<GoRouteMapLeg>, current: LatLng?, accent: Color ->
+            // Read the intent through its state here, never a captured value.
+            val intentNow = GoCameraIntent.valueOf(cameraIntentName)
             Box(m.clip(RoundedCornerShape(16.dp))) {
                 GoRouteMapView(
-                    legs = routeLegs, current = currentPoint, accent = routeAccent,
-                    intent = cameraIntent, command = cameraCommand, commandTick = cameraTick,
-                    onUserPan = { if (cameraIntent != GoCameraIntent.MANUAL) camera(GoCameraEvent.USER_PANNED) },
+                    legs = legs, current = current, accent = accent,
+                    intent = intentNow, command = cameraCommand, commandTick = cameraTick,
+                    onUserPan = { if (GoCameraIntent.valueOf(cameraIntentName) != GoCameraIntent.MANUAL) camera(GoCameraEvent.USER_PANNED) },
                     modifier = Modifier.fillMaxSize(),
                 )
                 // Trust: what the dot means. Android GO is manual, so the dot is
@@ -235,7 +246,7 @@ class GoJourneyScreenRoute(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     val pill = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp))
-                    if (cameraIntent != GoCameraIntent.FOLLOW) {
+                    if (intentNow != GoCameraIntent.FOLLOW) {
                         TextButton(onClick = { camera(GoCameraEvent.FOLLOW_TAPPED) }, modifier = pill) {
                             Text(t("Follow", "Ακολούθησε", "Ndiq", "Segui"), maxLines = 1)
                         }
@@ -245,6 +256,7 @@ class GoJourneyScreenRoute(
                     }
                 }
             }
+        }
         }
         LaunchedEffect(Unit) {
             lineColors = lineRepo.getAllLines().first().associate { it.id to it.color.toComposeColor() }
@@ -393,7 +405,7 @@ class GoJourneyScreenRoute(
                             VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             // Companion: the route map above the journey timeline (as iOS).
                             Column(Modifier.weight(1f).fillMaxHeight()) {
-                                routeMap(Modifier.fillMaxWidth().height(240.dp).padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                                routeMap(Modifier.fillMaxWidth().height(240.dp).padding(start = 16.dp, end = 16.dp, top = 12.dp), routeLegs, currentPoint, routeAccent)
                                 JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxWidth())
                             }
                         }
@@ -403,7 +415,7 @@ class GoJourneyScreenRoute(
                         Column(Modifier.fillMaxSize()) {
                             // Upright: the map keeps the upper region to itself; the
                             // instruction and the timeline read below, where the hands are.
-                            routeMap(Modifier.fillMaxWidth().height(companionH.dp).padding(horizontal = 16.dp, vertical = 12.dp))
+                            routeMap(Modifier.fillMaxWidth().height(companionH.dp).padding(horizontal = 16.dp, vertical = 12.dp), routeLegs, currentPoint, routeAccent)
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             Column(
                                 modifier = Modifier.weight(1f).fillMaxWidth()
@@ -432,7 +444,7 @@ class GoJourneyScreenRoute(
                                 else t("Show route map", "Εμφάνιση χάρτη διαδρομής", "Shfaq hartën e rrugës", "Mostra la mappa del percorso"),
                             )
                         }
-                        if (showCompactMap) routeMap(Modifier.fillMaxWidth().height(260.dp))
+                        if (showCompactMap) routeMap(Modifier.fillMaxWidth().height(260.dp), routeLegs, currentPoint, routeAccent)
                         // The journey's cards under the controls, so the lower half
                         // of a phone carries the route instead of empty space.
                         JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
