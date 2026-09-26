@@ -206,7 +206,7 @@ struct StationDetailView: View {
             switch loc.language {
             case .greek: return "Προσωρινή αναστολή δρομολογίων. Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή."
             case .albanian: return "Shërbimi përkohësisht i pezulluar. Kjo linjë nuk është në punë për momentin."
-            case .italian: return "Servizio temporaneamente sospeso. Questa linea non e in servizio in questo momento."
+            case .italian: return "Servizio temporaneamente sospeso. Questa linea non è in servizio in questo momento."
             default: return "Service temporarily suspended. This line is not running right now."
             }
         case .construction:
@@ -220,7 +220,7 @@ struct StationDetailView: View {
             switch loc.language {
             case .greek: return "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
             case .albanian: return "Shërbim sezonal. Funksionon në ditë dhe stinë të zgjedhura. Asgjë nuk është planifikuar nga këtu për momentin."
-            case .italian: return "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
+            case .italian: return "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non è prevista alcuna partenza da qui."
             default: return "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
             }
         }

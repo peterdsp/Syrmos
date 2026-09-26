@@ -23,7 +23,8 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   Settings (roughly 330 strings, iOS and Android alike); Greek tonos on the
   Android side of Ichnos, Settings, station detail, notifications and Rail
   Pulse (roughly 230 strings, now identical to iOS), plus the web What's New
-  copy and region labels. The two region chips
+  copy and region labels; Italian lost only nine accents (è, più, modalità,
+  funzionalità, responsabilità), fixed on both mobile platforms. The two region chips
   read Athinë, the iOS subtitle matches Android, and the get-off message
   uses a colon instead of a dash. Guardrail tests on both platforms fail the
   build if a shared-table string loses its tonos or its ë again.

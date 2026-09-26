@@ -776,7 +776,7 @@ private fun AriadneEngineStatus.engineLabel(lang: AppLanguage): String = if (isS
     when (lang) {
         AppLanguage.GREEK -> "Έξυπνη λειτουργία"
         AppLanguage.ALBANIAN -> "Modaliteti i zgjuar"
-        AppLanguage.ITALIAN -> "Modalita intelligente"
+        AppLanguage.ITALIAN -> "Modalità intelligente"
         else -> "Clever mode"
     }
 } else {
@@ -798,13 +798,13 @@ private fun AriadneEngineStatus.engineDetail(lang: AppLanguage): String = when (
     AriadneEngineStatus.MODEL_NOT_DOWNLOADED -> when (lang) {
         AppLanguage.GREEK -> "Το μοντέλο στη συσκευή δεν έχει κατέβει ακόμη. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
         AppLanguage.ALBANIAN -> "Modeli në pajisje nuk është shkarkuar ende. Syrmos përdor analizuesin e rregullave."
-        AppLanguage.ITALIAN -> "Il modello sul dispositivo non e ancora stato scaricato. Syrmos usa l'analizzatore di regole."
+        AppLanguage.ITALIAN -> "Il modello sul dispositivo non è ancora stato scaricato. Syrmos usa l'analizzatore di regole."
         else -> "The on-device model isn't downloaded yet. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.AICORE_MISSING -> when (lang) {
         AppLanguage.GREEK -> "Το AICore δεν υπάρχει σε αυτή τη συσκευή. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."
         AppLanguage.ALBANIAN -> "AICore mungon në këtë pajisje. Syrmos përdor analizuesin e rregullave."
-        AppLanguage.ITALIAN -> "AICore non e presente su questo dispositivo. Syrmos usa l'analizzatore di regole."
+        AppLanguage.ITALIAN -> "AICore non è presente su questo dispositivo. Syrmos usa l'analizzatore di regole."
         else -> "AICore isn't present on this device. Syrmos uses the rule parser."
     }
     AriadneEngineStatus.DEVICE_NOT_ELIGIBLE -> when (lang) {

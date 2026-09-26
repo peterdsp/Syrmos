@@ -276,7 +276,7 @@ fun StationDetailScreen(
                                 text = when (lang) {
                                     AppLanguage.GREEK -> "Η πληρωμή και η έκδοση εισιτηρίου γίνονται 100% στον ιστότοπο της Hellenic Train. Το Syrmos απλώς παρέχει τον σύνδεσμο, δεν συλλέγει στοιχεία πληρωμής και δεν έχει καμία ευθύνη για την κράτηση."
                                     AppLanguage.ALBANIAN -> "Pagesa dhe lëshimi i biletës bëhen 100% në faqen e Hellenic Train. Syrmos thjesht ofron lidhjen, nuk mbledh të dhëna pagesash dhe nuk ka asnjë përgjegjësi për rezervimin."
-                                    AppLanguage.ITALIAN -> "Il pagamento e l'emissione del biglietto avvengono al 100% sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha responsabilita per la prenotazione."
+                                    AppLanguage.ITALIAN -> "Il pagamento e l'emissione del biglietto avvengono al 100% sul sito di Hellenic Train. Syrmos fornisce solo il link, non raccoglie dati di pagamento e non ha responsabilità per la prenotazione."
                                     else -> "Payment and ticket issuance happen entirely on Hellenic Train's website. Syrmos only provides the link, does not collect any payment data, and has no responsibility for the booking."
                                 },
                                 style = MaterialTheme.typography.labelSmall,
@@ -564,7 +564,7 @@ private fun serviceStateMessage(state: StationServiceState, lang: AppLanguage): 
     StationServiceState.SUSPENDED -> when (lang) {
         AppLanguage.GREEK -> "Προσωρινή αναστολή δρομολογίων. Αυτή η γραμμή δεν λειτουργεί αυτή τη στιγμή."
         AppLanguage.ALBANIAN -> "Shërbimi përkohësisht i pezulluar. Kjo linjë nuk është në punë për momentin."
-        AppLanguage.ITALIAN -> "Servizio temporaneamente sospeso. Questa linea non e in servizio in questo momento."
+        AppLanguage.ITALIAN -> "Servizio temporaneamente sospeso. Questa linea non è in servizio in questo momento."
         else -> "Service temporarily suspended. This line is not running right now."
     }
     StationServiceState.CONSTRUCTION -> when (lang) {
@@ -576,7 +576,7 @@ private fun serviceStateMessage(state: StationServiceState, lang: AppLanguage): 
     StationServiceState.SEASONAL -> when (lang) {
         AppLanguage.GREEK -> "Εποχικό δρομολόγιο. Λειτουργεί επιλεγμένες ημέρες και εποχές. Δεν υπάρχει προγραμματισμένη αναχώρηση από εδώ αυτή τη στιγμή."
         AppLanguage.ALBANIAN -> "Shërbim sezonal. Funksionon në ditë dhe stinë të zgjedhura. Asgjë nuk është planifikuar nga këtu për momentin."
-        AppLanguage.ITALIAN -> "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non e prevista alcuna partenza da qui."
+        AppLanguage.ITALIAN -> "Servizio stagionale. Attivo in giorni e stagioni selezionati. Al momento non è prevista alcuna partenza da qui."
         else -> "Seasonal service. Runs on selected days and seasons. Nothing is scheduled from here right now."
     }
 }

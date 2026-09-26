@@ -150,7 +150,7 @@ private fun backLabel(language: AppLanguage) = when (language) {
 private fun unavailableLabel(language: AppLanguage) = when (language) {
     AppLanguage.GREEK -> "Η ειδοποίηση δεν είναι πλέον διαθέσιμη."
     AppLanguage.ALBANIAN -> "Njoftimi nuk është më i disponueshëm."
-    AppLanguage.ITALIAN -> "L'avviso non e piu disponibile."
+    AppLanguage.ITALIAN -> "L'avviso non è più disponibile."
     else -> "This alert is no longer available."
 }
 

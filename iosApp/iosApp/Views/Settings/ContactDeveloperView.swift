@@ -32,7 +32,7 @@ struct ContactDeveloperView: View {
             case (.bug, .italian): return "Bug"
             case (.bug, _): return "Bug"
             case (.feature, .greek): return "Πρόταση"
-            case (.feature, .italian): return "Funzionalita"
+            case (.feature, .italian): return "Funzionalità"
             case (.feature, _): return "Feature"
             case (.question, .greek): return "Ερώτηση"
             case (.question, .italian): return "Domanda"

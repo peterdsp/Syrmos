@@ -1016,6 +1016,9 @@ a single tonos.
 - **Also**: the iOS get-off notification used an em dash between station and
   "your destination" in all four languages; it is a colon now. The web
   Ariadne prompt "Për te cili stacion?" became "Për cilin stacion?".
+- **Italian**: scanned with the same method (bare `piu`, `gia`, `-ita`
+  nouns, and `non e` / `c'e` for the verb). Nine strings on the two mobile
+  platforms, none on the web; fixed in the same round.
 - **Follow-up (data, not copy)**: an Ichnos issue row can still read
   "Ichnos at Florina" in an Albanian or Greek UI. That title is the
   reporter's `scopeLabel`, built in the reporter's language when the report
