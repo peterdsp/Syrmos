@@ -450,8 +450,9 @@ class PlanScreenRoute : Screen {
                     }
                 }
 
-                endpointRow(t("From", "Από", "Nga", "Da"), name(fromId)) { open = if (open == "from") null else "from" }
-                endpointRow(t("To", "Προς", "Për", "A"), name(toId)) { open = if (open == "to") null else "to" }
+                val chooseStation = t("Choose a station", "Διάλεξε σταθμό", "Zgjidh stacion", "Scegli una stazione")
+                endpointRow(t("From", "Από", "Nga", "Da"), if (fromId == null) null else name(fromId), chooseStation) { open = if (open == "from") null else "from" }
+                endpointRow(t("To", "Προς", "Për", "A"), if (toId == null) null else name(toId), chooseStation) { open = if (open == "to") null else "to" }
 
                 if (open != null) {
                     OutlinedTextField(
@@ -889,17 +890,34 @@ class PlanScreenRoute : Screen {
         }
     }
 
+    /**
+     * An endpoint field. Before a station is chosen it reads as an invitation
+     * (the placeholder, muted, with a chevron) instead of a bare dash; once
+     * chosen, the name with a pencil. Mirrors the iOS endpoint row.
+     */
     @Composable
-    private fun endpointRow(label: String, value: String, onClick: () -> Unit) {
-        Column(
+    private fun endpointRow(label: String, value: String?, placeholder: String, onClick: () -> Unit) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                 .clickable(onClick = onClick)
                 .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.titleMedium)
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    value ?: placeholder,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                if (value == null) "›" else "✎",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
         }
     }
 
