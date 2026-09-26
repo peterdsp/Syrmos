@@ -51,11 +51,12 @@ import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.network.STASYServiceStatus
 import kotlin.math.roundToInt
 import com.syrmos.core.domain.usecase.InsightDedupe
+import com.syrmos.core.common.extensions.displayUppercase
 
 @Composable
 internal fun PulseContextTag(text: String, color: Color) {
     Text(
-        text = text.uppercase(),
+        text = text.displayUppercase(),
         style = SyrmosTypographyTokens.contextTag,
         color = color,
         modifier = Modifier

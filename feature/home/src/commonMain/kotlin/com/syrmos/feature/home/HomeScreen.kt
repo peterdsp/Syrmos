@@ -113,6 +113,7 @@ import com.syrmos.core.network.STASYServiceStatus
 import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
+import com.syrmos.core.common.extensions.displayUppercase
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -1076,7 +1077,7 @@ private fun TrackingCard(
                 LivePulseDot(color = lineAccent)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = L.LIVE.text(lang).uppercase(),
+                    text = L.LIVE.text(lang).displayUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = lineAccent,

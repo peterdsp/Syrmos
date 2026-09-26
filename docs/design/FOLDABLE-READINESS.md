@@ -926,6 +926,35 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
 - **Explore beside a docked assistant on iOS** does not arise: the inspector
   is a system column and the pill band is a safe-area inset.
 
+## Landed: polish round 20 (dark mode and language sweep)
+
+- **Dark mode**: Android Explore (paired with Line 2), Map (inspector plus
+  canvas), Airport and More at 841x673 read correctly after the round 17 root
+  content-colour fix. iOS: `explore-duo-inner-landscape-dark.png`,
+  `map-duo-inner-landscape-dark.png`, `plan-duo-inner-landscape-dark.png`
+  added to `DuoSnapshotTests` (the map canvas is tile-less in the offline
+  test host, as in the light render). No defects.
+- **Greek on the fold** (Android, language switched in More after planning in
+  English so the results survive): Plan pairs with "Επιλεγμένη διαδρομή",
+  the chips "Προτεινόμενη" and "Ταχύτερη" stay atomic, GO pairs with the map
+  card ("Επιβεβαιωμένη στάση", "Όλη η διαδρομή") and the timeline. One nit
+  on both platforms: all-caps labels kept the tonos ("ΈΤΟΙΜΟΣ ΓΙΑ
+  ΕΠΙΒΊΒΑΣΗ"), which Greek typography drops on capitals. Shared rule
+  `displayUppercase()` (Kotlin core/common extensions, 2 tests) maps the
+  accented capitals to plain ones after uppercasing; used at the GO state
+  label, the Home status tag and the LIVE pill. iOS already had the tested
+  `uppercasedForDisplay(language)` (locale-aware, on the Home tag); the GO
+  state label and the map's departures heading now go through it too instead
+  of a plain `uppercased()` or a device-locale `textCase`. Verified on the
+  emulator ("ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ"); iOS GreekTypography + HomeFeatures 23/23. Emulator note: adb cannot type
+  Greek, and the Greek search matches Greek names only, so plan in English and
+  switch the language afterwards.
+- **Italian on the fold** (same recipe): Plan pairs with "Viaggio
+  selezionato", the "Consigliato" chip and the "2 percorsi" row read
+  cleanly; GO pairs with "Fermata confermata" and "Tutto il percorso" on
+  the map card, both atomic, and the timeline captions "Ora" / "Prossima".
+  No wrapping in the longest of the four languages; no change.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

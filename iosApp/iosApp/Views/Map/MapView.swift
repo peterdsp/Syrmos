@@ -730,11 +730,12 @@ struct StationSheetView: View {
 
     private var departuresList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next departures")
+            // Uppercased through the app language, not the device locale, so the
+            // Greek heading drops its tonos on capitals.
+            Text((loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next departures").uppercasedForDisplay(loc.language))
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
             // Group by (line, destination) so a busy line reads as one row with
             // its next few times, not a stack of "Line 3 · Scheduled" rows.
             // Computed once so the divider check shares the group ids.

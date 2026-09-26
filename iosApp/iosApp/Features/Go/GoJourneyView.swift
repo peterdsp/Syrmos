@@ -627,7 +627,7 @@ struct GoJourneyView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(stateLabel.uppercased())
+            Text(stateLabel.uppercasedForDisplay(language))
                 .font(.caption.weight(.semibold))
                 .tracking(0.6)
                 .foregroundStyle(model.shouldAlert ? Color.white.opacity(0.85) : tint)

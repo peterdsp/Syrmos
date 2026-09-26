@@ -97,6 +97,7 @@ import com.syrmos.core.domain.go.GoCameraIntent
 import com.syrmos.feature.map.GoRouteMapLeg
 import com.syrmos.feature.map.GoRouteMapView
 import org.koin.compose.koinInject
+import com.syrmos.core.common.extensions.displayUppercase
 
 /**
  * GO live-guidance screen (Phase G / S06), the Android peer of the web
@@ -746,7 +747,7 @@ class GoJourneyScreenRoute(
         ) {
             val onHero = if (emphasize) Color.White else MaterialTheme.colorScheme.onSurface
             val onHeroDim = if (emphasize) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            Text(stateLabel.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = if (emphasize) onHeroDim else accent)
+            Text(stateLabel.displayUppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = if (emphasize) onHeroDim else accent)
             Text(headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (emphasize) onHero else accent)
             if (detail.isNotEmpty()) {
                 Text(detail, style = MaterialTheme.typography.bodyLarge, color = onHeroDim)
