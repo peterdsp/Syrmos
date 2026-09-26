@@ -54,11 +54,19 @@ fun LocalTime.minutesUntil(other: LocalTime): Int {
     return if (diff >= 0) diff else diff + 24 * 60
 }
 
+/**
+ * Seconds from this time until [other], for a live countdown. A departure that
+ * has just passed (within a minute) is the train at the platform, not tomorrow's
+ * service, so it reads as 0 rather than wrapping to 23h 59min; only a time more
+ * than a minute in the past wraps to the next day. Mirrors iOS
+ * `Departure.secondsAway(from:)`.
+ */
 fun LocalTime.secondsUntil(other: LocalTime): Int {
     val thisSecs = this.hour * 3600 + this.minute * 60 + this.second
     val otherSecs = other.hour * 3600 + other.minute * 60 + other.second
-    val diff = otherSecs - thisSecs
-    return if (diff >= 0) diff else diff + 24 * 3600
+    var diff = otherSecs - thisSecs
+    if (diff < -60) diff += 24 * 3600
+    return maxOf(diff, 0)
 }
 
 fun LocalTime.toDisplayString(): String {

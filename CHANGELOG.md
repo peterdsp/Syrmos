@@ -29,6 +29,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   module so every feature module can use it.
 - **Plan endpoints read as an invitation** ("Choose a station" with a chevron)
   instead of a bare dash before a station is chosen, on both platforms.
+- **Readable width on Android tablets and unfolded devices.** Home, Explore and
+  Settings centre their content in a 760 dp column, the same maximum iOS uses.
+- **Android hero countdown fix.** A train at the platform read as "23h 59min"
+  because a departure a few seconds in the past wrapped to the next day; the
+  countdown now keeps a one-minute grace and clamps to zero, as on iOS.
 
 ## 3.0.0-beta.3 - 2026-09-26
 
