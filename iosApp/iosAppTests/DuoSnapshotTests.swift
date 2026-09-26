@@ -270,6 +270,15 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Departures cover render should not be blank")
     }
 
+    // MARK: Visual: Explore paired on the Duo (list beside the companion)
+
+    @MainActor
+    func test_exploreScreen_duoInnerLandscape_render() throws {
+        let image = render(LinesView(), size: duoInnerLandscape)
+        try save(image, "explore-duo-inner-landscape.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore unfolded render should not be blank")
+    }
+
     // MARK: Journey fixture (mirrors GoDemoEntryView so the snapshot is a real route)
 
     private func demoJourney(_ language: AppLanguage = .english) -> GuidanceJourney? {

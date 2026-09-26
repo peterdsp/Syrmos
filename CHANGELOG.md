@@ -12,6 +12,17 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Explore pairs on foldables and tablets.** On both platforms the line list is
+  the task pane and the selected line's detail (stations, live trains, alerts)
+  opens in the companion pane, with a calm invitation before a line is chosen
+  and the selected row highlighted; phones keep the shipped list with push
+  navigation. iOS swaps its push links for selection through an environment
+  flag the arrangement sets; Android hosts the line-detail pane beside the list.
+- **Landscape windows always pair as two columns.** The layout policy applied a
+  task's tall-canvas preference (map above, list below) even when the window was
+  wider than tall, which put a band over a squeezed list on an unfolded device
+  held in landscape. The preference now applies only when height exceeds width;
+  twin fixtures on both platforms.
 - **Home sees the whole interchange on Android.** The nearest stop is now the
   cluster of per-line station ids within the 150 m interchange radius, so the
   hero and the direction board load every line at the stop (Omonia shows M1 and

@@ -21,6 +21,8 @@ struct LinesView: View {
     @State private var showPlan = false
     @State private var railPulseDestination: RailPulseDestination?
     @State private var manualOrigin: MapStationNode?
+    @State private var selectedLine: TransitLine?
+    @Environment(\.syrmosIsPaired) private var isPaired
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationService = LocationService()
 
@@ -72,98 +74,15 @@ struct LinesView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ExploreUniversalSearchField(text: $searchText, language: loc.language)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-
-                segmentedControl
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-
-                switch segment {
-                case .destinations:
-                    destinationsContent
-                case .yourNetwork:
-                    networkContent
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                // Entry into the 3.0 Plan flow (interim, until Journeys is a
-                // primary destination). Finding 4: hosted as a bottom safe-area
-                // inset, not a fixed-offset overlay, so it RESERVES its real height
-                // and the "Explore by time" chip row scrolls clear above it instead
-                // of being covered. The reserved band grows with Dynamic Type and
-                // the label, and the system keeps it above the tab bar / Ariadne
-                // pill, so no device-specific bottom offset is needed.
-                HStack {
-                    Spacer(minLength: 0)
-                    Button { showPlan = true } label: {
-                        Text(planLabel)
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 12)
-                            .background(Capsule().fill(Color.syrmosPrimary))
-                            .foregroundStyle(.white)
-                            .shadow(radius: 6, y: 2)
-                    }
-                }
-                .padding(.trailing, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity)
-                // Opaque full-width backing (finding 4): the reserved band occludes
-                // any content that scrolls up into it, so the "Explore by time"
-                // chips are never left half-legible under the floating pill. A chip
-                // row is either fully clear above the band or scrolled behind it,
-                // never sliced. A thin top hairline keeps the band visually distinct
-                // from the content above. Reduce Transparency safe (opaque colour).
-                .background(alignment: .top) {
-                    Color.syrmosBackground
-                        .ignoresSafeArea(edges: .bottom)
-                        .overlay(alignment: .top) { Divider().opacity(0.15) }
-                }
-            }
-            // Compact: a bottom sheet (unchanged iPhone flow). Regular: a full-window
-            // cover, so PlanView occupies the whole width and its ArrangementView
-            // two-pane (query beside results) can render. Only one is ever active.
-            .sheet(isPresented: Binding(
-                get: { showPlan && hSize != .regular },
-                set: { if !$0 { showPlan = false } }
-            )) {
-                PlanView(language: loc.language)
-            }
-            .fullScreenCover(isPresented: Binding(
-                get: { showPlan && hSize == .regular },
-                set: { if !$0 { showPlan = false } }
-            )) {
-                PlanView(language: loc.language)
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                exploreHeader
-            }
-            .toolbar(.hidden, for: .navigationBar)
-            .task { await stasyService.fetchAnnouncements() }
-            .navigationDestination(item: $railPulseDestination) { destination in
-                switch destination {
-                case .station:
-                    RailPulseStationDetailView(language: loc.language) { context in
-                        presentedSheet = .quickReport(context)
-                    }
-                case .train:
-                    RailPulseTrainDetailView(language: loc.language) { context in
-                        presentedSheet = .quickReport(context)
-                    }
-                case .contribution:
-                    RailPulseContributionView(language: loc.language)
-                case .feed:
-                    RailPulseAllActivityView(language: loc.language)
-                }
-            }
+            // Foldables and iPad (six-posture prompt, section 6, Explore): the list
+            // is the task pane and the selected line's detail the companion; a
+            // phone keeps the shipped list with push navigation.
+            SyrmosArrangement(
+                task: .explore,
+                primary: { exploreList },
+                companion: { exploreCompanion },
+                combined: { exploreList }
+            )
         }
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
@@ -274,6 +193,171 @@ struct LinesView: View {
     }
 
     // MARK: - Destinations
+
+    /// The shipped Explore list with its header, sheets and destinations.
+    private var exploreList: some View {
+            List {
+                ExploreUniversalSearchField(text: $searchText, language: loc.language)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+
+                segmentedControl
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+
+                switch segment {
+                case .destinations:
+                    destinationsContent
+                case .yourNetwork:
+                    networkContent
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.syrmosBackground)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Entry into the 3.0 Plan flow (interim, until Journeys is a
+                // primary destination). Finding 4: hosted as a bottom safe-area
+                // inset, not a fixed-offset overlay, so it RESERVES its real height
+                // and the "Explore by time" chip row scrolls clear above it instead
+                // of being covered. The reserved band grows with Dynamic Type and
+                // the label, and the system keeps it above the tab bar / Ariadne
+                // pill, so no device-specific bottom offset is needed.
+                HStack {
+                    Spacer(minLength: 0)
+                    Button { showPlan = true } label: {
+                        Text(planLabel)
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .background(Capsule().fill(Color.syrmosPrimary))
+                            .foregroundStyle(.white)
+                            .shadow(radius: 6, y: 2)
+                    }
+                }
+                .padding(.trailing, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
+                // Opaque full-width backing (finding 4): the reserved band occludes
+                // any content that scrolls up into it, so the "Explore by time"
+                // chips are never left half-legible under the floating pill. A chip
+                // row is either fully clear above the band or scrolled behind it,
+                // never sliced. A thin top hairline keeps the band visually distinct
+                // from the content above. Reduce Transparency safe (opaque colour).
+                .background(alignment: .top) {
+                    Color.syrmosBackground
+                        .ignoresSafeArea(edges: .bottom)
+                        .overlay(alignment: .top) { Divider().opacity(0.15) }
+                }
+            }
+            // Compact: a bottom sheet (unchanged iPhone flow). Regular: a full-window
+            // cover, so PlanView occupies the whole width and its ArrangementView
+            // two-pane (query beside results) can render. Only one is ever active.
+            .sheet(isPresented: Binding(
+                get: { showPlan && hSize != .regular },
+                set: { if !$0 { showPlan = false } }
+            )) {
+                PlanView(language: loc.language)
+            }
+            .fullScreenCover(isPresented: Binding(
+                get: { showPlan && hSize == .regular },
+                set: { if !$0 { showPlan = false } }
+            )) {
+                PlanView(language: loc.language)
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                exploreHeader
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .task { await stasyService.fetchAnnouncements() }
+            .navigationDestination(item: $railPulseDestination) { destination in
+                switch destination {
+                case .station:
+                    RailPulseStationDetailView(language: loc.language) { context in
+                        presentedSheet = .quickReport(context)
+                    }
+                case .train:
+                    RailPulseTrainDetailView(language: loc.language) { context in
+                        presentedSheet = .quickReport(context)
+                    }
+                case .contribution:
+                    RailPulseContributionView(language: loc.language)
+                case .feed:
+                    RailPulseAllActivityView(language: loc.language)
+                }
+            }
+    }
+
+    /// Companion pane on a paired layout: the selected line's detail, or a calm
+    /// invitation before anything is chosen.
+    @ViewBuilder private var exploreCompanion: some View {
+        if let line = selectedLine {
+            NavigationStack {
+                LineDetailView(line: line, stations: SyrmosData.stations(for: line.id))
+            }
+            .id(line.id)
+        } else {
+            VStack(alignment: .leading, spacing: SyrmosTokens.Space.sm) {
+                Image(systemName: "tram.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.syrmosPrimary)
+                Text(exploreText("Choose a line.", "Διάλεξε γραμμή.", "Zgjidh një linjë.", "Scegli una linea."))
+                    .font(.headline)
+                Text(exploreText(
+                    "Its stations, live trains and alerts appear here.",
+                    "Οι σταθμοί, οι ζωντανοί συρμοί και οι ειδοποιήσεις της εμφανίζονται εδώ.",
+                    "Stacionet, trenat live dhe njoftimet e saj shfaqen këtu.",
+                    "Le sue stazioni, i treni in tempo reale e gli avvisi compaiono qui."))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(SyrmosTokens.Space.xl)
+            .background(
+                RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                    .fill(Color.syrmosSurfaceMuted)
+            )
+            .padding(SyrmosTokens.Space.lg)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.syrmosBackground)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func exploreText(_ en: String, _ el: String, _ sq: String, _ it: String) -> String {
+        switch loc.language {
+        case .greek: return el
+        case .albanian: return sq
+        case .italian: return it
+        default: return en
+        }
+    }
+
+    /// A line row: selects into the companion on a paired layout, pushes the
+    /// detail on a phone.
+    @ViewBuilder private func lineLink(_ line: TransitLine) -> some View {
+        if isPaired {
+            Button { selectedLine = line } label: {
+                LineRow(line: line, disruptionSeverity: stasyService.lineDisruptions[line.id])
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(selectedLine?.id == line.id ? Color.syrmosPrimary.opacity(0.10) : nil)
+        } else {
+            NavigationLink {
+                LineDetailView(
+                    line: line,
+                    stations: SyrmosData.stations(for: line.id)
+                )
+            } label: {
+                LineRow(
+                    line: line,
+                    disruptionSeverity: stasyService.lineDisruptions[line.id]
+                )
+            }
+        }
+    }
 
     @ViewBuilder
     private var destinationsContent: some View {
@@ -447,17 +531,7 @@ struct LinesView: View {
                 if !typed.isEmpty {
                     Section(type.localizedName(loc.language)) {
                         ForEach(typed) { line in
-                            NavigationLink {
-                                LineDetailView(
-                                    line: line,
-                                    stations: SyrmosData.stations(for: line.id)
-                                )
-                            } label: {
-                                LineRow(
-                                    line: line,
-                                    disruptionSeverity: stasyService.lineDisruptions[line.id]
-                                )
-                            }
+                            lineLink(line)
                         }
                     }
                 }

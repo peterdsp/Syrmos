@@ -340,6 +340,24 @@ the iPhone Duo and Android fold devices only; GO stays.
   navigation today on both platforms, needs a split-view shape), Home paired
   with a map on wide windows, Duo hardware confirmation of the reported regions.
 
+## Landed: polish round 3 (Explore pairing, orientation-aware axis)
+
+- **Explore pairs** (six-posture prompt section 6): iOS `LinesView` hands its list
+  to `SyrmosArrangement(task: .explore)` as the task pane and shows the selected
+  line's `LineDetailView` in the companion (a calm invitation before a choice, the
+  selected row highlighted); the arrangement now publishes `\.syrmosIsPaired` so
+  list content swaps push links for selection. Android `ExploreTab` hosts
+  `LineDetailPane` (extracted from `LineDetailScreenRoute`) beside `LinesScreen`
+  through `rememberContentWorkspace(EXPLORE)`, side by side or stacked; back in
+  the pane clears the selection instead of popping. Phones keep push navigation.
+- **Orientation-aware axis**: the first Android capture (841 x 673 with the rail,
+  a 761 x 649 content box) stacked Explore with the placeholder band above the
+  list because the medium-canvas rule honoured the task's tall-canvas preference
+  regardless of orientation. The shared policy and its Swift twin now apply that
+  preference only when height exceeds width; a landscape window pairs as two
+  columns for every task. Fixture `wideMediumWindow_pairsSideBySideEvenForStackingTasks`
+  on both platforms (Kotlin suite 22, Swift suite 51).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

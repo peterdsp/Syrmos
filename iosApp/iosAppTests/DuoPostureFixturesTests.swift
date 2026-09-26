@@ -439,4 +439,15 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(resolve(innerW, innerH, .departures).arrangement, .sideBySide)
         XCTAssertEqual(resolve(coverW, coverH, .departures).arrangement, .single)
     }
+
+    // MARK: Wide medium window
+
+    func test_wideMediumWindow_pairsSideBySideEvenForStackingTasks() {
+        for task in [SyrmosWorkspaceTask.explore, .go, .plan] {
+            let ws = resolve(761, 649, task)
+            XCTAssertEqual(ws.arrangement, .sideBySide, "\(task)")
+            XCTAssertEqual(ws.pane(.task)?.rect.width, 380, "\(task)")
+        }
+        XCTAssertEqual(resolve(innerW, innerH, .explore).arrangement, .stacked)
+    }
 }
