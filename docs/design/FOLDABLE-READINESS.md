@@ -705,10 +705,12 @@ so a fold or rotation recreates the activity and every osmdroid view with it.
   switch to 673x841 (activity recreation, stacked layout): Follow is still
   offered and the map shows the panned view rather than a refit. Restored to
   841x673.
-- iOS: `GoRouteMapView` is a `UIViewRepresentable` whose `MKMapView` is
-  recreated when `SyrmosArrangement` changes its structure; the shipped
-  behaviour refits on creation. Parity for a persisted camera on iOS is a
-  follow-up (needs the camera in a `@SceneStorage` and a fit skip).
+- **iOS parity**: `GoRouteMapView` is a `UIViewRepresentable` whose
+  `MKMapView` is recreated when `SyrmosArrangement` changes its structure (a
+  fold flips side by side and stacked). The owning `GoJourneyView` now keeps
+  the last settled region (`GoSavedCamera`, from `regionDidChangeAnimated`)
+  and hands it to the new map as `initialCamera`, which skips the first fit,
+  so a manual view survives the flip. Guidance and snapshot suites 44/44.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 

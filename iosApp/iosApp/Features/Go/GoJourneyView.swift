@@ -34,6 +34,10 @@ struct GoJourneyView: View {
     @State private var timelineViewportHeight: CGFloat = 0
     @State private var cameraCommand: GoCameraAction = .none
     @State private var cameraTick = 0
+    /// The last map region the rider saw. The representable is recreated when
+    /// the arrangement flips (a fold), so the owner keeps the camera and hands
+    /// it back instead of letting the new map refit over a manual view.
+    @State private var savedCamera: GoSavedCamera? = nil
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -238,7 +242,9 @@ struct GoJourneyView: View {
                     intent: cameraIntent,
                     command: cameraCommand,
                     commandTick: cameraTick,
-                    onUserPan: { if cameraIntent != .manual { camera(.userPanned) } }
+                    onUserPan: { if cameraIntent != .manual { camera(.userPanned) } },
+                    initialCamera: savedCamera,
+                    onCameraChanged: { savedCamera = $0 }
                 )
                 .frame(height: mapHeight)
                 .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
@@ -1115,6 +1121,27 @@ private struct GoCurrentRowTracker: ViewModifier {
     }
 }
 
+/// The last settled map region, kept by the owning view across a reflow
+/// (Android keeps the same in rememberSaveable).
+struct GoSavedCamera: Equatable {
+    var latitude: Double
+    var longitude: Double
+    var latitudeDelta: Double
+    var longitudeDelta: Double
+
+    init(region: MKCoordinateRegion) {
+        latitude = region.center.latitude
+        longitude = region.center.longitude
+        latitudeDelta = region.span.latitudeDelta
+        longitudeDelta = region.span.longitudeDelta
+    }
+
+    var region: MKCoordinateRegion {
+        MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                           span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta))
+    }
+}
+
 /// What the GO route map's camera is doing for the rider (twin of Kotlin
 /// `GoCameraIntent`): follow the current stop, keep the whole route fitted, or
 /// leave the rider's manual view alone.
@@ -1167,6 +1194,10 @@ private struct GoRouteMapView: UIViewRepresentable {
     var command: GoCameraAction = .none
     var commandTick: Int = 0
     var onUserPan: () -> Void = {}
+    /// A camera to restore on creation (skips the first fit) and where to report
+    /// every settled region so the owner can restore it after a reflow.
+    var initialCamera: GoSavedCamera? = nil
+    var onCameraChanged: (GoSavedCamera) -> Void = { _ in }
 
     private var uiEdgeInsets: UIEdgeInsets {
         UIEdgeInsets(top: edgeInsets.top, left: edgeInsets.left,
@@ -1194,9 +1225,12 @@ private struct GoRouteMapView: UIViewRepresentable {
         } else if route.count >= 2 {
             map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
         }
-        if let rect = boundingRect() {
+        if let initialCamera {
+            map.setRegion(initialCamera.region, animated: false)
+        } else if let rect = boundingRect() {
             map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: false)
         }
+        context.coordinator.onCameraChanged = onCameraChanged
         context.coordinator.lastInsets = edgeInsets
         context.coordinator.lastCurrent = current
         context.coordinator.lastCommandTick = commandTick
@@ -1207,6 +1241,7 @@ private struct GoRouteMapView: UIViewRepresentable {
     func updateUIView(_ map: MKMapView, context: Context) {
         let coordinator = context.coordinator
         coordinator.onUserPan = onUserPan
+        coordinator.onCameraChanged = onCameraChanged
         coordinator.syncCurrent(on: map, to: current)
         let insetsChanged = coordinator.lastInsets != edgeInsets
         coordinator.lastInsets = edgeInsets
@@ -1285,6 +1320,7 @@ private struct GoRouteMapView: UIViewRepresentable {
         /// The last one-shot command tick that ran.
         var lastCommandTick = 0
         var onUserPan: () -> Void
+        var onCameraChanged: (GoSavedCamera) -> Void = { _ in }
 
         init(tint: UIColor, onUserPan: @escaping () -> Void) {
             self.tint = tint
@@ -1293,6 +1329,10 @@ private struct GoRouteMapView: UIViewRepresentable {
 
         /// A pan or pinch in progress when the region starts changing is the
         /// rider exploring; programmatic moves carry no active gesture.
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            onCameraChanged(GoSavedCamera(region: mapView.region))
+        }
+
         func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
             let gestures = mapView.subviews.first?.gestureRecognizers ?? []
             if gestures.contains(where: { $0.state == .began || $0.state == .changed }) {

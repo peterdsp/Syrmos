@@ -12,11 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
-- **The GO map keeps your view through a fold (Android).** Centre, zoom and
-  the camera mode (follow, fit, manual) survive a fold or rotation, and an
-  in-place change of the pane arrangement (for example docking Ariadne) moves
-  the same map instead of rebuilding it. The Network Map canvas moves the same
-  way.
+- **The GO map keeps your view through a fold.** Centre, zoom and the camera
+  mode (follow, fit, manual) survive a fold or rotation on both platforms, and
+  on Android an in-place change of the pane arrangement (for example docking
+  Ariadne) moves the same map instead of rebuilding it. The Network Map canvas
+  moves the same way.
 - **Home always leads with the next train.** When two Home columns do not fit
   (for example beside a docked Ariadne panel) Home keeps its single column
   instead of stacking the network context above the answer. Shared rule on iOS
