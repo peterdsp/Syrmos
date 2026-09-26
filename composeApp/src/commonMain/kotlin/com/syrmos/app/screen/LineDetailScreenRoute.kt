@@ -19,39 +19,51 @@ data class LineDetailScreenRoute(val lineId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = koinInject<LineDetailViewModel>()
-        val announcementsRepo = koinInject<AnnouncementsRepository>()
-        val feed by announcementsRepo.feed.collectAsState()
-        val lang by LocalizationManager.language.collectAsState()
-
-        val matchingAlert = feed.announcements.firstOrNull { ann ->
-            ann.isServiceAlert && ann.affectedLines.any { it.equals(lineId, ignoreCase = true) }
-        }
-        val alertBanner = matchingAlert?.let { ann ->
-            val detail = when (lang) {
-                com.syrmos.core.common.AppLanguage.GREEK -> ann.title
-                com.syrmos.core.common.AppLanguage.ALBANIAN ->
-                    ann.titleSq.ifBlank { ann.titleEn.ifBlank { ann.title } }
-                com.syrmos.core.common.AppLanguage.ITALIAN ->
-                    ann.titleEn.ifBlank { ann.title }
-                else -> ann.titleEn.ifBlank { ann.title }
-            }
-            AlertBannerInfo(
-                headline = L.SERVICE_ALERT_AFFECTS_LINE.text(lang),
-                detail = detail,
-            )
-        }
-
-        LaunchedEffect(lineId) {
-            viewModel.loadLine(lineId)
-        }
-        LineDetailScreen(
-            viewModel = viewModel,
-            alertBanner = alertBanner,
-            onStationClick = { stationId ->
-                navigator.push(StationDetailScreenRoute(stationId))
-            },
+        LineDetailPane(
+            lineId = lineId,
+            onStationClick = { stationId -> navigator.push(StationDetailScreenRoute(stationId)) },
             onBack = { navigator.pop() },
         )
     }
+}
+
+/**
+ * The line detail as a pane: pushed as a screen on a phone, or hosted beside the
+ * Explore list on a paired layout (foldables, tablets), where back clears the
+ * selection instead of popping.
+ */
+@Composable
+fun LineDetailPane(lineId: String, onStationClick: (String) -> Unit, onBack: () -> Unit) {
+    val viewModel = koinInject<LineDetailViewModel>()
+    val announcementsRepo = koinInject<AnnouncementsRepository>()
+    val feed by announcementsRepo.feed.collectAsState()
+    val lang by LocalizationManager.language.collectAsState()
+
+    val matchingAlert = feed.announcements.firstOrNull { ann ->
+        ann.isServiceAlert && ann.affectedLines.any { it.equals(lineId, ignoreCase = true) }
+    }
+    val alertBanner = matchingAlert?.let { ann ->
+        val detail = when (lang) {
+            com.syrmos.core.common.AppLanguage.GREEK -> ann.title
+            com.syrmos.core.common.AppLanguage.ALBANIAN ->
+                ann.titleSq.ifBlank { ann.titleEn.ifBlank { ann.title } }
+            com.syrmos.core.common.AppLanguage.ITALIAN ->
+                ann.titleEn.ifBlank { ann.title }
+            else -> ann.titleEn.ifBlank { ann.title }
+        }
+        AlertBannerInfo(
+            headline = L.SERVICE_ALERT_AFFECTS_LINE.text(lang),
+            detail = detail,
+        )
+    }
+
+    LaunchedEffect(lineId) {
+        viewModel.loadLine(lineId)
+    }
+    LineDetailScreen(
+        viewModel = viewModel,
+        alertBanner = alertBanner,
+        onStationClick = onStationClick,
+        onBack = onBack,
+    )
 }
