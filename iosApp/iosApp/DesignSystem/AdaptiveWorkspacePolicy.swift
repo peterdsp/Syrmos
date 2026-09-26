@@ -101,6 +101,9 @@ enum SyrmosWorkspaceTask {
     /// the answer must lead, so when two columns do not fit it keeps its single
     /// column instead of putting the network context above the next train.
     var stacks: Bool { self != .home }
+    /// Whether the task pane is the main event (Home): on a large canvas it
+    /// splits the width evenly with its companion instead of the fixed column.
+    var leadsWithTask: Bool { self == .home }
 
     var tallCanvasAxis: SyrmosPairAxis {
         switch self {
@@ -473,8 +476,11 @@ enum SyrmosAdaptiveWorkspacePolicy {
             )
         }
 
-        let primaryW = base.primaryPaneWidth!
-        let secondaryW = base.secondaryPaneWidth!
+        let basePrimary = base.primaryPaneWidth!
+        let baseSecondary = base.secondaryPaneWidth!
+        // A task that leads with its task pane splits the canvas evenly.
+        let primaryW = task.leadsWithTask ? (basePrimary + baseSecondary) / 2 : basePrimary
+        let secondaryW = basePrimary + baseSecondary - primaryW
         let minCompanionScaled = scaled(minCompanion, scale)
 
         if secondaryW < minCompanionScaled {

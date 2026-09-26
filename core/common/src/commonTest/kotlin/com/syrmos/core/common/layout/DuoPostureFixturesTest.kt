@@ -216,6 +216,17 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun t10_largeCanvas_homeSplitsEvenlyOtherTasksKeepTheTaskColumn() {
+        val home = resolve(1032, 1376, WorkspaceTask.HOME)
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, home.arrangement)
+        val homeTask = home.pane(PaneRole.TASK)!!.rect.width
+        val homeCompanion = home.pane(PaneRole.COMPANION)!!.rect.width
+        assertTrue(kotlin.math.abs(homeTask - homeCompanion) <= 1, "home splits evenly: $homeTask vs $homeCompanion")
+        val plan = resolve(1032, 1376, WorkspaceTask.PLAN)
+        assertTrue(plan.pane(PaneRole.TASK)!!.rect.width < plan.pane(PaneRole.COMPANION)!!.rect.width)
+    }
+
+    @Test
     fun t8_narrowRemainder_homeKeepsTheAnswerFirst() {
         // Beside a docked 400 dp inspector an iPad leaves ~633 x 1376: two Home
         // columns do not fit and Home never stacks (the answer must lead), so it

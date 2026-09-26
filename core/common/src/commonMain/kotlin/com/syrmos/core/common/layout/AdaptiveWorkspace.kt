@@ -94,6 +94,15 @@ enum class WorkspaceTask {
     val stacks: Boolean
         get() = this != HOME
 
+    /**
+     * Whether the task pane is the main event (Home: the next-train answer and
+     * the direction board). On a large canvas such a task splits the width
+     * evenly with its companion instead of taking the fixed 360/400 column, so
+     * the board is never the narrow column beside a wide context pane.
+     */
+    val leadsWithTask: Boolean
+        get() = this == HOME
+
     val tallCanvasAxis: PairAxis
         get() = when (this) {
             GO, EXPLORE, MAP -> PairAxis.STACKED
@@ -475,8 +484,11 @@ object AdaptiveWorkspacePolicy {
             )
         }
 
-        val primaryW = base.primaryPaneWidth!!
-        val secondaryW = base.secondaryPaneWidth!!
+        val basePrimary = base.primaryPaneWidth!!
+        val baseSecondary = base.secondaryPaneWidth!!
+        // A task that leads with its task pane splits the canvas evenly.
+        val primaryW = if (task.leadsWithTask) (basePrimary + baseSecondary) / 2 else basePrimary
+        val secondaryW = basePrimary + baseSecondary - primaryW
         val minCompanion = scaled(MIN_COMPANION, scale)
 
         // Larger text can push the companion below its floor: collapse to single.

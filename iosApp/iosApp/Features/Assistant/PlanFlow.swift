@@ -1340,8 +1340,11 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
             // The policy's single column is a READABLE column (outer insets and a
             // content width from the shared breakpoint), so a wide window that
             // cannot pair still reads as a centred column, not a full-width one.
+            // Compact widths keep the full width (the views own their 16 pt
+            // gutters); only a wider window is centred to the readable column.
             combined()
-                .frame(maxWidth: CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)))
+                .frame(maxWidth: Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity)
                 .frame(maxWidth: .infinity)
                 .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .sideBySide:

@@ -175,6 +175,16 @@ final class DuoPostureFixturesTests: XCTestCase {
         }
     }
 
+    func test_t10_largeCanvas_homeSplitsEvenlyOtherTasksKeepTheTaskColumn() {
+        let home = resolve(1032, 1376, .home)
+        XCTAssertEqual(home.arrangement, .sideBySide)
+        let homeTask = home.pane(.task)!.rect.width
+        let homeCompanion = home.pane(.companion)!.rect.width
+        XCTAssertLessThanOrEqual(abs(homeTask - homeCompanion), 1)
+        let plan = resolve(1032, 1376, .plan)
+        XCTAssertLessThan(plan.pane(.task)!.rect.width, plan.pane(.companion)!.rect.width)
+    }
+
     func test_t8_narrowRemainder_homeKeepsTheAnswerFirst() {
         XCTAssertEqual(resolve(633, 1376, .home).arrangement, .single)
         XCTAssertEqual(resolve(633, 1376, .plan).arrangement, .stacked)

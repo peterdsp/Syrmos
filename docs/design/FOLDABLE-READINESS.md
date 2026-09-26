@@ -743,6 +743,17 @@ merged (#201, #202).
   single column at the policy's readable task width, centred, instead of full
   width. Android already let pairs span the full width (its 760 dp cap is on
   the single LazyColumn only), so this is parity.
+- **T10, Home splits evenly on a large canvas** (both twins): the large
+  two-pane rule gives every task a fixed 360/400 task column; on the iPad Home
+  that put the answer in the narrow column beside a wide context pane.
+  `WorkspaceTask.leadsWithTask` (HOME) splits the two panes evenly; Plan and
+  the others keep the task column. Fixture
+  `t10_largeCanvas_homeSplitsEvenlyOtherTasksKeepTheTaskColumn` (Kotlin layout
+  suite 67, Swift fixtures 62).
+- **Compact guard**: the arrangement's readable single column applies from
+  600 wide; the compact breakpoint already subtracts 32 and the views own their
+  16 pt gutters, so the first cut doubled the margins on the Duo cover
+  (`departures-duo-cover.png` moved); the guard restores the phone rendering.
 - **Verified**: Android emulator at 841x673 (Explore paired: button at the
   pane's bottom edge, Line 2 detail in the companion; Airport and More read
   correctly). iPad simulator (1032x1376) rebuilt: Explore pairs the list with
