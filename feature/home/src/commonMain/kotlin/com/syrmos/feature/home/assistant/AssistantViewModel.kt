@@ -35,6 +35,7 @@ import com.syrmos.core.domain.assistant.MissingSlot
 import com.syrmos.core.domain.usecase.ComputeDeparturesFromBandsUseCase
 import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
+import com.syrmos.core.domain.usecase.InsightDedupe
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.PlanByArrivalUseCase
@@ -560,8 +561,11 @@ class AssistantViewModel(
      */
     private suspend fun currentNotices(): List<ServiceNotice> {
         val feed = announcementsRepository.feed.first()
-        return feed.announcements
-            .filter { it.isServiceAlert || it.severity != "info" }
+        // The operator feed repeats a notice under two ids; one "Heads up" per
+        // distinct text (shared InsightDedupe rule, as on Home).
+        return InsightDedupe.distinctByText(
+            feed.announcements.filter { it.isServiceAlert || it.severity != "info" },
+        ) { it.title }
             .map { a ->
                 ServiceNotice(
                     id = a.id,

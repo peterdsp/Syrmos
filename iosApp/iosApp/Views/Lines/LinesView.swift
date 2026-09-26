@@ -6,7 +6,6 @@ enum ExploreSegment: String, CaseIterable {
 }
 
 struct LinesView: View {
-    @Environment(\.syrmosArrangementAxis) private var arrangementAxis
     let lines = SyrmosData.lines
     @ObservedObject private var loc = LocalizationManager.shared
     // Present Plan full-window on a regular-width container (iPad, iPhone Duo inner
@@ -23,7 +22,6 @@ struct LinesView: View {
     @State private var railPulseDestination: RailPulseDestination?
     @State private var manualOrigin: MapStationNode?
     @State private var selectedLine: TransitLine?
-    @Environment(\.syrmosIsPaired) private var isPaired
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationService = LocationService()
 
@@ -226,29 +224,33 @@ struct LinesView: View {
                 // of being covered. The reserved band grows with Dynamic Type and
                 // the label, and the system keeps it above the tab bar / Ariadne
                 // pill, so no device-specific bottom offset is needed.
-                HStack {
-                    Spacer(minLength: 0)
-                    Button { showPlan = true } label: {
-                        Text(planLabel)
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 12)
-                            .background(Capsule().fill(Color.syrmosPrimary))
-                            .foregroundStyle(.white)
-                            .shadow(radius: 6, y: 2)
+                // Read the axis INSIDE the band: the owning view cannot read the pane
+                // environment it sets (always nil there, so every layout got 104).
+                SyrmosAxisReader { axis in
+                    HStack {
+                        Spacer(minLength: 0)
+                        Button { showPlan = true } label: {
+                            Text(planLabel)
+                                .font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 12)
+                                .background(Capsule().fill(Color.syrmosPrimary))
+                                .foregroundStyle(.white)
+                                .shadow(radius: 6, y: 2)
+                        }
                     }
+                    // Stacked pairing (an upright fold): the list pane spans the window's
+                    // bottom edge where the Ariadne launcher floats, so the pill clears
+                    // the launcher instead of sitting under it. Side by side, the
+                    // launcher is over the companion pane and the corner is free.
+                    // The Ariadne launcher owns the bottom-right corner in the single
+                    // column (phone, folded cover) and in a stacked pair; only side by
+                    // side is the corner free (the launcher floats over the companion).
+                    .padding(.trailing, axis == .horizontal ? 16 : 104)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
                 }
-                // Stacked pairing (an upright fold): the list pane spans the window's
-                // bottom edge where the Ariadne launcher floats, so the pill clears
-                // the launcher instead of sitting under it. Side by side, the
-                // launcher is over the companion pane and the corner is free.
-                // The Ariadne launcher owns the bottom-right corner in the single
-                // column (phone, folded cover) and in a stacked pair; only side by
-                // side is the corner free (the launcher floats over the companion).
-                .padding(.trailing, arrangementAxis == .horizontal ? 16 : 104)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity)
                 // Opaque full-width backing (finding 4): the reserved band occludes
                 // any content that scrolls up into it, so the "Explore by time"
                 // chips are never left half-legible under the floating pill. A chip
@@ -347,23 +349,28 @@ struct LinesView: View {
     /// A line row: selects into the companion on a paired layout, pushes the
     /// detail on a phone.
     @ViewBuilder private func lineLink(_ line: TransitLine) -> some View {
-        if isPaired {
-            Button { selectedLine = line } label: {
-                LineRow(line: line, disruptionSeverity: stasyService.lineDisruptions[line.id])
-            }
-            .buttonStyle(.plain)
-            .listRowBackground(selectedLine?.id == line.id ? Color.syrmosPrimary.opacity(0.10) : nil)
-        } else {
-            NavigationLink {
-                LineDetailView(
-                    line: line,
-                    stations: SyrmosData.stations(for: line.id)
-                )
-            } label: {
-                LineRow(
-                    line: line,
-                    disruptionSeverity: stasyService.lineDisruptions[line.id]
-                )
+        // Read the paired state INSIDE the row: the owning view cannot read the
+        // environment SyrmosArrangement sets on its own panes (round 4 gotcha),
+        // so `isPaired` on LinesView was always false and every tap pushed.
+        SyrmosAxisReader { axis in
+        if axis != nil {
+                Button { selectedLine = line } label: {
+                    LineRow(line: line, disruptionSeverity: stasyService.lineDisruptions[line.id])
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(selectedLine?.id == line.id ? Color.syrmosPrimary.opacity(0.10) : nil)
+            } else {
+                NavigationLink {
+                    LineDetailView(
+                        line: line,
+                        stations: SyrmosData.stations(for: line.id)
+                    )
+                } label: {
+                    LineRow(
+                        line: line,
+                        disruptionSeverity: stasyService.lineDisruptions[line.id]
+                    )
+                }
             }
         }
     }

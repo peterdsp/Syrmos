@@ -7,6 +7,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import com.syrmos.core.designsystem.layout.LocalFloatingBarInset
+import com.syrmos.core.designsystem.layout.LocalLauncherEndInset
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.VerticalDivider
 import com.syrmos.core.common.layout.PaneRole
@@ -300,6 +303,11 @@ fun SyrmosApp() {
 
                             @Composable
                             fun BoxScope.TabContentWithOverlays(pillBottomInset: Dp) {
+                            // Tabs read the real bottom clearance instead of guessing it.
+                            CompositionLocalProvider(
+                                LocalFloatingBarInset provides pillBottomInset,
+                                LocalLauncherEndInset provides (if (showLauncher && !showAriadne) 84.dp else 16.dp),
+                            ) {
                                 if (dockAssistant && showAriadne) {
                                     Row(Modifier.fillMaxSize()) {
                                         Box(Modifier.weight(1f).fillMaxHeight()) { CurrentTab() }
@@ -335,6 +343,7 @@ fun SyrmosApp() {
                                     Box(modifier = Modifier.fillMaxSize().zIndex(3f)) { AssistantHost() }
                                 }
                                 }
+                            }
                             }
 
                             if (useRail) {

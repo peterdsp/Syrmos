@@ -875,6 +875,57 @@ geometry (466x678) after round 17 merged (#203).
   at 1.2 the tall canvas still stacks Plan (fixture
   `p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked`).
 
+## Landed: polish round 19 (More, station detail, assistant audit)
+
+Source: a capture pass over More, the Explore line detail pane and the
+docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
+
+- **More** reads correctly on the fold (Assistant, Preferences, Map
+  preferences, Operators sections at the readable width).
+- **Line detail pane**: the small vehicle glyphs on the departure cards were
+  mistaken for broken images at a glance; they are the real 384 px PNGs
+  (`VehicleIcons.resourceFor`) rendered at card size. No change.
+- **Ariadne heads-up (Android)**: the assistant's opening "Heads up" joined
+  the same operator notice twice (the feed repeats it under two ids);
+  `currentNotices` now goes through `InsightDedupe.distinctByText`, the rule
+  Home uses. Verified in the docked assistant: one occurrence. iOS had the
+  same two paths (`loadAlertNote`, `currentNotices` in AriadneModel.swift) and
+  takes the same rule; HomeFeaturesTests 18/18.
+
+- **Explore row action on iOS (defect)**: on the iPad, tapping a line in the
+  paired Explore pushed the full-screen `LineDetailView` instead of filling
+  the companion. `LinesView` read `\.syrmosIsPaired` on itself, and the
+  owning view cannot read the environment `SyrmosArrangement` sets on its own
+  panes (the round 4 gotcha), so `isPaired` was always false. `lineLink` now
+  reads the axis inside the row through `SyrmosAxisReader`. The round 3
+  Duo render only showed the pane structure, not the tap, which is why it
+  passed. Verified on the iPad simulator: Line 2 fills the companion
+  (departures and stations) and the row stays highlighted. The same
+  owner-level read drove the Plan pill's trailing clearance (always 104 pt);
+  the band now reads the axis inside `SyrmosAxisReader`, and the two dead
+  owner-level environment properties are gone.
+- **Android detail lists at tablet width**: the station and line detail
+  `LazyColumn`s had no readable-width cap; at 1280x800 the departure cards
+  stretched across the canvas. Both take the 760 dp cap Home and Explore use.
+  Verified at 1280x800 (Dafni: capped column centred beside the rail).
+
+- **Explore Plan button beside a docked assistant (Android)**: with Ariadne
+  docked the tab drops to a single column under the rail, and the button kept
+  the 96 dp clearance meant for the compact bottom bar, floating over the list
+  rows. The shell now provides its real clearance through
+  `LocalFloatingBarInset` (96 dp in the compact layout, 16 dp beside the
+  rail) plus `LocalLauncherEndInset` (84 dp while the launcher is shown,
+  16 dp when the shell hides it), and Explore reads both for the single
+  column. Verified: docked, the button sits 16 dp above the window bottom and
+  16 dp from the pane's end; compact, it keeps 96 dp beside the launcher. Lesson from the first cut: a brace inserted by counting landed
+  after the rail/compact branches and the shell painted nothing; the
+  structure is now checked by reading the tail of the function.
+- **Map controls (Android)** read the same `LocalFloatingBarInset` for the
+  single column, so beside a docked assistant they sit 16 dp above the
+  bottom instead of 96 dp up the canvas. Verified docked and compact.
+- **Explore beside a docked assistant on iOS** does not arise: the inspector
+  is a system column and the pill band is a safe-area inset.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
