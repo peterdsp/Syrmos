@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Ariadne docks beside what you were doing on foldables and tablets.** With
+  room for two panes the assistant opens as a side panel next to Home, Plan or
+  the map instead of covering the screen; phones keep the full-screen
+  conversation. On Android the conversation now also survives closing and
+  reopening the assistant. Same idea on iOS through a trailing inspector that
+  becomes a sheet on a compact width.
 - **The GO map says what its dot means.** A small pill on the route map reads
   "Confirmed stop" while you step through the journey and, on iOS with live
   guidance on, "Live position", so a confirmed station is never mistaken for a

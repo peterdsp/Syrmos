@@ -168,6 +168,15 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(resolve(593, 761, .home).arrangement, .single)
     }
 
+    func test_p3_flatLandscape_ariadneDocksBesideTheContent() {
+        XCTAssertEqual(resolve(innerH, innerW, .ariadne).arrangement, .sideBySide)
+        XCTAssertEqual(resolve(761, 649, .ariadne).arrangement, .sideBySide)
+    }
+
+    func test_p1_cover_ariadneStaysASheet() {
+        XCTAssertEqual(resolve(coverW, coverH, .ariadne).arrangement, .single)
+    }
+
     func test_t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
         XCTAssertEqual(resolve(440, 900, .go).arrangement, .single)
         XCTAssertEqual(resolve(coverW, coverH, .go).arrangement, .single)

@@ -623,6 +623,39 @@ automatically a live GPS fix").
   UI-only change with no new pure logic, so no new unit tests beyond the
   renders.
 
+## Landed: polish round 14 (Ariadne docks beside the content)
+
+Source: master plan section 4 (Ariadne: "Expanded may dock the same
+conversation beside the relevant Plan/map context when there is sufficient
+room. Moving between sheet and pane must not resend a prompt or initialize
+another model").
+
+- **Android** (`SyrmosApp.kt`): the shared policy resolves the ARIADNE task on
+  the canvas after the rail; when it pairs (SIDE_BY_SIDE) and the rail layout
+  is active, `TabContentWithOverlays` lays the current tab beside a docked
+  `AssistantScreen` (companion width from the policy, capped at 480 dp);
+  otherwise the full-screen presentation stays. The `AssistantViewModel` is
+  now injected once at the shell and the open-time effect (location, pending
+  query) is keyed on `showAriadne`, so closing, reopening or moving between
+  the docked pane and the overlay never recreates the conversation or resends
+  the pending prompt.
+- **iOS** (`SyrmosApp.swift`): the root `.sheet` became `.inspector` with
+  `inspectorColumnWidth(min: 320, ideal: 400, max: 480)`; on a regular width
+  the same `AriadneView` docks as a trailing column, on a compact width the
+  system presents it as a sheet. Settings keeps its own sheet.
+- **Fixtures** (both twins): `p3_flatLandscape_ariadneDocksBesideTheContent`
+  (951x669 and the 761x649 Android canvas beside the rail pair) and
+  `p1_cover_ariadneStaysASheet` (466x678 single). Kotlin layout suite 64,
+  Swift fixtures 59.
+- **Verified (Android)**: Pixel emulator at 841x673: tapping Ask Ariadne keeps
+  Home (hero and direction board) on the left and opens the conversation with
+  its composer on the right; the hierarchy holds both.
+- **Verified (iOS)**: build for the iPad simulator and a capture of the docked
+  inspector (see below); the Duo portrait behaviour (regular or compact width
+  class) is the system's call and was not runtime-checked.
+- **Regression pass this round**: full KMP suite 630/630, full iOS unit target
+  400/400.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

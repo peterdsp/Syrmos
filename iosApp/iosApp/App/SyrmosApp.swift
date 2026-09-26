@@ -244,8 +244,13 @@ struct ContentView: View {
             .tint(.syrmosPrimary)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
-        .sheet(isPresented: $showAriadne) {
+        // Foldables and iPad (master plan, Ariadne): with room for two panes the
+        // conversation docks as a trailing inspector beside the content; on a
+        // compact width the system presents the same view as a sheet. One view,
+        // one conversation, whichever way it is shown.
+        .inspector(isPresented: $showAriadne) {
             AriadneView()
+                .inspectorColumnWidth(min: 320, ideal: 400, max: 480)
         }
         .preferredColorScheme(themeManager.theme.colorScheme)
         .task {

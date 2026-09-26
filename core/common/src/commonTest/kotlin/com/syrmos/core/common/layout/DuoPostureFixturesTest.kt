@@ -205,6 +205,18 @@ class DuoPostureFixturesTest {
     }
 
     @Test
+    fun p3_flatLandscape_ariadneDocksBesideTheContent() {
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(INNER_H, INNER_W, WorkspaceTask.ARIADNE).arrangement)
+        // An Android fold beside its 80 dp rail (841 - 80 = 761 wide) still docks.
+        assertEquals(WorkspaceArrangement.SIDE_BY_SIDE, resolve(761, 649, WorkspaceTask.ARIADNE).arrangement)
+    }
+
+    @Test
+    fun p1_cover_ariadneStaysASheet() {
+        assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.ARIADNE).arrangement)
+    }
+
+    @Test
     fun t7_tallNarrowCanvas_phoneColumnsAndLargeTextNeverStack() {
         assertEquals(WorkspaceArrangement.SINGLE, resolve(440, 900, WorkspaceTask.GO).arrangement)
         assertEquals(WorkspaceArrangement.SINGLE, resolve(COVER_W, COVER_H, WorkspaceTask.GO).arrangement)
