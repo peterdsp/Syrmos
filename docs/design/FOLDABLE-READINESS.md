@@ -1174,7 +1174,10 @@ nothing read the flag on either platform.
   #16 stays partial for TalkBack and keyboard navigation.
 - **Verified**: GoTimelineFocusTest (Kotlin), JourneyGuidanceTests (iOS),
   Compose app compile plus the iOS-simulator and wasm compiles of the
-  design system.
+  design system. On the Pixel fold with `animator_duration_scale 0`
+  ("Remove animations"), six advances from Piraeus placed "Θησείο · Τώρα"
+  mid-pane with "Μοναστηράκι · Αλλαγή εδώ" below and no Back to now pill:
+  the jump path lands where the glide did.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
