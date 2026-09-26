@@ -940,11 +940,13 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   card ("Επιβεβαιωμένη στάση", "Όλη η διαδρομή") and the timeline. One nit
   on both platforms: all-caps labels kept the tonos ("ΈΤΟΙΜΟΣ ΓΙΑ
   ΕΠΙΒΊΒΑΣΗ"), which Greek typography drops on capitals. Shared rule
-  `displayUppercase()` (Kotlin core/common extensions, Swift
-  `displayUppercased()` in GoJourneyView.swift; 2 tests each) maps the accented
-  capitals to plain ones after uppercasing; used at the GO state label, the
-  Home status tag and the LIVE pill. Verified on the emulator ("ΕΤΟΙΜΟΣ ΓΙΑ
-  ΕΠΙΒΙΒΑΣΗ"); iOS HomeFeaturesTests 20/20. Emulator note: adb cannot type
+  `displayUppercase()` (Kotlin core/common extensions, 2 tests) maps the
+  accented capitals to plain ones after uppercasing; used at the GO state
+  label, the Home status tag and the LIVE pill. iOS already had the tested
+  `uppercasedForDisplay(language)` (locale-aware, on the Home tag); the GO
+  state label and the map's departures heading now go through it too instead
+  of a plain `uppercased()` or a device-locale `textCase`. Verified on the
+  emulator ("ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ"); iOS GreekTypography + HomeFeatures 23/23. Emulator note: adb cannot type
   Greek, and the Greek search matches Greek names only, so plan in English and
   switch the language afterwards.
 
