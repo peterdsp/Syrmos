@@ -364,6 +364,18 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Map folded cover render should not be blank")
     }
 
+    // MARK: Visual: an upright iPad pairs Explore side by side (T9)
+
+    /// 1032 x 1376 is tall but wide enough for two comfortable columns, so the
+    /// list and the line detail read beside each other instead of stacking a
+    /// short overview above the list.
+    @MainActor
+    func test_exploreScreen_ipadPortrait_render() throws {
+        let image = render(LinesView(), size: CGSize(width: 1032, height: 1376))
+        try save(image, "explore-ipad-portrait.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Explore upright iPad render should not be blank")
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor

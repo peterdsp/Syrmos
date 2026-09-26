@@ -1337,7 +1337,13 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         switch ws.arrangement {
         case .single:
-            combined().environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
+            // The policy's single column is a READABLE column (outer insets and a
+            // content width from the shared breakpoint), so a wide window that
+            // cannot pair still reads as a centred column, not a full-width one.
+            combined()
+                .frame(maxWidth: CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)))
+                .frame(maxWidth: .infinity)
+                .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .sideBySide:
             paired(ws, size: size, axis: .horizontal)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)

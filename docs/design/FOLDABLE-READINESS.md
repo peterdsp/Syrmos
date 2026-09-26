@@ -735,10 +735,20 @@ merged (#201, #202).
   window's bottom-right corner with the Ariadne launcher.
 - **Airport route chips** (iOS): `lineLimit(1)` + `fixedSize` so "X93" no
   longer breaks into two lines in the route overview.
+- **Readable stage (iOS)**: the T9 rule alone did not change the iPad, because
+  every tab was wrapped in `ReadableTabContent` (760 pt), so the arrangement
+  measured 760 and still stacked. Tabs that pair (Home, Explore, Departures)
+  now get a 1200 pt stage (`pairedMaximumWidth`); More keeps 760. To keep a
+  wide window that cannot pair readable, `SyrmosArrangement` now renders its
+  single column at the policy's readable task width, centred, instead of full
+  width. Android already let pairs span the full width (its 760 dp cap is on
+  the single LazyColumn only), so this is parity.
 - **Verified**: Android emulator at 841x673 (Explore paired: button at the
   pane's bottom edge, Line 2 detail in the companion; Airport and More read
-  correctly); iPad simulator rebuilt for Explore side by side (capture note
-  below). Unit twins green on both sides.
+  correctly). iPad simulator (1032x1376) rebuilt: Explore pairs the list with
+  the "Choose a line" companion side by side, the Plan pill sits clear of the
+  launcher. New render `explore-ipad-portrait.png` in `DuoSnapshotTests`
+  (23/23). Unit twins green on both sides.
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
