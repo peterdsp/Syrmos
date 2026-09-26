@@ -12,6 +12,8 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Round 19 small fixes.** Ariadne's "Heads up" on Android no longer repeats
+  the same operator notice twice.
 - **Round 18 small fixes.** The Explore "Plan a journey" button sits beside
   the assistant launcher on both platforms (it floated over the content on a
   folded cover on Android and hid under the launcher on iPhone). On a tall

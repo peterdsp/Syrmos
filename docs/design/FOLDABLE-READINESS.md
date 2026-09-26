@@ -875,6 +875,21 @@ geometry (466x678) after round 17 merged (#203).
   at 1.2 the tall canvas still stacks Plan (fixture
   `p5_tallCanvas_largerTextTurnsPlanFromSideBySideToStacked`).
 
+## Landed: polish round 19 (More, station detail, assistant audit)
+
+Source: a capture pass over More, the Explore line detail pane and the
+docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
+
+- **More** reads correctly on the fold (Assistant, Preferences, Map
+  preferences, Operators sections at the readable width).
+- **Line detail pane**: the small vehicle glyphs on the departure cards were
+  mistaken for broken images at a glance; they are the real 384 px PNGs
+  (`VehicleIcons.resourceFor`) rendered at card size. No change.
+- **Ariadne heads-up (Android)**: the assistant's opening "Heads up" joined
+  the same operator notice twice (the feed repeats it under two ids);
+  `currentNotices` now goes through `InsightDedupe.distinctByText`, the rule
+  Home uses. Verified in the docked assistant: one occurrence.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
