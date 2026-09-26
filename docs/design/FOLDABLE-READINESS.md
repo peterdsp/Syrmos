@@ -909,6 +909,19 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   stretched across the canvas. Both take the 760 dp cap Home and Explore use.
   Verified at 1280x800 (Dafni: capped column centred beside the rail).
 
+- **Explore Plan button beside a docked assistant (Android)**: with Ariadne
+  docked the tab drops to a single column under the rail, and the button kept
+  the 96 dp clearance meant for the compact bottom bar, floating over the list
+  rows. The shell now provides its real clearance through
+  `LocalFloatingBarInset` (96 dp in the compact layout, 16 dp beside the
+  rail) and Explore reads it for the single column. Verified: docked, the
+  button sits 16 dp above the window bottom; compact, it keeps 96 dp beside
+  the launcher. Lesson from the first cut: a brace inserted by counting landed
+  after the rail/compact branches and the shell painted nothing; the
+  structure is now checked by reading the tail of the function.
+- **Explore beside a docked assistant on iOS** does not arise: the inspector
+  is a system column and the pill band is a safe-area inset.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

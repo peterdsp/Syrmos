@@ -3,6 +3,7 @@ package com.syrmos.core.designsystem.layout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.layout.AdaptiveWorkspace
 import com.syrmos.core.common.layout.AdaptiveWorkspacePolicy
 import com.syrmos.core.common.layout.FoldOrientation
@@ -16,6 +17,16 @@ import com.syrmos.core.common.layout.WorkspaceTask
  * screen composed outside the root still resolves through the plain-window path.
  */
 val LocalReservedRegions = staticCompositionLocalOf { emptyList<ReservedRegion>() }
+
+/**
+ * How far a floating control at a tab's bottom-right must sit above the
+ * window's bottom to clear the shell's own floating chrome: the compact bottom
+ * bar (96 dp) or, beside a navigation rail, only the launcher's row (16 dp).
+ * Provided by the app shell; tabs read it instead of guessing from width, so a
+ * single column beside the rail (a docked assistant, large text) never carries
+ * the phone's bottom-bar clearance.
+ */
+val LocalFloatingBarInset = staticCompositionLocalOf { 96.dp }
 
 /**
  * Resolve the [AdaptiveWorkspace] for a measured content box.
