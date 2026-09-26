@@ -899,7 +899,8 @@ docked Ariadne on the fold emulator, plus the iPad, after round 18 merged.
   panes (the round 4 gotcha), so `isPaired` was always false. `lineLink` now
   reads the axis inside the row through `SyrmosAxisReader`. The round 3
   Duo render only showed the pane structure, not the tap, which is why it
-  passed.
+  passed. Verified on the iPad simulator: Line 2 fills the companion
+  (departures and stations) and the row stays highlighted.
 - **Android detail lists at tablet width**: the station and line detail
   `LazyColumn`s had no readable-width cap; at 1280x800 the departure cards
   stretched across the canvas. Both take the 760 dp cap Home and Explore use.
