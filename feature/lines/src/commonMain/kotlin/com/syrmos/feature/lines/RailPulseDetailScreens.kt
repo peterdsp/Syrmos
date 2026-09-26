@@ -106,6 +106,7 @@ internal fun RailPulseStationScreen(
         summary = communityService.fetchSummary(context.scopeId)
     }
     RailPulseDetailLayout(
+        lang = lang,
         title = pulseText(lang, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"),
         subtitle = pulseText(lang, "Athens International Airport", "Διεθνές Αεροδρόμιο Αθηνών", "Aeroporti Ndërkombëtar i Athinës", "Aeroporto Internazionale di Atene"),
         onBack = onBack,
@@ -141,6 +142,7 @@ internal fun RailPulseTrainScreen(
         summary = communityService.fetchSummary(context.scopeId)
     }
     RailPulseDetailLayout(
+        lang = lang,
         title = context.title,
         subtitle = context.subtitle,
         onBack = onBack,
@@ -176,6 +178,7 @@ internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
         didLoadHistory = true
     }
     RailPulseDetailLayout(
+        lang = lang,
         title = pulseText(lang, "Ichnos activity", "Δραστηριότητα Ichnos", "Aktiviteti Ichnos", "Attivita Ichnos"),
         subtitle = pulseText(lang, "Across Greece", "Σε όλη την Ελλάδα", "Në gjithë Greqinë", "In tutta la Grecia"),
         onBack = onBack,
@@ -357,6 +360,7 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
     val callsign = railContributorCallsign(level, lang)
     val nextCallsign = railContributorCallsign(level + 1, lang)
     RailPulseDetailLayout(
+        lang = lang,
         title = pulseText(lang, "Local contribution", "Τοπική συνεισφορά", "Kontributi lokal", "Contributo locale"),
         subtitle = "",
         onBack = onBack,
@@ -432,6 +436,7 @@ internal fun RailPulseContributionScreen(lang: AppLanguage, onBack: () -> Unit) 
 
 @Composable
 private fun RailPulseDetailLayout(
+    lang: AppLanguage,
     title: String,
     subtitle: String,
     onBack: () -> Unit,
@@ -449,7 +454,7 @@ private fun RailPulseDetailLayout(
             val headerModifier = if (headerColors != null) Modifier.background(Brush.horizontalGradient(headerColors), RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp)) else Modifier
             Column(modifier = headerModifier.padding(if (headerColors != null) 14.dp else 0.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = if (headerColors != null) Color.White else MaterialTheme.colorScheme.onSurface) }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = pulseText(lang, "Back", "Πίσω", "Kthehu", "Indietro"), tint = if (headerColors != null) Color.White else MaterialTheme.colorScheme.onSurface) }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (headerColors != null) Color.White else MaterialTheme.colorScheme.onSurface)
                         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = if (headerColors != null) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant)

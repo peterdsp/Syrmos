@@ -55,7 +55,7 @@ class NearMeGlanceWidget : GlanceAppWidget() {
                         .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
                 ) {
                     Text(
-                        text = "Near me",
+                        text = widgetText("Near me", "Κοντά μου", "Pranë meje", "Vicino a me"),
                         style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp),
                         modifier = GlanceModifier.padding(bottom = 6.dp),
                     )

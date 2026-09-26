@@ -1064,6 +1064,28 @@ scan's blind spots.
   rows read "1 report" with their full title; the Android fold in Albanian
   reads "Problem sigurie · 1 raport".
 
+## Landed: polish round 24 (widgets in the app's language)
+
+Source: a hard-coded-English audit over both codebases (any Text, label or
+title literal on a line with no language switch), run after the diacritics
+rounds so the remaining English-only copy stood out.
+
+- **Finding**: the Android home-screen widgets (Near me, Next train) and
+  the widget setup activity had eight English-only strings, and the one
+  localized widget resolved its language from `Locale.getDefault()`, so a
+  reader running Syrmos in Greek on an English phone got an English widget.
+  The iOS widgets already read the in-app language through the app group.
+- **Fix**: `widgetText` now switches on `LocalizationManager.language`, and
+  every widget and setup string goes through it. The calendar provider's
+  "Airport trip" fallback title is localized on Android and iOS.
+- **Also**: the only English-only content description on Android, the
+  Ichnos detail back button, now goes through `pulseText`; the layout takes
+  the language from its callers.
+- **Everything else the audit flagged** was already localized on a line the
+  heuristic could not read (ternaries with a leading English string).
+- **Verified**: Android app compile, iOS build; widget copy checked by code
+  (Glance widgets cannot be driven from the emulator scripts).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

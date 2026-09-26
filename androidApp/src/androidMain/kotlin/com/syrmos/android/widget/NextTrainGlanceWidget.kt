@@ -45,7 +45,7 @@ class NextTrainGlanceWidget : GlanceAppWidget() {
                     if (lead != null) {
                         GlanceLinePill(lead.lineId, fontSize = 13.sp)
                         Text(
-                            text = if (lead.minutes <= 1) "now" else "${lead.minutes} min",
+                            text = if (lead.minutes <= 1) widgetText("now", "τώρα", "tani", "ora") else "${lead.minutes} min",
                             style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 32.sp),
                             modifier = GlanceModifier.padding(top = 6.dp),
                         )
@@ -53,7 +53,7 @@ class NextTrainGlanceWidget : GlanceAppWidget() {
                         Text(snapshot.stationName, style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp), maxLines = 1)
                     } else {
                         Text(snapshot.stationName, style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp))
-                        Text("No upcoming departures", style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
+                        Text(widgetText("No upcoming departures", "Δεν υπάρχουν επόμενες αναχωρήσεις", "Nuk ka nisje të ardhshme", "Nessuna partenza in arrivo"), style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp))
                     }
                 }
             }

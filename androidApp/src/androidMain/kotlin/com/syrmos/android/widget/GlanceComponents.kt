@@ -19,7 +19,8 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import java.util.Locale
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
 
 /** The line pill, mirroring the iOS `LinePill`: white label on the line color. */
 @Composable
@@ -77,9 +78,14 @@ fun GlanceLiveBadge(count: Int) {
     }
 }
 
-internal fun widgetText(en: String, el: String, sq: String, it: String): String = when (Locale.getDefault().language) {
-    "el" -> el
-    "sq" -> sq
-    "it" -> it
+/**
+ * Widget copy in the language the reader chose inside the app, not the
+ * system locale: someone running Syrmos in Greek on an English phone
+ * expects the widget to match the app.
+ */
+internal fun widgetText(en: String, el: String, sq: String, it: String): String = when (LocalizationManager.language.value) {
+    AppLanguage.GREEK -> el
+    AppLanguage.ALBANIAN -> sq
+    AppLanguage.ITALIAN -> it
     else -> en
 }
