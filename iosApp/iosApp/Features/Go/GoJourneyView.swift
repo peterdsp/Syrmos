@@ -23,6 +23,12 @@ struct GoJourneyView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
     @State private var confirmEnd = false
+    // Camera with explicit intent (shared GoCamera reducer): follow the current
+    // stop by default, keep the whole route on Fit route, and leave the rider's
+    // manual view alone until they ask again.
+    @State private var cameraIntent: GoCameraIntent = .follow
+    @State private var cameraCommand: GoCameraAction = .none
+    @State private var cameraTick = 0
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -215,10 +221,15 @@ struct GoJourneyView: View {
                     legRuns: legRuns,
                     current: currentCoord,
                     tint: UIColor(tint),
-                    edgeInsets: mapInsets
+                    edgeInsets: mapInsets,
+                    intent: cameraIntent,
+                    command: cameraCommand,
+                    commandTick: cameraTick,
+                    onUserPan: { if cameraIntent != .manual { camera(.userPanned) } }
                 )
                 .frame(height: mapHeight)
                 .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
+                .overlay(alignment: .topTrailing) { mapCameraControls }
                 .overlay(
                     RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
                         .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
@@ -229,6 +240,37 @@ struct GoJourneyView: View {
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
                 if !mapOnly { goTimeline }
             }
+        }
+    }
+
+    /// Fit route always; Follow only while the camera is not following.
+    private var mapCameraControls: some View {
+        HStack(spacing: 8) {
+            if cameraIntent != .follow {
+                Button { camera(.followTapped) } label: {
+                    Label(t("Follow", "Ακολούθησε", "Ndiq", "Segui"), systemImage: "location.fill")
+                }
+            }
+            Button { camera(.fitTapped) } label: {
+                Label(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso"),
+                      systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .lineLimit(1)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
+        .tint(Color.syrmosPrimary)
+        .padding(8)
+    }
+
+    private func camera(_ event: GoCameraEvent) {
+        let step = GoCamera.reduce(cameraIntent, event)
+        cameraIntent = step.intent
+        if step.action != .none {
+            cameraCommand = step.action
+            cameraTick += 1
         }
     }
 
@@ -942,6 +984,42 @@ private final class GoLegPolyline: MKPolyline {
     var color: UIColor = .systemBlue
 }
 
+/// What the GO route map's camera is doing for the rider (twin of Kotlin
+/// `GoCameraIntent`): follow the current stop, keep the whole route fitted, or
+/// leave the rider's manual view alone.
+enum GoCameraIntent { case follow, fit, manual }
+enum GoCameraEvent { case userPanned, fitTapped, followTapped, currentStopChanged, geometryChanged }
+enum GoCameraAction { case none, fitRoute, centerCurrent }
+
+/// The camera reducer shared with Android (`GoCamera` in core/domain/go): only
+/// a real event moves the camera, and only when the intent calls for it. An
+/// identical SwiftUI update is not an event, so a manual pan survives ticks,
+/// folds and re-renders.
+enum GoCamera {
+    static func reduce(_ intent: GoCameraIntent, _ event: GoCameraEvent) -> (intent: GoCameraIntent, action: GoCameraAction) {
+        switch event {
+        case .userPanned: return (.manual, .none)
+        case .fitTapped: return (.fit, .fitRoute)
+        case .followTapped: return (.follow, .centerCurrent)
+        case .currentStopChanged: return intent == .follow ? (.follow, .centerCurrent) : (intent, .none)
+        case .geometryChanged:
+            switch intent {
+            case .follow: return (.follow, .centerCurrent)
+            case .fit: return (.fit, .fitRoute)
+            case .manual: return (.manual, .none)
+            }
+        }
+    }
+
+    static func same(_ a: CLLocationCoordinate2D?, _ b: CLLocationCoordinate2D?) -> Bool {
+        switch (a, b) {
+        case (nil, nil): return true
+        case let (x?, y?): return x.latitude == y.latitude && x.longitude == y.longitude
+        default: return false
+        }
+    }
+}
+
 private struct GoRouteMapView: UIViewRepresentable {
     let route: [CLLocationCoordinate2D]
     /// Per-leg runs with their line colours; drawn one polyline per leg.
@@ -952,13 +1030,19 @@ private struct GoRouteMapView: UIViewRepresentable {
     /// visible area (base breathing room plus any hinge or cutout the companion
     /// reported). See `SyrmosMapPadding`.
     var edgeInsets: SyrmosEdgeInsets = .all(SyrmosMapPadding.base)
+    /// Camera intent, the one-shot command (Fit route / Follow) with its tick,
+    /// and the rider's manual pan reported back to the owner.
+    var intent: GoCameraIntent = .follow
+    var command: GoCameraAction = .none
+    var commandTick: Int = 0
+    var onUserPan: () -> Void = {}
 
     private var uiEdgeInsets: UIEdgeInsets {
         UIEdgeInsets(top: edgeInsets.top, left: edgeInsets.left,
                      bottom: edgeInsets.bottom, right: edgeInsets.right)
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(tint: tint) }
+    func makeCoordinator() -> Coordinator { Coordinator(tint: tint, onUserPan: onUserPan) }
 
     func makeUIView(context: Context) -> MKMapView {
         let map = MKMapView()
@@ -983,20 +1067,47 @@ private struct GoRouteMapView: UIViewRepresentable {
             map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: false)
         }
         context.coordinator.lastInsets = edgeInsets
+        context.coordinator.lastCurrent = current
+        context.coordinator.lastCommandTick = commandTick
         context.coordinator.syncCurrent(on: map, to: current)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        context.coordinator.syncCurrent(on: map, to: current)
-        let insetsChanged = context.coordinator.lastInsets != edgeInsets
-        context.coordinator.lastInsets = edgeInsets
-        if let current {
-            recenter(map, on: current, animated: true)
-        } else if insetsChanged, let rect = boundingRect() {
-            // No current stop to follow (e.g. a stop without coordinates): keep
-            // the whole route visible inside the new padded area.
-            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+        let coordinator = context.coordinator
+        coordinator.onUserPan = onUserPan
+        coordinator.syncCurrent(on: map, to: current)
+        let insetsChanged = coordinator.lastInsets != edgeInsets
+        coordinator.lastInsets = edgeInsets
+        let currentChanged = !GoCamera.same(coordinator.lastCurrent, current)
+        coordinator.lastCurrent = current
+
+        // Camera with explicit intent: a one-shot command first; otherwise only a
+        // real change (the current stop moved, the fold geometry changed) may move
+        // the camera, and only when the intent says so. An identical SwiftUI
+        // update never recenters, so a manual pan holds.
+        var action: GoCameraAction = .none
+        if coordinator.lastCommandTick != commandTick {
+            coordinator.lastCommandTick = commandTick
+            action = command
+        } else if currentChanged {
+            action = GoCamera.reduce(intent, .currentStopChanged).action
+        } else if insetsChanged {
+            action = GoCamera.reduce(intent, .geometryChanged).action
+        }
+        switch action {
+        case .none:
+            break
+        case .fitRoute:
+            if let rect = boundingRect() {
+                map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+            }
+        case .centerCurrent:
+            if let current {
+                recenter(map, on: current, animated: true)
+            } else if let rect = boundingRect() {
+                map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
+            }
         }
     }
 
@@ -1038,8 +1149,25 @@ private struct GoRouteMapView: UIViewRepresentable {
         private var currentAnnotation: MKPointAnnotation?
         /// The insets the map was last laid out with, to notice a fold change.
         var lastInsets: SyrmosEdgeInsets?
+        /// The current stop the camera last acted on, to notice a real advance.
+        var lastCurrent: CLLocationCoordinate2D?
+        /// The last one-shot command tick that ran.
+        var lastCommandTick = 0
+        var onUserPan: () -> Void
 
-        init(tint: UIColor) { self.tint = tint }
+        init(tint: UIColor, onUserPan: @escaping () -> Void) {
+            self.tint = tint
+            self.onUserPan = onUserPan
+        }
+
+        /// A pan or pinch in progress when the region starts changing is the
+        /// rider exploring; programmatic moves carry no active gesture.
+        func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
+            let gestures = mapView.subviews.first?.gestureRecognizers ?? []
+            if gestures.contains(where: { $0.state == .began || $0.state == .changed }) {
+                onUserPan()
+            }
+        }
 
         /// Keep exactly one "you are here" annotation at the current stop.
         func syncCurrent(on map: MKMapView, to coord: CLLocationCoordinate2D?) {

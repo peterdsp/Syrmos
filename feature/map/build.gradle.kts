@@ -18,6 +18,7 @@ kotlin {
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.koin)
             implementation(projects.core.common)
+            implementation(projects.core.domain)
             implementation(projects.core.data)
             implementation(projects.core.network)
         }

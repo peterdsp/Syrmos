@@ -80,6 +80,10 @@ import kotlinx.coroutines.flow.first
 import com.syrmos.core.common.map.LatLng
 import com.syrmos.core.domain.go.GoRoutePoint
 import com.syrmos.core.domain.go.GoRouteRuns
+import com.syrmos.core.domain.go.GoCamera
+import com.syrmos.core.domain.go.GoCameraAction
+import com.syrmos.core.domain.go.GoCameraEvent
+import com.syrmos.core.domain.go.GoCameraIntent
 import com.syrmos.feature.map.GoRouteMapLeg
 import com.syrmos.feature.map.GoRouteMapView
 import org.koin.compose.koinInject
@@ -180,20 +184,41 @@ class GoJourneyScreenRoute(
             }
         }
         val currentPoint = GoRouteRuns.currentPoint(journey, position) { stationCoords[it] }?.let { LatLng(it.lat, it.lon) }
-        var fitTick by remember { mutableStateOf(0) }
+        // Camera with explicit intent (shared GoCamera reducer): follow the
+        // current stop by default, keep the whole route on Fit route, and leave
+        // the rider's manual view alone until they ask again.
+        var cameraIntent by remember { mutableStateOf(GoCameraIntent.FOLLOW) }
+        var cameraCommand by remember { mutableStateOf(GoCameraAction.NONE) }
+        var cameraTick by remember { mutableStateOf(0) }
+        fun camera(event: GoCameraEvent) {
+            val step = GoCamera.reduce(cameraIntent, event)
+            cameraIntent = step.intent
+            if (step.action != GoCameraAction.NONE) { cameraCommand = step.action; cameraTick++ }
+        }
         val routeAccent = lineColors[journey.legs.getOrNull(position.legIndex)?.lineId] ?: primaryColor
-        // The route map card: rounded, with the Fit route control (camera intent).
+        // The route map card: rounded, with the camera controls.
         val routeMap: @Composable (Modifier) -> Unit = { m ->
             Box(m.clip(RoundedCornerShape(16.dp))) {
                 GoRouteMapView(
-                    legs = routeLegs, current = currentPoint, accent = routeAccent, fitTick = fitTick,
+                    legs = routeLegs, current = currentPoint, accent = routeAccent,
+                    intent = cameraIntent, command = cameraCommand, commandTick = cameraTick,
+                    onUserPan = { if (cameraIntent != GoCameraIntent.MANUAL) camera(GoCameraEvent.USER_PANNED) },
                     modifier = Modifier.fillMaxSize(),
                 )
-                TextButton(
-                    onClick = { fitTick++ },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp)),
-                ) { Text(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso")) }
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val pill = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(999.dp))
+                    if (cameraIntent != GoCameraIntent.FOLLOW) {
+                        TextButton(onClick = { camera(GoCameraEvent.FOLLOW_TAPPED) }, modifier = pill) {
+                            Text(t("Follow", "Ακολούθησε", "Ndiq", "Segui"), maxLines = 1)
+                        }
+                    }
+                    TextButton(onClick = { camera(GoCameraEvent.FIT_TAPPED) }, modifier = pill) {
+                        Text(t("Fit route", "Όλη η διαδρομή", "Gjithë rruga", "Tutto il percorso"), maxLines = 1)
+                    }
+                }
             }
         }
         LaunchedEffect(Unit) {

@@ -262,4 +262,30 @@ final class JourneyGuidanceTests: XCTestCase {
         let partial = GoRouteProjection.legRuns(journey: timelineJourney) { $0 == "SYN" ? nil : coords[$0] }
         XCTAssertEqual(partial.map(\.lineId), ["M1"])
     }
+
+    // MARK: GO camera intent (twin of Kotlin GoCameraTest)
+
+    func test_camera_followCentersOnStopChangeAndManualPanHoldsTheView() {
+        XCTAssertEqual(GoCamera.reduce(.follow, .currentStopChanged).action, .centerCurrent)
+        let panned = GoCamera.reduce(.follow, .userPanned)
+        XCTAssertEqual(panned.intent, .manual)
+        XCTAssertEqual(panned.action, .none)
+        XCTAssertEqual(GoCamera.reduce(.manual, .currentStopChanged).action, .none)
+    }
+
+    func test_camera_fitKeepsTheWholeRouteUntilFollowIsTapped() {
+        let fit = GoCamera.reduce(.manual, .fitTapped)
+        XCTAssertEqual(fit.intent, .fit)
+        XCTAssertEqual(fit.action, .fitRoute)
+        XCTAssertEqual(GoCamera.reduce(.fit, .currentStopChanged).action, .none)
+        let follow = GoCamera.reduce(.fit, .followTapped)
+        XCTAssertEqual(follow.intent, .follow)
+        XCTAssertEqual(follow.action, .centerCurrent)
+    }
+
+    func test_camera_geometryChangeReframesOnlyWhenTheIntentAsksForIt() {
+        XCTAssertEqual(GoCamera.reduce(.follow, .geometryChanged).action, .centerCurrent)
+        XCTAssertEqual(GoCamera.reduce(.fit, .geometryChanged).action, .fitRoute)
+        XCTAssertEqual(GoCamera.reduce(.manual, .geometryChanged).action, .none)
+    }
 }

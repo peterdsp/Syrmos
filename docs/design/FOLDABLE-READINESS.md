@@ -530,6 +530,34 @@ master plan's GO portrait contract (map overview above, instruction below).
   GO: the route map holds the upper region with Fit route and attribution, the
   instruction, progress and controls read below. Restored to 841x673 after.
 
+## Landed: polish round 10 (GO map camera intent: follow, fit, manual)
+
+Source: master plan GO contract ("Map camera has explicit intent: fit route,
+follow, or manual exploration. Respect manual pan ... do not recenter on every
+SwiftUI update or identical coordinate delivery").
+
+- **Finding (iOS)**: `GoRouteMapView.updateUIView` recentred on the current
+  stop on every SwiftUI update (any tick), so a manual pan was thrown away
+  within seconds and there was no Fit route control.
+- **Shared reducer**: `GoCamera.reduce(intent, event)` with intents FOLLOW /
+  FIT / MANUAL, events user panned, Fit tapped, Follow tapped, current stop
+  changed, geometry changed, and actions none / fit route / centre current.
+  Kotlin `core/domain/go/GoCamera.kt` (`GoCameraTest`, 3) and the Swift twin in
+  GoJourneyView.swift (three `test_camera_*` cases in `JourneyGuidanceTests`).
+- **iOS**: the representable receives the intent plus a one-shot command with
+  a tick and reports manual pans (an active pan or pinch gesture when the
+  region starts changing); `updateUIView` acts only on a command, a real
+  current-stop change or a fold-geometry change, never on an identical update.
+  Card controls: Fit route always, Follow while not following.
+- **Android**: `GoRouteMapView` fits the route once on first layout, then
+  applies the same reducer; a finger move on the osmdroid view reports the
+  manual pan; Follow animates to the current stop keeping the zoom. Same
+  controls. `feature/map` now depends on `core:domain` for the reducer.
+- **Verified (Android)**: Pixel emulator at 841x673: Next stop moved the camera
+  to Faliro (follow); a swipe on the map revealed Follow (manual) and the view
+  stayed where it was panned; Fit route reframed the whole route with Follow
+  still offered.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

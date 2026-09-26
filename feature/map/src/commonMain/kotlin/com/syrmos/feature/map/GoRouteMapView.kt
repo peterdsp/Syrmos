@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.domain.go.GoCameraAction
+import com.syrmos.core.domain.go.GoCameraIntent
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
@@ -24,9 +26,10 @@ data class GoRouteMapLeg(val lineId: String, val color: Color, val points: List<
 /**
  * The GO journey's route map (the Android peer of iOS `GoRouteMapView`): every
  * leg in its real line colour, the rider's current stop as a haloed dot, and a
- * camera with explicit intent: the route is fitted when [fitTick] changes (first
- * composition and the Fit route control), manual pan and zoom are respected in
- * between. Android draws it on the platform map with tiles and attribution; the
+ * camera with explicit intent (shared `GoCamera` reducer): the route is fitted
+ * on first layout, a one-shot [command] runs when [commandTick] changes (Fit
+ * route / Follow), the current stop is followed only under FOLLOW, and a manual
+ * pan (reported through [onUserPan]) is respected until the rider asks again. Android draws it on the platform map with tiles and attribution; the
  * other targets draw the same route on a canvas so the route never disappears
  * when geography is unavailable.
  */
@@ -35,7 +38,10 @@ expect fun GoRouteMapView(
     legs: List<GoRouteMapLeg>,
     current: LatLng?,
     accent: Color,
-    fitTick: Int,
+    intent: GoCameraIntent,
+    command: GoCameraAction,
+    commandTick: Int,
+    onUserPan: () -> Unit,
     modifier: Modifier = Modifier,
 )
 

@@ -15,6 +15,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.syrmos.core.common.map.LatLng
+import com.syrmos.core.domain.go.GoCamera
+import com.syrmos.core.domain.go.GoCameraAction
+import com.syrmos.core.domain.go.GoCameraEvent
+import com.syrmos.core.domain.go.GoCameraIntent
+import androidx.compose.runtime.rememberUpdatedState
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -34,14 +39,21 @@ actual fun GoRouteMapView(
     legs: List<GoRouteMapLeg>,
     current: LatLng?,
     accent: Color,
-    fitTick: Int,
+    intent: GoCameraIntent,
+    command: GoCameraAction,
+    commandTick: Int,
+    onUserPan: () -> Unit,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val legOverlays = remember { mutableListOf<Polyline>() }
     var currentMarker by remember { mutableStateOf<Marker?>(null) }
-    var lastFit by remember { mutableStateOf(Int.MIN_VALUE) }
+    // Camera bookkeeping outside Compose state: writing state from `update`
+    // would recompose in a loop, and the map is the only reader.
+    class CameraMemo { var firstFitDone = false; var lastCommandTick = Int.MIN_VALUE; var lastCurrent: LatLng? = null }
+    val memo = remember { CameraMemo() }
+    val panCallback by rememberUpdatedState(onUserPan)
 
     DisposableEffect(context) {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -60,6 +72,12 @@ actual fun GoRouteMapView(
                 controller.setZoom(12.0)
                 controller.setCenter(GeoPoint(37.98, 23.73))
                 overlays.add(CopyrightOverlay(ctx))
+                // A finger moving on the map is the rider exploring: report it so
+                // the intent turns manual. Programmatic moves never fire this.
+                setOnTouchListener { _, ev ->
+                    if (ev.actionMasked == android.view.MotionEvent.ACTION_MOVE) panCallback()
+                    false
+                }
             }
         },
         update = { mv ->
@@ -98,18 +116,31 @@ actual fun GoRouteMapView(
                 }.also { mv.overlays.add(it) }
             }
 
-            if (lastFit != fitTick) {
-                lastFit = fitTick
-                val all = legs.flatMap { it.points }.map { GeoPoint(it.lat, it.lng) }
-                if (all.size >= 2) {
-                    val box = BoundingBox.fromGeoPoints(all).increaseByScale(1.3f)
-                    val fit = { mv.zoomToBoundingBox(box, false, 24) }
-                    if (mv.width == 0 || mv.height == 0) {
-                        mv.addOnFirstLayoutListener { _, _, _, _, _ -> fit() }
-                    } else {
-                        mv.post { fit() }
-                    }
+            // Camera with explicit intent: fit the whole route once on first
+            // layout, run a one-shot command when its tick changes, otherwise
+            // move only when the current stop really changed and the intent is
+            // FOLLOW. An identical recomposition never moves the camera.
+            val allPoints = legs.flatMap { it.points }.map { GeoPoint(it.lat, it.lng) }
+            val fitRoute = {
+                if (allPoints.size >= 2) {
+                    val box = BoundingBox.fromGeoPoints(allPoints).increaseByScale(1.3f)
+                    val fit = { mv.zoomToBoundingBox(box, true, 24) }
+                    if (mv.width == 0 || mv.height == 0) mv.addOnFirstLayoutListener { _, _, _, _, _ -> fit() } else mv.post { fit() }
                 }
+            }
+            val action = when {
+                !memo.firstFitDone && allPoints.size >= 2 -> { memo.firstFitDone = true; GoCameraAction.FIT_ROUTE }
+                memo.lastCommandTick != commandTick -> command
+                memo.lastCurrent != current -> GoCamera.reduce(intent, GoCameraEvent.CURRENT_STOP_CHANGED).action
+                else -> GoCameraAction.NONE
+            }
+            memo.lastCommandTick = commandTick
+            memo.lastCurrent = current
+            when (action) {
+                GoCameraAction.FIT_ROUTE -> fitRoute()
+                GoCameraAction.CENTER_CURRENT ->
+                    if (current != null) mv.controller.animateTo(GeoPoint(current.lat, current.lng)) else fitRoute()
+                GoCameraAction.NONE -> Unit
             }
             mv.invalidate()
         },

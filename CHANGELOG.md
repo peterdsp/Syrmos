@@ -12,6 +12,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The GO map camera has explicit intent.** It follows your current stop as
+  the journey advances, keeps the whole route in view after Fit route, and
+  leaves a view you panned or zoomed alone until you tap Follow; a fold, a
+  rotation or a refresh never yanks the camera back on its own. One shared rule
+  on iOS and Android, with Fit route and Follow controls on the map card. On
+  iOS the map previously recentred on every redraw, which threw away a manual
+  pan within seconds.
 - **Upright folds stack even with a navigation rail.** An unfolded device held
   upright hosts an 80 dp rail that narrows the content to just under the medium
   breakpoint, and until now that kept GO, Explore and the Map in one column.
