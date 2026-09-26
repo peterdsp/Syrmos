@@ -65,7 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import com.syrmos.core.common.layout.PaneRole
 import com.syrmos.core.common.layout.WorkspaceArrangement
 import com.syrmos.core.common.layout.WorkspaceTask

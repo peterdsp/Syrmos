@@ -254,6 +254,22 @@ final class DuoSnapshotTests: XCTestCase {
         return nonBlack >= 8
     }
 
+    // MARK: Visual: Departures paired on the Duo, single on the cover
+
+    @MainActor
+    func test_departuresScreen_duoInnerLandscape_render() throws {
+        let image = render(TimetablesView(), size: duoInnerLandscape)
+        try save(image, "departures-duo-inner-landscape.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Departures unfolded render should not be blank")
+    }
+
+    @MainActor
+    func test_departuresScreen_duoCover_render() throws {
+        let image = render(TimetablesView(), size: duoCover)
+        try save(image, "departures-duo-cover.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Departures cover render should not be blank")
+    }
+
     // MARK: Journey fixture (mirrors GoDemoEntryView so the snapshot is a real route)
 
     private func demoJourney(_ language: AppLanguage = .english) -> GuidanceJourney? {

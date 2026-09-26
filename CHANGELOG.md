@@ -21,6 +21,14 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   describe 3.0 (Plan, GO, the direction board, leave-by reminders, foldables)
   instead of the 2.0 Atlas notes, and show once more for 3.0.0.
 - **Dark-mode GO render** added to the Duo snapshot suite.
+- **Departures pairs on foldables and tablets.** On both platforms the Airport
+  hub's planning cards (hub, city, calendar, route overview, predictive
+  itinerary) sit beside the live board (next services, departures, alerts) when
+  the window pairs, decided by the shared policy; phones keep the single column.
+  The Compose workspace helper moved from the app module into the design-system
+  module so every feature module can use it.
+- **Plan endpoints read as an invitation** ("Choose a station" with a chevron)
+  instead of a bare dash before a station is chosen, on both platforms.
 
 ## 3.0.0-beta.3 - 2026-09-26
 

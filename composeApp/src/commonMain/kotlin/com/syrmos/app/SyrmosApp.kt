@@ -55,7 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.Dp
 import com.syrmos.core.common.layout.ContentBreakpoint
 import com.syrmos.core.common.layout.ContentMode
-import com.syrmos.app.layout.LocalReservedRegions
+import com.syrmos.core.designsystem.layout.LocalReservedRegions
 import com.syrmos.app.platform.rememberReservedRegions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

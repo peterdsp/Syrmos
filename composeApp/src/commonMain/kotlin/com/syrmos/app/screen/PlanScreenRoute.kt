@@ -101,7 +101,7 @@ import com.syrmos.core.model.journey.Ranking
 import com.syrmos.core.model.journey.SavedJourney
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.domain.station.StationGrouping
-import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
 import com.syrmos.core.common.layout.PaneRole
 import com.syrmos.core.common.layout.WorkspaceArrangement
 import com.syrmos.core.common.layout.WorkspaceTask

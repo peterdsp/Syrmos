@@ -6,6 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraints
+import com.syrmos.core.designsystem.layout.rememberContentWorkspace
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.PaneRole
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -194,16 +200,9 @@ fun AirportHubScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp, bottom = 126.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
+    // What the rider decides with: hub, city, calendar, and for a direct-rail
+    // hub the route overview and the predictive itinerary.
+    val planning: @Composable ColumnScope.() -> Unit = {
         AirportHero(hub, lang)
         AirportCitySelector(selectedCity, lang, onSelect = {
             selectedCity = it
@@ -222,6 +221,14 @@ fun AirportHubScreen(
         if (hub.hasDirectRail) {
             AirportRouteOverview(lang, selectedRoute, dayOffset, onRouteSelected = { selectedRoute = it })
             PredictiveItinerary(lang, flightMinutes, airportBoundDepartures, selectedTrip?.title)
+        } else {
+            AirportConnections(hub, lang)
+        }
+    }
+    // The live board: next services and departures (or the metro legs feeding
+    // an airport shuttle), then the service alert.
+    val board: @Composable ColumnScope.() -> Unit = {
+        if (hub.hasDirectRail) {
             NextAirportServices(lang, dayOffset, airportDepartures, suburbanAirportDepartures, now.time.hour * 60 + now.time.minute, onOpenStation)
             Text(
                 text = airportText(lang, "Airport services", "Υπηρεσίες αεροδρομίου", "Shërbimet e aeroportit", "Servizi aeroportuali"),
@@ -230,7 +237,6 @@ fun AirportHubScreen(
             )
             AirportDepartureRows(lang, dayOffset, airportDepartures, suburbanAirportDepartures, liveBuses, onOpenStation)
         } else {
-            AirportConnections(hub, lang)
             Text(
                 text = airportText(lang, "Metro departures to the airport shuttle", "Αναχωρήσεις μετρό προς το λεωφορείο αεροδρομίου", "Nisjet e metros drejt autobusit të aeroportit", "Partenze metro verso la navetta aeroporto"),
                 style = MaterialTheme.typography.titleLarge,
@@ -239,6 +245,56 @@ fun AirportHubScreen(
             AirportMetroLegs(hub, lang, dayOffset, metroLegDepartures, now.time.hour * 60 + now.time.minute, onOpenStation)
         }
         AirportAlert(lang)
+    }
+
+    // Foldables and tablets (six-posture prompt, section 6, Departures): the
+    // planning cards beside the live board when the measured window pairs,
+    // decided by the shared policy; the shipped single column otherwise.
+    BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+    ) {
+        val ws = rememberContentWorkspace(
+            task = WorkspaceTask.DEPARTURES,
+            width = maxWidth.value.toInt(),
+            height = maxHeight.value.toInt(),
+        )
+        if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) {
+            val taskW = ws.pane(PaneRole.TASK)?.rect?.right ?: (maxWidth.value.toInt() / 2)
+            Row(Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier.width(taskW.dp).fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 126.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    content = planning,
+                )
+                VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 126.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    content = board,
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp, bottom = 126.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                planning()
+                board()
+            }
+        }
     }
 }
 

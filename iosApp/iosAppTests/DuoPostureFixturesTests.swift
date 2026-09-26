@@ -431,4 +431,12 @@ final class DuoPostureFixturesTests: XCTestCase {
         XCTAssertEqual(resolve(innerW, innerH, .plan, fontScale: SyrmosDynamicType.fontScale(.xxxLarge)).arrangement, .single)
         XCTAssertEqual(resolve(innerW, innerH, .plan, fontScale: SyrmosDynamicType.fontScale(.accessibility1)).arrangement, .single)
     }
+
+    // MARK: Departures task
+
+    func test_departures_pairsSideBySideOnBothInnerOrientations() {
+        XCTAssertEqual(resolve(innerH, innerW, .departures).arrangement, .sideBySide)
+        XCTAssertEqual(resolve(innerW, innerH, .departures).arrangement, .sideBySide)
+        XCTAssertEqual(resolve(coverW, coverH, .departures).arrangement, .single)
+    }
 }

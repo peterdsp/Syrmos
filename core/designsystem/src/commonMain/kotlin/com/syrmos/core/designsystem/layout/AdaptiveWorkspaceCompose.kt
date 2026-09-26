@@ -1,4 +1,4 @@
-package com.syrmos.app.layout
+package com.syrmos.core.designsystem.layout
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -11,7 +11,7 @@ import com.syrmos.core.common.layout.WorkspaceTask
 
 /**
  * The window's reported fold/occlusion regions (window dp coordinates), provided
- * once at the app root from [com.syrmos.app.platform.rememberReservedRegions].
+ * once at the app root from the app root's platform reserved-regions reader.
  * Screens read it through [rememberContentWorkspace]; it defaults to empty so a
  * screen composed outside the root still resolves through the plain-window path.
  */
