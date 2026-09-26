@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
+import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.LocalizationManager
 import com.syrmos.feature.schedule.AirportCalendarTrip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -55,7 +57,7 @@ actual suspend fun loadAirportCalendarTrips(): List<AirportCalendarTrip> = withC
             if ((title + " " + location).isAirportTripText()) {
                 trips += AirportCalendarTrip(
                     id = cursor.getLong(idIndex).toString(),
-                    title = title.ifBlank { "Airport trip" },
+                    title = title.ifBlank { fallbackTripTitle() },
                     startEpochMillis = cursor.getLong(startIndex),
                     location = location,
                 )
@@ -71,4 +73,12 @@ private fun String.isAirportTripText(): Boolean {
         "airport", "flight", "ath", "aeroporto", "aeroporti", "volo", "fluturim",
         "αεροδρο", "πτηση", "πτήση", "m3", "x95", "x93",
     ).any(value::contains)
+}
+
+/** Title for a calendar event that matched as an airport trip but has no title of its own. */
+private fun fallbackTripTitle(): String = when (LocalizationManager.language.value) {
+    AppLanguage.GREEK -> "Ταξίδι αεροδρομίου"
+    AppLanguage.ALBANIAN -> "Udhëtim aeroporti"
+    AppLanguage.ITALIAN -> "Viaggio in aeroporto"
+    else -> "Airport trip"
 }

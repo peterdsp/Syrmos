@@ -117,28 +117,28 @@ private fun ConfigScreen(
     var line by remember { mutableStateOf(initial.line) }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("Syrmos widget", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        Text(widgetText("Syrmos widget", "Widget Syrmos", "Widget Syrmos", "Widget Syrmos"), fontWeight = FontWeight.Bold, fontSize = 22.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Show the nearest station automatically, or pick your own.",
+            widgetText("Show the nearest station automatically, or pick your own.", "Εμφάνιση του πλησιέστερου σταθμού αυτόματα, ή επίλεξε τον δικό σου.", "Shfaq automatikisht stacionin më të afërt, ose zgjidh një vetë.", "Mostra automaticamente la stazione più vicina, oppure scegline una."),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
         )
         Spacer(Modifier.height(20.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Use nearest station", fontSize = 16.sp, modifier = Modifier.weight(1f))
+            Text(widgetText("Use nearest station", "Χρήση πλησιέστερου σταθμού", "Përdor stacionin më të afërt", "Usa la stazione più vicina"), fontSize = 16.sp, modifier = Modifier.weight(1f))
             Switch(checked = useNearest, onCheckedChange = { useNearest = it })
         }
         Spacer(Modifier.height(16.dp))
 
         // Station picker, only when not tracking the nearest station.
         if (!useNearest) {
-            Text("Station", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(widgetText("Station", "Σταθμός", "Stacioni", "Stazione"), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Spacer(Modifier.height(6.dp))
             Card(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(260.dp)) {
                 if (stations.isEmpty()) {
-                    Text("Loading stations…", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(widgetText("Loading stations…", "Φόρτωση σταθμών…", "Po ngarkohen stacionet…", "Caricamento stazioni…"), modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     LazyColumn {
                         items(stations) { s ->
@@ -160,10 +160,10 @@ private fun ConfigScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        Text("Only this line (optional)", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        Text(widgetText("Only this line (optional)", "Μόνο αυτή η γραμμή (προαιρετικό)", "Vetëm kjo linjë (opsionale)", "Solo questa linea (facoltativo)"), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
         Spacer(Modifier.height(6.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LineChip(label = "All", selected = line == null) { line = null }
+            LineChip(label = widgetText("All", "Όλα", "Të gjitha", "Tutte"), selected = line == null) { line = null }
         }
         Spacer(Modifier.height(8.dp))
         // Two rows of line chips so they fit narrow screens.
@@ -194,7 +194,7 @@ private fun ConfigScreen(
             enabled = useNearest || stationId != null,
             modifier = Modifier.fillMaxWidth().height(50.dp),
         ) {
-            Text("Save")
+            Text(widgetText("Save", "Αποθήκευση", "Ruaj", "Salva"))
         }
     }
 }

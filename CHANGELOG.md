@@ -37,6 +37,14 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   hooks in Albanian got their accents. The Explore hero subtitle and the
   Browse-all subtitle wrap to a second line in narrow panes instead of
   truncating.
+- **Android widgets speak the app's language.** The home-screen widgets and
+  the widget setup screen were English only ("Near me", "No upcoming
+  departures", "Use nearest station", "Save") and the one localized widget
+  followed the phone's locale rather than the language chosen in Syrmos.
+  They now match the app, as the iOS widgets already did. A calendar
+  event that matched as an airport trip but has no title gets a localized
+  fallback title on both platforms. The back button on the Ichnos detail
+  screens is described to screen readers in the app's language.
 
 ## 3.0.0-beta.4 - 2026-09-26
 

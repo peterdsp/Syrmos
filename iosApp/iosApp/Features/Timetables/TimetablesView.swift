@@ -67,6 +67,16 @@ private final class AirportCalendarStore: ObservableObject {
         return status == .authorized
     }
 
+    /// Title for a calendar event that matched as an airport trip but has no title of its own.
+    private var fallbackTripTitle: String {
+        switch LocalizationManager.shared.language {
+        case .greek: return "Ταξίδι αεροδρομίου"
+        case .albanian: return "Udhëtim aeroporti"
+        case .italian: return "Viaggio in aeroporto"
+        case .english: return "Airport trip"
+        }
+    }
+
     private func loadEvents() {
         let start = SyrmosClock.now
         let end = Calendar.current.date(byAdding: .day, value: 8, to: start) ?? start
@@ -83,7 +93,7 @@ private final class AirportCalendarStore: ObservableObject {
             .map { event in
                 AirportCalendarEvent(
                     id: event.eventIdentifier ?? UUID().uuidString,
-                    title: event.title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? event.title! : "Airport trip",
+                    title: event.title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? event.title! : fallbackTripTitle,
                     startDate: event.startDate,
                     location: event.location ?? ""
                 )
