@@ -21,6 +21,7 @@ struct GoJourneyView: View {
     @StateObject private var model: GoJourneyViewModel
     @StateObject private var location = LocationService()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
     let language: AppLanguage
     private let originName: String
     private let destinationName: String
@@ -80,6 +81,7 @@ struct GoJourneyView: View {
         // the shipped single column. The native ArrangementView split takes over on
         // iOS 27.1; older systems use the HStack fallback in SyrmosArrangement.
         SyrmosArrangement(
+            task: .go,
             primary: {
                 ScrollView {
                     VStack(spacing: 20) {
@@ -91,14 +93,17 @@ struct GoJourneyView: View {
             },
             companion: { goCompanion },
             combined: {
-                VStack(spacing: 20) {
-                    goInstruction
-                    Spacer()
-                    footnote
+                ScrollView {
+                    VStack(spacing: 20) {
+                        goInstruction
+                        timelineContent
+                        footnote
+                    }
+                    .padding()
                 }
-                .padding()
             }
         )
+        .background(Color.syrmosBackground.ignoresSafeArea())
         .navigationTitle("GO")
         .navigationBarTitleDisplayMode(.inline)
         .animation(.easeInOut(duration: 0.2), value: model.position)
@@ -152,9 +157,7 @@ struct GoJourneyView: View {
         header
         heroCard
         if let risk = activeTransferRisk { connectionRiskCard(risk) }
-        ProgressView(value: model.progress)
-            .tint(tint)
-            .padding(.horizontal)
+        legProgressBar
         controls
         if location.isDenied {
             locationDeniedNote
@@ -168,16 +171,36 @@ struct GoJourneyView: View {
     /// where they are on the map and what is coming up in one glance.
     @ViewBuilder private var goCompanion: some View {
         GeometryReader { geo in
+            // Hinge-aware map padding (six-posture prompt, section 9, item 2): the
+            // companion reads the regions the system reports for its own box
+            // (empty on systems without the Duo API, or injected by a test) and
+            // pads the map so the route and the current stop stay clear of an
+            // occluding hinge or a camera cutout instead of resetting the camera.
+            let geometry = reservedGeometryOverride ?? geo.syrmosReservedGeometry()
+            // The map is a card inside the pane (Calm Signal: 16 pt gutters, large
+            // radius), so the rect the padding rule sees is the card's rect.
+            let gutter = SyrmosTokens.Space.lg
+            let mapHeight = max(200, geo.size.height * 0.42)
+            let mapRect = CGRect(x: gutter, y: SyrmosTokens.Space.md,
+                                 width: max(0, geo.size.width - gutter * 2), height: mapHeight)
+            let mapInsets = SyrmosMapPadding.insets(mapRect: mapRect, geometry: geometry)
             VStack(spacing: 0) {
                 GoRouteMapView(
                     route: routeCoords,
                     current: currentCoord,
-                    tint: UIColor(tint)
+                    tint: UIColor(tint),
+                    edgeInsets: mapInsets
                 )
-                .frame(height: max(200, geo.size.height * 0.42))
+                .frame(height: mapHeight)
+                .clipShape(RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                        .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
+                )
+                .padding(.horizontal, gutter)
+                .padding(.top, SyrmosTokens.Space.md)
                 .accessibilityLabel(t(
                     "Journey route map", "Χάρτης διαδρομής", "Harta e udhëtimit", "Mappa del percorso"))
-                Divider()
                 goTimeline
             }
         }
@@ -201,40 +224,171 @@ struct GoJourneyView: View {
     /// highlighted, shown beside the instruction on a regular-width display.
     @ViewBuilder private var goTimeline: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
-                    .font(.headline)
+            timelineContent
+                .padding(SyrmosTokens.Space.lg)
+        }
+    }
+
+    /// The timeline's cards without their scroll view, so the compact single
+    /// column can place them under the instruction and controls instead of
+    /// leaving the lower half of the phone empty.
+    @ViewBuilder private var timelineContent: some View {
+        let rows = GoTimelineProjection.rows(journey: model.journey, position: model.position)
+        VStack(alignment: .leading, spacing: SyrmosTokens.Space.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"))
+                        .font(.title3.weight(.semibold))
+                    Text(journeySummary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, SyrmosTokens.Space.xs)
                 ForEach(Array(model.journey.legs.enumerated()), id: \.offset) { legIdx, leg in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 6) {
-                            Text(leg.lineId)
-                                .font(.caption.weight(.bold))
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.syrmosPrimary.opacity(0.14), in: Capsule())
-                                .foregroundStyle(Color.syrmosPrimary)
-                            Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
-                                .font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        ForEach(Array(leg.stops.enumerated()), id: \.offset) { stopIdx, stop in
-                            let isCurrent = legIdx == model.position.legIndex && stopIdx == model.position.stopIndex
-                            let isPast = legIdx < model.position.legIndex
-                                || (legIdx == model.position.legIndex && stopIdx < model.position.stopIndex)
-                            HStack(spacing: 10) {
-                                Circle()
-                                    .fill(isCurrent ? tint : Color.secondary.opacity(isPast ? 0.35 : 0.22))
-                                    .frame(width: isCurrent ? 12 : 8, height: isCurrent ? 12 : 8)
-                                Text(stop.name)
-                                    .font(.subheadline)
-                                    .fontWeight(isCurrent ? .semibold : .regular)
-                                    .foregroundStyle(isPast ? .secondary : .primary)
-                            }
-                        }
+                    let legColor = SyrmosData.line(for: leg.lineId)?.color ?? Color.syrmosPrimary
+                    if legIdx > 0 {
+                        transferConnector(to: leg, color: legColor)
                     }
+                    legCard(leg: leg, legIdx: legIdx, color: legColor,
+                            rows: rows.filter { $0.legIndex == legIdx })
+                }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// "Piraeus to Syntagma, 2 lines, 9 stops": the whole journey in one line.
+    private var journeySummary: String {
+        let lines = model.journey.legs.count
+        let stops = GoTimelineProjection.stopCount(journey: model.journey)
+        let linesText = lines == 1
+            ? t("1 line", "1 γραμμή", "1 linjë", "1 linea")
+            : t("\(lines) lines", "\(lines) γραμμές", "\(lines) linja", "\(lines) linee")
+        let stopsText = t("\(stops) stops", "\(stops) στάσεις", "\(stops) ndalesa", "\(stops) fermate")
+        return "\(originName) → \(destinationName) · \(linesText) · \(stopsText)"
+    }
+
+    /// One leg as a card: line pill, direction and stop count in the header, then
+    /// the stops on a rail in the leg's colour.
+    private func legCard(leg: GuidanceLeg, legIdx: Int, color: Color, rows: [GoTimelineRow]) -> some View {
+        let count = max(0, leg.stops.count - 1)
+        let countText = count == 1
+            ? t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
+            : t("\(count) stops", "\(count) στάσεις", "\(count) ndalesa", "\(count) fermate")
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: SyrmosTokens.Space.sm) {
+                LinePill(lineId: leg.lineId, size: .large)
+                Text(t("toward", "προς", "drejt", "verso") + " " + leg.towards)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Spacer(minLength: SyrmosTokens.Space.sm)
+                Text(countText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, SyrmosTokens.Space.lg)
+            .padding(.vertical, SyrmosTokens.Space.md)
+            Divider().overlay(Color.syrmosSurfaceMuted)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(rows, id: \.stopIndex) { row in
+                    timelineRow(row, color: color)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
+            .padding(.horizontal, SyrmosTokens.Space.lg)
+            .padding(.vertical, SyrmosTokens.Space.sm)
         }
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .fill(Color.syrmosSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.lg, style: .continuous)
+                .stroke(Color.syrmosSurfaceMuted, lineWidth: 1)
+        )
+    }
+
+    /// The walk between two legs: a dotted connector and the change instruction.
+    private func transferConnector(to leg: GuidanceLeg, color: Color) -> some View {
+        HStack(spacing: SyrmosTokens.Space.md) {
+            VStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Circle().fill(Color.secondary.opacity(0.35)).frame(width: 4, height: 4)
+                }
+            }
+            .frame(width: 24)
+            Image(systemName: "figure.walk")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(t("Change to", "Αλλαγή σε", "Ndërro në", "Cambia in") + " " + SyrmosLineTokens.label(for: leg.lineId))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, SyrmosTokens.Space.lg)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// One stop on the rail: origin and alight stops are rings, intermediate stops
+    /// small dots, the current stop a filled marker with a halo; the rail dims
+    /// behind the rider. A caption names the moment: Now, Next, Change here,
+    /// Destination.
+    private func timelineRow(_ row: GoTimelineRow, color: Color) -> some View {
+        let isPast = row.state == .past
+        let isCurrent = row.state == .current
+        let terminus = row.role != .intermediate
+        let railWidth: CGFloat = 4
+        let rowHeight: CGFloat = terminus || isCurrent ? 44 : 30
+        let caption: String? = {
+            if row.isDestination { return t("Destination", "Προορισμός", "Destinacioni", "Destinazione") }
+            if row.role == .alight { return t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui") }
+            switch row.state {
+            case .current: return t("Now", "Τώρα", "Tani", "Ora")
+            case .next: return t("Next", "Επόμενη", "Tjetra", "Prossima")
+            default: return nil
+            }
+        }()
+        return HStack(alignment: .center, spacing: SyrmosTokens.Space.md) {
+            ZStack {
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(row.role == .origin ? Color.clear : color.opacity(isPast || isCurrent ? 0.3 : 1))
+                        .frame(width: railWidth)
+                    Rectangle()
+                        .fill(row.role == .alight ? Color.clear : color.opacity(isPast ? 0.3 : 1))
+                        .frame(width: railWidth)
+                }
+                if isCurrent {
+                    Circle().fill(color.opacity(0.18)).frame(width: 28, height: 28)
+                    Circle().fill(color).frame(width: 16, height: 16)
+                    Circle().fill(Color.white).frame(width: 6, height: 6)
+                } else if terminus {
+                    Circle()
+                        .fill(Color.syrmosSurface)
+                        .overlay(Circle().stroke(color.opacity(isPast ? 0.4 : 1), lineWidth: 3))
+                        .frame(width: 14, height: 14)
+                } else {
+                    Circle()
+                        .fill(color.opacity(isPast ? 0.35 : 1))
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .frame(width: 24)
+            Text(row.name)
+                .font(isCurrent ? .body.weight(.semibold) : terminus ? .subheadline.weight(.semibold) : .subheadline)
+                .foregroundStyle(isPast ? .secondary : .primary)
+                .lineLimit(1)
+            Spacer(minLength: SyrmosTokens.Space.sm)
+            if let caption {
+                Text(caption)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isPast && !row.isDestination ? Color.secondary : color)
+                    .padding(.horizontal, SyrmosTokens.Space.sm)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule().fill((isPast && !row.isDestination ? Color.secondary : color).opacity(0.12))
+                    )
+            }
+        }
+        .frame(height: rowHeight)
+        .accessibilityElement(children: .combine)
     }
 
     /// Phase R S10 permission-denied capability state: location off changes the
@@ -318,6 +472,10 @@ struct GoJourneyView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text(stateLabel.uppercased())
+                .font(.caption.weight(.semibold))
+                .tracking(0.6)
+                .foregroundStyle(model.shouldAlert ? Color.white.opacity(0.85) : tint)
             Label {
                 Text(headline).font(.title2.bold())
             } icon: {
@@ -432,12 +590,61 @@ struct GoJourneyView: View {
         }
     }
 
+    /// One segment per leg in the leg's line colour, filled to the rider's
+    /// position, with a "stop X of Y" caption: the journey's shape at a glance,
+    /// instead of an anonymous grey bar.
+    private var legProgressBar: some View {
+        let segments = GoLegProgress.segments(journey: model.journey, position: model.position)
+        let total = GoTimelineProjection.stopCount(journey: model.journey)
+        let done = GoLegProgress.stopsRidden(journey: model.journey, position: model.position)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(Array(segments.enumerated()), id: \.offset) { _, seg in
+                    let color = SyrmosData.line(for: seg.lineId)?.color ?? Color.syrmosPrimary
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(color.opacity(0.18))
+                            Capsule().fill(color).frame(width: max(seg.fraction > 0 ? 6 : 0, geo.size.width * seg.fraction))
+                        }
+                    }
+                    .frame(height: 6)
+                }
+            }
+            HStack {
+                Text(model.isArrived
+                    ? t("Journey complete", "Το ταξίδι ολοκληρώθηκε", "Udhëtimi përfundoi", "Viaggio completato")
+                    : t("Stop \(done) of \(total)", "Στάση \(done) από \(total)", "Ndalesa \(done) nga \(total)", "Fermata \(done) di \(total)"))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Spacer()
+                Text("\(Int((model.progress * 100).rounded()))%")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The moment the hero describes, as a short label above the headline
+    /// (matches the Android GO hero's state label).
+    private var stateLabel: String {
+        switch model.current {
+        case .board: return t("Ready to board", "Έτοιμος για επιβίβαση", "Gati për të hipur", "Pronto a salire")
+        case .ride: return t("Riding", "Σε κίνηση", "Duke udhëtuar", "In viaggio")
+        case .getOffNext: return t("Alight soon", "Αποβίβαση σύντομα", "Zbrit së shpejti", "Scendi a breve")
+        case .transfer: return t("Transfer", "Μετεπιβίβαση", "Ndërrim", "Cambio")
+        case .arrived: return t("Arrived", "Έφτασες", "Mbërritët", "Arrivato")
+        }
+    }
+
     private var footnote: some View {
         Text(t(
-            "Step through your journey. Live get-off alerts as you ride are coming next.",
-            "Δες το ταξίδι σου βήμα-βήμα. Οι ζωντανές ειδοποιήσεις αποβίβασης έρχονται σύντομα.",
-            "Shiko udhëtimin hap pas hapi. Njoftimet e zbritjes në kohë reale vijnë së shpejti.",
-            "Percorri il tuo viaggio passo passo. Gli avvisi di discesa in tempo reale arrivano presto."
+            "Step through your journey, or turn on live guidance to follow your position and get the get-off alert.",
+            "Προχώρα βήμα-βήμα ή ενεργοποίησε τη ζωντανή καθοδήγηση για να ακολουθεί τη θέση σου και να σε ειδοποιεί για αποβίβαση.",
+            "Ec hap pas hapi, ose aktivizo udhëzimin e drejtpërdrejtë që të ndjekë pozicionin tënd dhe të njoftojë për zbritjen.",
+            "Procedi passo passo, oppure attiva la guida dal vivo per seguire la tua posizione e ricevere l'avviso di discesa."
         ))
         .font(.footnote)
         .foregroundStyle(.secondary)
@@ -537,6 +744,92 @@ struct GoJourneyView: View {
     }
 }
 
+/// The role a stop plays on its leg and the rider's relation to it.
+enum GoTimelineRole: Equatable { case origin, intermediate, alight }
+enum GoTimelineState: Equatable { case past, current, next, future }
+
+/// One timeline row, pure data so the GO companion and its tests share the rule.
+struct GoTimelineRow: Equatable {
+    let legIndex: Int
+    let stopIndex: Int
+    let name: String
+    let role: GoTimelineRole
+    let state: GoTimelineState
+    /// The journey's final stop (the alight of the last leg).
+    let isDestination: Bool
+}
+
+/// Pure projection of a guidance journey and position into timeline rows: which
+/// stop is the origin or alight of its leg, which is behind the rider, which is
+/// current, which is next. Mirrors the Kotlin `GoTimeline` in core/domain.
+enum GoTimelineProjection {
+    static func rows(journey: GuidanceJourney, position: GuidancePosition) -> [GoTimelineRow] {
+        var out: [GoTimelineRow] = []
+        for (legIdx, leg) in journey.legs.enumerated() {
+            for (stopIdx, stop) in leg.stops.enumerated() {
+                let role: GoTimelineRole = stopIdx == 0 ? .origin
+                    : stopIdx == leg.stops.count - 1 ? .alight : .intermediate
+                let state: GoTimelineState
+                if legIdx < position.legIndex || (legIdx == position.legIndex && stopIdx < position.stopIndex) {
+                    state = .past
+                } else if legIdx == position.legIndex && stopIdx == position.stopIndex {
+                    state = .current
+                } else if legIdx == position.legIndex && stopIdx == position.stopIndex + 1 {
+                    state = .next
+                } else {
+                    state = .future
+                }
+                out.append(GoTimelineRow(
+                    legIndex: legIdx, stopIndex: stopIdx, name: stop.name, role: role, state: state,
+                    isDestination: role == .alight && legIdx == journey.legs.count - 1))
+            }
+        }
+        return out
+    }
+
+    /// Stops ridden across the journey: each leg's stops minus its boarding stop,
+    /// so an interchange counted at the end of one leg is not counted again at
+    /// the start of the next.
+    static func stopCount(journey: GuidanceJourney) -> Int {
+        journey.legs.reduce(0) { $0 + max(0, $1.stops.count - 1) }
+    }
+}
+
+/// One leg of the segmented progress bar: the line and how much of the leg the
+/// rider has covered (0 before it, 1 after it, hops ridden over hops in the leg
+/// while on it).
+struct GoLegSegment: Equatable {
+    let lineId: String
+    let fraction: Double
+}
+
+enum GoLegProgress {
+    static func segments(journey: GuidanceJourney, position: GuidancePosition) -> [GoLegSegment] {
+        journey.legs.enumerated().map { idx, leg in
+            let hops = max(1, leg.stops.count - 1)
+            let fraction: Double
+            if idx < position.legIndex {
+                fraction = 1
+            } else if idx > position.legIndex {
+                fraction = 0
+            } else {
+                fraction = min(1, max(0, Double(position.stopIndex) / Double(hops)))
+            }
+            return GoLegSegment(lineId: leg.lineId, fraction: fraction)
+        }
+    }
+
+    /// Hops ridden so far across the journey (the "X" in "stop X of Y").
+    static func stopsRidden(journey: GuidanceJourney, position: GuidancePosition) -> Int {
+        var done = 0
+        for (idx, leg) in journey.legs.enumerated() {
+            let hops = max(0, leg.stops.count - 1)
+            if idx < position.legIndex { done += hops } else if idx == position.legIndex { done += min(hops, position.stopIndex) }
+        }
+        return done
+    }
+}
+
 /// Pure projection of a guidance journey into map geometry, so the GO companion
 /// map and its tests share one placement rule. `resolve` turns a stop id into a
 /// coordinate (the app passes StationCoordinateLookup; tests pass a fixture).
@@ -580,6 +873,15 @@ private struct GoRouteMapView: UIViewRepresentable {
     let route: [CLLocationCoordinate2D]
     let current: CLLocationCoordinate2D?
     let tint: UIColor
+    /// Padding that keeps the route fit and the current stop inside the map's
+    /// visible area (base breathing room plus any hinge or cutout the companion
+    /// reported). See `SyrmosMapPadding`.
+    var edgeInsets: SyrmosEdgeInsets = .all(SyrmosMapPadding.base)
+
+    private var uiEdgeInsets: UIEdgeInsets {
+        UIEdgeInsets(top: edgeInsets.top, left: edgeInsets.left,
+                     bottom: edgeInsets.bottom, right: edgeInsets.right)
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(tint: tint) }
 
@@ -597,20 +899,46 @@ private struct GoRouteMapView: UIViewRepresentable {
             map.addOverlay(MKPolyline(coordinates: route, count: route.count), level: .aboveLabels)
         }
         if let rect = boundingRect() {
-            map.setVisibleMapRect(
-                rect,
-                edgePadding: UIEdgeInsets(top: 44, left: 44, bottom: 44, right: 44),
-                animated: false)
+            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: false)
         }
+        context.coordinator.lastInsets = edgeInsets
         context.coordinator.syncCurrent(on: map, to: current)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
         context.coordinator.syncCurrent(on: map, to: current)
+        let insetsChanged = context.coordinator.lastInsets != edgeInsets
+        context.coordinator.lastInsets = edgeInsets
         if let current {
-            map.setCenter(current, animated: true)
+            recenter(map, on: current, animated: true)
+        } else if insetsChanged, let rect = boundingRect() {
+            // No current stop to follow (e.g. a stop without coordinates): keep
+            // the whole route visible inside the new padded area.
+            map.setVisibleMapRect(rect, edgePadding: uiEdgeInsets, animated: true)
         }
+    }
+
+    /// Centre `coord` in the PADDED visible area, not the map's geometric centre,
+    /// so a hinge or a cutout never sits on the current stop. The offset between
+    /// the two centres is measured in map points at the current zoom, which a
+    /// pan does not change, so the camera keeps its zoom and bearing.
+    private func recenter(_ map: MKMapView, on coord: CLLocationCoordinate2D, animated: Bool) {
+        let size = map.bounds.size
+        guard size.width > 0, size.height > 0 else {
+            map.setCenter(coord, animated: animated)
+            return
+        }
+        let geometric = CGPoint(x: size.width / 2, y: size.height / 2)
+        let compensating = SyrmosMapPadding.compensatingPoint(size: size, insets: edgeInsets)
+        guard compensating != geometric else {
+            map.setCenter(coord, animated: animated)
+            return
+        }
+        let a = MKMapPoint(map.convert(geometric, toCoordinateFrom: map))
+        let b = MKMapPoint(map.convert(compensating, toCoordinateFrom: map))
+        let target = MKMapPoint(x: MKMapPoint(coord).x + (b.x - a.x), y: MKMapPoint(coord).y + (b.y - a.y))
+        map.setCenter(target.coordinate, animated: animated)
     }
 
     /// The map rect that encloses every placed stop, nil when there are none.
@@ -627,6 +955,8 @@ private struct GoRouteMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let tint: UIColor
         private var currentAnnotation: MKPointAnnotation?
+        /// The insets the map was last laid out with, to notice a fold change.
+        var lastInsets: SyrmosEdgeInsets?
 
         init(tint: UIColor) { self.tint = tint }
 

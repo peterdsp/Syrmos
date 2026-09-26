@@ -366,15 +366,69 @@ final class DuoPostureFixturesTests: XCTestCase {
 
     // MARK: Parity with the shipped SyrmosArrangement threshold
 
-    /// `SyrmosArrangement` still decides by width alone (640 pt). That threshold
-    /// must equal the narrowest width at which the policy pairs a planner side
-    /// by side (two map-floor panes), so the shipped container and the policy
-    /// agree on where the Duo inner display starts pairing.
-    @MainActor
+    /// `SyrmosArrangement` is driven by the policy; its documented pairing floor
+    /// (640 pt, the threshold the width-only container used to hard-code) must
+    /// equal the narrowest width at which the policy pairs a planner side by
+    /// side, so nothing that relied on 640 moved.
     func test_shippedArrangementThresholdMatchesThePolicyFloor() {
-        let probe = SyrmosArrangement(primary: { Color.red }, companion: { Color.blue }, combined: { Color.green })
-        XCTAssertEqual(Int(probe.minPairWidth), Policy.minMapPane * 2)
+        XCTAssertEqual(Int(SyrmosArrangementRule.pairFloor), Policy.minMapPane * 2)
         XCTAssertEqual(resolve(Policy.minMapPane * 2, innerH, .plan).arrangement, .sideBySide)
         XCTAssertEqual(resolve(Policy.minMapPane * 2 - 1, innerH, .plan).arrangement, .stacked)
+    }
+
+    // MARK: Arrangement numbers derived from a workspace
+
+    func test_arrangementRule_horizontalFallbackHonoursTaskWidthAndGap() {
+        // P3 Atlas: task 24..384, companion from 408: column 384 wide, gap 24.
+        let ws = resolve(innerH, innerW, .plan)
+        XCTAssertEqual(SyrmosArrangementRule.taskExtent(ws, axis: .horizontal), 384)
+        XCTAssertEqual(SyrmosArrangementRule.gap(ws, axis: .horizontal), 24)
+        XCTAssertEqual(SyrmosArrangementRule.taskShare(ws, size: CGSize(width: 951, height: 669)), 384.0 / 951.0, accuracy: 0.001)
+    }
+
+    func test_arrangementRule_verticalFallbackPutsTheCompanionOnTop() {
+        // P5 Tall canvas GO: companion 0..427, task from 427: band 427, no gap.
+        let ws = resolve(innerW, innerH, .go)
+        XCTAssertEqual(SyrmosArrangementRule.companionExtent(ws, axis: .vertical), 427)
+        XCTAssertEqual(SyrmosArrangementRule.gap(ws, axis: .vertical), 0)
+        XCTAssertEqual(SyrmosArrangementRule.companionShare(ws, size: CGSize(width: 669, height: 951)), 427.0 / 951.0, accuracy: 0.001)
+    }
+
+    func test_arrangementRule_occludingHingeLeavesItsThicknessEmpty() {
+        let hinge = SyrmosReservedRegion(kind: .occlusion, orientation: .horizontal, start: 314, size: 40)
+        let ws = resolve(innerH, innerW, .go, regions: [hinge])
+        XCTAssertEqual(ws.arrangement, .stacked)
+        XCTAssertEqual(SyrmosArrangementRule.companionExtent(ws, axis: .vertical), 314)
+        XCTAssertEqual(SyrmosArrangementRule.gap(ws, axis: .vertical), 40)
+    }
+
+    func test_arrangementRule_bookDivisionHasNoGap() {
+        let ws = resolve(innerW, innerH, .plan, regions: [bookDivision])
+        XCTAssertEqual(SyrmosArrangementRule.taskExtent(ws, axis: .horizontal), 334)
+        XCTAssertEqual(SyrmosArrangementRule.gap(ws, axis: .horizontal), 0)
+    }
+
+    func test_arrangementRule_sharesAreClampedForASinglePane() {
+        let ws = resolve(coverW, coverH, .plan)
+        XCTAssertEqual(SyrmosArrangementRule.taskShare(ws, size: CGSize(width: 466, height: 678)), 0.8, accuracy: 0.001)
+        XCTAssertEqual(SyrmosArrangementRule.companionExtent(ws, axis: .vertical), 0)
+    }
+
+    // MARK: Dynamic Type as font scale
+
+    func test_dynamicTypeScale_matchesBodySizesOver17() {
+        XCTAssertEqual(SyrmosDynamicType.fontScale(.large), 1, accuracy: 0.001)
+        XCTAssertEqual(SyrmosDynamicType.fontScale(.xSmall), 14.0 / 17.0, accuracy: 0.001)
+        XCTAssertEqual(SyrmosDynamicType.fontScale(.xxxLarge), 23.0 / 17.0, accuracy: 0.001)
+        XCTAssertEqual(SyrmosDynamicType.fontScale(.accessibility1), 28.0 / 17.0, accuracy: 0.001)
+        XCTAssertEqual(SyrmosDynamicType.fontScale(.accessibility5), 53.0 / 17.0, accuracy: 0.001)
+    }
+
+    func test_dynamicTypeScale_accessibilitySizesCollapseTheTallCanvas() {
+        // xxxLarge (1.35) is the first size that forces one column on a plain
+        // window, exactly the policy's large-text threshold.
+        XCTAssertEqual(resolve(innerW, innerH, .plan, fontScale: SyrmosDynamicType.fontScale(.xxLarge)).arrangement, .stacked)
+        XCTAssertEqual(resolve(innerW, innerH, .plan, fontScale: SyrmosDynamicType.fontScale(.xxxLarge)).arrangement, .single)
+        XCTAssertEqual(resolve(innerW, innerH, .plan, fontScale: SyrmosDynamicType.fontScale(.accessibility1)).arrangement, .single)
     }
 }

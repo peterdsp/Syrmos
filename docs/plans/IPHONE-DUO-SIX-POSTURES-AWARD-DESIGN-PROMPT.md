@@ -463,6 +463,29 @@ Step 1 of the delivery plan is landed: the shared policy carries these cases as
 numbers. The shipped `SyrmosArrangement` is not yet driven by the policy; that
 is delivery step 3.
 
+Step 2 is landed too: `iosApp/iosApp/DesignSystem/ReservedRegionAdapter.swift`
+normalises the system's regions into a content box (bars for the policy,
+cutouts for overlays), reads them behind the `SYRMOS_DUO_SDK` gate, and
+`SyrmosMapPadding` keeps the GO route map and its current stop clear of an
+occluding hinge or cutout without resetting the camera. The Duo simulator
+reported no regions to a bare test window, so the reported coordinate space
+is still to be confirmed on hardware (see the readiness record).
+
+Step 3 is landed for GO and Plan: `SyrmosArrangement` is driven by the Swift
+policy (Dynamic Type, reported regions, task), so GO stacks its map above the
+timeline and controls on the tall inner display and Plan pairs side by side;
+an occluding fold stacks any task with the band left empty. On the Duo runtime
+the native split refused a requested axis (it hid the secondary pane), so the
+policy contributes pane order and ratio there and the system keeps the axis.
+Explore still has no iOS two-pane, so its stacked preference is policy-only.
+
+A first slice of step 4 is landed as the foldable UI polish: the GO companion is
+a map card with a line-coloured timeline rail, the Plan Routes pane has a title
+and a calm empty state, both on the Calm Signal surface; Android GO gained the
+same paired and stacked layouts with a timeline companion, and Android Plan the
+same Routes pane treatment. See the readiness record for the renders and the
+emulator evidence.
+
 Also required:
 
 - Policy fixtures for every row above in both Kotlin and Swift.

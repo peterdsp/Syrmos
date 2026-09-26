@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -40,6 +39,41 @@ import com.syrmos.core.domain.go.JourneyGuidance
 import com.syrmos.core.domain.journey.ActiveJourneyStore
 import androidx.compose.runtime.collectAsState
 import kotlinx.datetime.Clock
+import kotlin.jvm.Transient
+import com.syrmos.core.domain.go.GuidanceLeg
+import com.syrmos.core.domain.go.GoTimelineState
+import com.syrmos.core.domain.go.GoTimelineRow
+import com.syrmos.core.domain.go.GoTimelineRole
+import com.syrmos.core.domain.go.GoTimeline
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.syrmos.app.layout.rememberContentWorkspace
+import com.syrmos.core.common.layout.PaneRole
+import com.syrmos.core.common.layout.WorkspaceArrangement
+import com.syrmos.core.common.layout.WorkspaceTask
+import com.syrmos.core.data.repository.LineRepositoryImpl
+import com.syrmos.core.data.repository.StationRepositoryImpl
+import com.syrmos.core.designsystem.component.toComposeColor
+import kotlinx.coroutines.flow.first
+import org.koin.compose.koinInject
 
 /**
  * GO live-guidance screen (Phase G / S06), the Android peer of the web
@@ -64,9 +98,17 @@ object PlanReplanRequest {
 }
 
 class GoJourneyScreenRoute(
-    private val journey: GuidanceJourney,
-    private val transferRisks: List<TransferRisk> = emptyList(),
+    // Both fields are transient: a Voyager screen is saved with the activity's
+    // instance state on a rotation or a fold, and the guidance journey is not
+    // serialisable. After restoration the screen rebuilds its journey from the
+    // persisted live session instead, so GO survives recreation (D05, D12)
+    // rather than falling back to the tab root; transfer risks are advisory and
+    // simply absent on a restored screen (already the documented behaviour).
+    @Transient private val journey: GuidanceJourney? = null,
+    @Transient private val transferRisks: List<TransferRisk> = emptyList(),
 ) : Screen {
+    override val key: String = "go-journey"
+
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -74,6 +116,22 @@ class GoJourneyScreenRoute(
         // Position is derived from the persisted live session so it survives a kill /
         // navigation; every step is written back through the shared lifecycle store.
         val active by ActiveJourneyRepository.active.collectAsState()
+        val stationRepo = koinInject<StationRepositoryImpl>()
+        // The journey: the one handed over at push time, or, after a restoration,
+        // the one rebuilt from the live session's frozen itinerary.
+        var rebuilt by remember { mutableStateOf<GuidanceJourney?>(null) }
+        val snapshot = active?.itinerarySnapshot
+        LaunchedEffect(snapshot, lang) {
+            if (this@GoJourneyScreenRoute.journey == null && rebuilt == null && snapshot != null) {
+                rebuilt = buildGuidanceJourney(snapshot, stationRepo, lang)
+            }
+        }
+        val journey = this.journey ?: rebuilt
+        if (journey == null || journey.legs.isEmpty()) {
+            // Restored with no live session left: nothing to guide, leave quietly.
+            LaunchedEffect(active) { if (active == null) navigator.pop() }
+            return
+        }
         val position = active?.let { ActiveJourneyStore.positionOf(it, journey) } ?: GuidancePosition(0, 0)
 
         fun t(en: String, el: String, sq: String, it: String) = when (lang) {
@@ -92,6 +150,13 @@ class GoJourneyScreenRoute(
 
         val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
         val destination = journey.legs.lastOrNull()?.stops?.lastOrNull()?.name ?: ""
+
+        // Line colours for the timeline pills and rail (seed data, not a guess).
+        val lineRepo = koinInject<LineRepositoryImpl>()
+        var lineColors by remember { mutableStateOf<Map<String, Color>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            lineColors = lineRepo.getAllLines().first().associate { it.id to it.color.toComposeColor() }
+        }
 
         Scaffold(
             topBar = {
@@ -115,10 +180,9 @@ class GoJourneyScreenRoute(
                 }
             },
         ) { padding ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
+            // The current instruction and its reachable controls: the task pane on
+            // a paired layout, the whole screen on a phone.
+            val instruction: @Composable ColumnScope.() -> Unit = {
                 Text("$origin → $destination", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -126,7 +190,8 @@ class GoJourneyScreenRoute(
                 // destination only on the final leg), named in the GO sub so its
                 // count can never be read as the S05 "intermediate stops" number.
                 val alightStation = journey.legs.getOrNull(position.legIndex)?.stops?.lastOrNull()?.name ?: ""
-                heroCard(guidance, alightStation, ::t)
+                val currentLineId = journey.legs.getOrNull(position.legIndex)?.lineId
+                heroCard(guidance, alightStation, ::t, lineColors[currentLineId] ?: MaterialTheme.colorScheme.primary)
 
                 // Phase R S07: inline connection-risk warning below the instruction.
                 val transferMoment = guidance is JourneyGuidance.Transfer ||
@@ -153,7 +218,7 @@ class GoJourneyScreenRoute(
                     )
                 }
 
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                LegProgressBar(journey, position, lineColors, progress, arrived, ::t)
 
                 if (arrived) {
                     Button(onClick = { endJourney() }, modifier = Modifier.fillMaxWidth()) {
@@ -173,17 +238,221 @@ class GoJourneyScreenRoute(
                 }
 
                 Text(
-                    t("Step through your journey. Live get-off alerts as you ride are coming next.",
-                      "Προχώρα βήμα βήμα. Ζωντανές ειδοποιήσεις αποβίβασης έρχονται σύντομα.",
-                      "Ec hap pas hapi. Sinjalizimet e drejtpërdrejta për zbritjen vijnë së shpejti.",
-                      "Procedi passo passo. Gli avvisi di discesa dal vivo arrivano presto."),
+                    t("Step through your journey. The get-off alert fires as you approach your stop.",
+                      "Προχώρα βήμα βήμα. Η ειδοποίηση αποβίβασης έρχεται καθώς πλησιάζεις τη στάση σου.",
+                      "Ec hap pas hapi. Sinjalizimi për zbritjen vjen kur i afrohesh ndalesës tënde.",
+                      "Procedi passo passo. L'avviso di discesa arriva quando ti avvicini alla tua fermata."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            // Foldables and tablets (foldables / Duo prompt section 6, GO): beside
+            // the instruction on a wide window or a book fold, the journey timeline;
+            // on a tall window or a horizontal fold, the timeline above and the
+            // instruction with its controls below, where the hands are. Decided by
+            // the shared policy from the measured content box.
+            BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+                val ws = rememberContentWorkspace(
+                    task = WorkspaceTask.GO,
+                    width = maxWidth.value.toInt(),
+                    height = maxHeight.value.toInt(),
+                )
+                when (ws.arrangement) {
+                    WorkspaceArrangement.SIDE_BY_SIDE -> {
+                        val taskW = ws.pane(PaneRole.TASK)?.rect?.right ?: (maxWidth.value.toInt() / 2)
+                        Row(Modifier.fillMaxSize()) {
+                            Column(
+                                modifier = Modifier.width(taskW.dp).fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                content = instruction,
+                            )
+                            VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.weight(1f).fillMaxHeight())
+                        }
+                    }
+                    WorkspaceArrangement.STACKED -> {
+                        val companionH = ws.pane(PaneRole.COMPANION)?.rect?.bottom ?: (maxHeight.value.toInt() * 45 / 100)
+                        Column(Modifier.fillMaxSize()) {
+                            JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth().height(companionH.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                            Column(
+                                modifier = Modifier.weight(1f).fillMaxWidth()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                content = instruction,
+                            )
+                        }
+                    }
+                    WorkspaceArrangement.SINGLE -> Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        instruction()
+                        // The journey's cards under the controls, so the lower half
+                        // of a phone carries the route instead of empty space.
+                        JourneyTimeline(journey, position, lineColors, ::t, Modifier.fillMaxWidth(), scrollable = false, inset = 0.dp)
+                    }
+                }
             }
         }
     }
 
-    /// Phase R S07: inline connection-risk warning with real values + Find alternatives.
+    /**
+     * The journey as a timeline of leg cards: line pill, direction and stop count
+     * in each card's header, then the stops on a rail in the leg's colour with
+     * origin and alight rings, a haloed current marker, Now / Next / Change here /
+     * Destination captions, and a walking connector between legs. Rows come from
+     * the shared [GoTimeline] projection so iOS and Android agree on every state.
+     */
+    @Composable
+    private fun JourneyTimeline(
+        journey: GuidanceJourney,
+        position: GuidancePosition,
+        lineColors: Map<String, Color>,
+        t: (String, String, String, String) -> String,
+        modifier: Modifier = Modifier,
+        scrollable: Boolean = true,
+        inset: androidx.compose.ui.unit.Dp = 16.dp,
+    ) {
+        val rows = GoTimeline.rows(journey, position)
+        val origin = journey.legs.firstOrNull()?.stops?.firstOrNull()?.name ?: ""
+        val destination = journey.legs.lastOrNull()?.stops?.lastOrNull()?.name ?: ""
+        val lines = journey.legs.size
+        val stops = GoTimeline.stopCount(journey)
+        val linesText = if (lines == 1) t("1 line", "1 γραμμή", "1 linjë", "1 linea")
+            else t("$lines lines", "$lines γραμμές", "$lines linja", "$lines linee")
+        val stopsText = t("$stops stops", "$stops στάσεις", "$stops ndalesa", "$stops fermate")
+        Column(
+            modifier = (if (scrollable) modifier.verticalScroll(rememberScrollState()) else modifier).padding(inset),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    t("Journey", "Διαδρομή", "Udhëtimi", "Viaggio"),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "$origin → $destination · $linesText · $stopsText",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            journey.legs.forEachIndexed { legIdx, leg ->
+                val color = lineColors[leg.lineId] ?: MaterialTheme.colorScheme.primary
+                if (legIdx > 0) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(Modifier.width(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            repeat(3) { Box(Modifier.size(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))) }
+                        }
+                        Text(
+                            "⇄ " + t("Change to", "Αλλαγή σε", "Ndërro në", "Cambia in") + " " + leg.lineId,
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                LegCard(leg, color, rows.filter { it.legIndex == legIdx }, t)
+            }
+            // Clear the floating assistant launcher so the last card is readable.
+            Spacer(Modifier.height(88.dp))
+        }
+    }
+
+    @Composable
+    private fun LegCard(
+        leg: GuidanceLeg,
+        color: Color,
+        rows: List<GoTimelineRow>,
+        t: (String, String, String, String) -> String,
+    ) {
+        val count = maxOf(0, leg.stops.size - 1)
+        val countText = if (count == 1) t("1 stop", "1 στάση", "1 ndalesë", "1 fermata")
+            else t("$count stops", "$count στάσεις", "$count ndalesa", "$count fermate")
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(Modifier.background(color, RoundedCornerShape(7.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                    Text(leg.lineId, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+                Text(
+                    t("toward", "προς", "drejt", "verso") + " " + leg.towards,
+                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(countText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                rows.forEach { row -> TimelineRow(row, color, t) }
+            }
+        }
+    }
+
+    @Composable
+    private fun TimelineRow(row: GoTimelineRow, color: Color, t: (String, String, String, String) -> String) {
+        val isPast = row.state == GoTimelineState.PAST
+        val isCurrent = row.state == GoTimelineState.CURRENT
+        val terminus = row.role != GoTimelineRole.INTERMEDIATE
+        val rowHeight = if (terminus || isCurrent) 44.dp else 30.dp
+        val caption: String? = when {
+            row.isDestination -> t("Destination", "Προορισμός", "Destinacioni", "Destinazione")
+            row.role == GoTimelineRole.ALIGHT -> t("Change here", "Αλλαγή εδώ", "Ndërro këtu", "Cambia qui")
+            isCurrent -> t("Now", "Τώρα", "Tani", "Ora")
+            row.state == GoTimelineState.NEXT -> t("Next", "Επόμενη", "Tjetra", "Prossima")
+            else -> null
+        }
+        val captionColor = if (isPast && !row.isDestination) MaterialTheme.colorScheme.onSurfaceVariant else color
+        Row(
+            modifier = Modifier.fillMaxWidth().height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(Modifier.width(24.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.weight(1f).width(4.dp).background(
+                        if (row.role == GoTimelineRole.ORIGIN) Color.Transparent else color.copy(alpha = if (isPast || isCurrent) 0.3f else 1f)))
+                    Box(Modifier.weight(1f).width(4.dp).background(
+                        if (row.role == GoTimelineRole.ALIGHT) Color.Transparent else color.copy(alpha = if (isPast) 0.3f else 1f)))
+                }
+                when {
+                    isCurrent -> Box(Modifier.size(28.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(16.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White))
+                        }
+                    }
+                    terminus -> Box(Modifier.size(14.dp).clip(CircleShape).background(color.copy(alpha = if (isPast) 0.4f else 1f)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface))
+                    }
+                    else -> Box(Modifier.size(8.dp).clip(CircleShape).background(color.copy(alpha = if (isPast) 0.35f else 1f)))
+                }
+            }
+            Text(
+                row.name,
+                style = if (isCurrent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isCurrent || terminus) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            if (caption != null) {
+                Box(Modifier.background(captionColor.copy(alpha = 0.12f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                    Text(caption, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = captionColor)
+                }
+            }
+        }
+    }
+
     @Composable
     private fun ConnectionRiskCard(
         risk: TransferRisk,
@@ -220,25 +489,69 @@ class GoJourneyScreenRoute(
         }
     }
 
+    /**
+     * One segment per leg in the leg's line colour, filled to the rider's
+     * position, with a "stop X of Y" caption: the journey's shape at a glance.
+     */
     @Composable
-    private fun heroCard(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String) {
-        // The get-off cue is the one moment that matters most, so it is tinted.
+    private fun LegProgressBar(
+        journey: GuidanceJourney,
+        position: GuidancePosition,
+        lineColors: Map<String, Color>,
+        progress: Float,
+        arrived: Boolean,
+        t: (String, String, String, String) -> String,
+    ) {
+        val segments = GoTimeline.legProgress(journey, position)
+        val total = GoTimeline.stopCount(journey)
+        val done = GoTimeline.stopsRidden(journey, position)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                segments.forEach { seg ->
+                    val color = lineColors[seg.lineId] ?: MaterialTheme.colorScheme.primary
+                    Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.18f))) {
+                        if (seg.fraction > 0.0) {
+                            Box(
+                                Modifier.fillMaxHeight()
+                                    .fillMaxWidth(seg.fraction.toFloat().coerceIn(0.02f, 1f))
+                                    .clip(RoundedCornerShape(50)).background(color),
+                            )
+                        }
+                    }
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    if (arrived) t("Journey complete", "Το ταξίδι ολοκληρώθηκε", "Udhëtimi përfundoi", "Viaggio completato")
+                    else t("Stop $done of $total", "Στάση $done από $total", "Ndalesa $done nga $total", "Fermata $done di $total"),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @Composable
+    private fun heroCard(g: JourneyGuidance, alightStation: String, t: (String, String, String, String) -> String, accent: Color) {
+        // The get-off cue is the one moment that matters most, so it is filled with
+        // the line colour; every other moment sits on a light wash of that colour,
+        // matching the iOS hero.
         val emphasize = g is JourneyGuidance.GetOffNext
         val (stateLabel, headline, detail) = describe(g, alightStation, t)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    if (emphasize) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    if (emphasize) accent else accent.copy(alpha = 0.12f),
                     RoundedCornerShape(24.dp),
                 )
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            val onHero = if (emphasize) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-            val onHeroDim = if (emphasize) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            Text(stateLabel, style = MaterialTheme.typography.labelMedium, color = onHeroDim)
-            Text(headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = onHero)
+            val onHero = if (emphasize) Color.White else MaterialTheme.colorScheme.onSurface
+            val onHeroDim = if (emphasize) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+            Text(stateLabel.uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = if (emphasize) onHeroDim else accent)
+            Text(headline, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (emphasize) onHero else accent)
             if (detail.isNotEmpty()) {
                 Text(detail, style = MaterialTheme.typography.bodyLarge, color = onHeroDim)
             }

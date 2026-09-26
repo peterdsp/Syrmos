@@ -118,4 +118,32 @@ final class DepartureGroupingTests: XCTestCase {
     func testEmptyInputYieldsNoGroups() {
         XCTAssertTrue(DepartureGrouping.group([]).isEmpty)
     }
+
+    // MARK: Home direction board
+
+    func testDirectionBoardShowsEveryDirectionSoonestFirstWithTwoTimes() {
+        let rows = DepartureGrouping.directionBoard([
+            dep("M1", min: 9, dir: "Kifissia"),
+            dep("M1", min: 4, dir: "Piraeus"),
+            dep("M3", min: 6, dir: "Airport"),
+            dep("M1", min: 14, dir: "Piraeus"),
+            dep("M1", min: 19, dir: "Kifissia"),
+            dep("M1", min: 24, dir: "Piraeus"),
+            dep("M3", min: 16, dir: "Dimotiko Theatro"),
+        ])
+        XCTAssertEqual(rows.map(\.destination), ["Piraeus", "Airport", "Kifissia", "Dimotiko Theatro"])
+        XCTAssertEqual(rows[0].times.map(\.minutesAway), [4, 14], "next two times, the third is folded")
+        XCTAssertEqual(rows[0].moreCount, 1)
+        XCTAssertEqual(rows[2].times.map(\.minutesAway), [9, 19])
+    }
+
+    func testDirectionBoardIsCappedAndAcceptsUnsortedInput() {
+        let rows = DepartureGrouping.directionBoard([
+            dep("T6", min: 30, dir: "Pikrodafni"),
+            dep("M2", min: 3, dir: "Elliniko"),
+            dep("M2", min: 7, dir: "Anthoupoli"),
+        ], maxRows: 2)
+        XCTAssertEqual(rows.map(\.destination), ["Elliniko", "Anthoupoli"])
+        XCTAssertTrue(DepartureGrouping.directionBoard([]).isEmpty)
+    }
 }

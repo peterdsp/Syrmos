@@ -108,6 +108,207 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 3,
   Android therefore pairs only through its reported hinge region, as before;
   the medium-width rule reaches Android windows whose content box clears 640.
 
+## Landed: iOS reserved-region adapter and hinge-aware map padding (six-posture prompt, delivery step 2)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 2; parent prompt section 9.4.
+
+- **Adapter** `iosApp/iosApp/DesignSystem/ReservedRegionAdapter.swift`:
+  `SyrmosReservedRegionAdapter.normalize(raw, in: box)` is a PURE function from
+  the regions the system reports (kind, frame, active) to the content box's own
+  coordinates. It translates once, clips to the box, rounds to whole points,
+  drops a fold beside the box (a nav rail's fold never splits the content), keeps
+  the active flag (an inactive division reaches the policy as inactive, never as
+  blank pixels), and separates two outputs: `regions` (bars spanning at least
+  90 percent of the box on their axis, the policy's input) and `cutouts` (active
+  occlusions that do not span, such as a camera cutout, which never split the
+  layout and only steer overlays and map padding).
+- **Gated reader**: `GeometryProxy.syrmosRawReservedRegions()` calls
+  `reservedRegions(kind:options:)` for `.occlusion` and `.division` with
+  `.includeInactive`, inside `#if SYRMOS_DUO_SDK` and `if #available(iOS 27.1, *)`,
+  and returns nothing otherwise. `syrmosReservedGeometry()` normalises into the
+  proxy's own box. The frames are assumed to be in the proxy's local space; the
+  Duo runtime probe below records what the system actually reports.
+- **Test seam**: `\.syrmosReservedGeometryOverride` environment value lets a test
+  or preview inject a geometry on a simulator that reports none.
+- **Map padding** `SyrmosMapPadding.insets(mapRect:geometry:)`: base 44 pt on
+  every edge; an active occluding bar that crosses the map gives up the smaller
+  side of the map (bottom or top, right or left); a cutout that touches the map
+  insets the nearest edge past it; divisions never pad; the padding can never
+  claim more than three quarters of an axis. `visibleCenter` and
+  `compensatingPoint` give the point math for centring a coordinate in the
+  padded area rather than the geometric centre.
+- **GO companion wiring** (`GoJourneyView.swift`): the companion reads its box's
+  geometry (override first, then the system), computes the map insets for the
+  map's rect at the top of the companion, and passes them to `GoRouteMapView`,
+  which now fits the route with those insets, recentres the current stop in the
+  padded visible area (offset measured in map points at the current zoom, so
+  zoom and bearing are kept: parent prompt 9.4 rule 6, no camera reset), and
+  refits the route when the insets change with no current stop to follow.
+- **Tests**: `iosApp/iosAppTests/ReservedRegionAdapterTests.swift`, 26 cases
+  (normalisation, cutouts, clipping, rounding, the P4 book fixture through the
+  adapter into the policy, padding on every side, the no-inversion clamp, the
+  centre math, and the reader returning nothing without the Duo API). New render
+  `iosAppTests/__DuoSnapshots__/go-duo-inner-landscape-hinge.png` from
+  `DuoSnapshotTests.test_goScreen_duoInnerLandscape_hingeAcrossCompanion_render`:
+  an injected occluding bar at 220 to 260 of the companion crosses the lower part
+  of the 281 pt map, so the map pads its bottom by 105 and the current stop
+  (Piraeus) renders at the padded visible centre with the whole route above the
+  bar. Registered through `scripts/add-duo-reserved-region-files.py`.
+- **Evidence tier**: iOS 27.0 simulator (default Xcode 27.0 SDK, the
+  CI-equivalent compile of the gated code): ReservedRegionAdapterTests 26/26,
+  DuoSnapshotTests 6/6, DuoPostureFixturesTests 42/42. Duo runtime under the
+  27.1 SDK with `SYRMOS_DUO_SDK` (Xcode 27.1, booted iPhone Duo simulator,
+  `-destination id=92B2C61A-...`): ReservedRegionAdapterTests 26/26 and
+  DuoSnapshotTests 6/6, so the gated `reservedRegions` reader compiles and
+  executes on the real Duo runtime. The probe (`test_readerIsEmptyWithoutTheDuoApiOrRegions`)
+  hosted a `GeometryReader` in a plain test `UIWindow` at 669 x 951 and the
+  system reported NO regions there (`regions: [], cutouts: []`). So the Duo
+  simulator does not surface its fold to a bare test window; whether a
+  scene-hosted window reports it, and in which coordinate space, is still
+  Pending and is the first thing to read on real Duo hardware. The rendered
+  reference images stay the 27.0 renders (the 27.1 native `ArrangementView`
+  path re-renders them differently, as recorded above).
+
+## Landed: policy-driven arrangement, stacked axis for GO (six-posture prompt, delivery step 3)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 1; section 5 (P5, P6).
+
+- **`SyrmosArrangement` is now driven by `SyrmosAdaptiveWorkspacePolicy`**
+  (`PlanFlow.swift`): the container measures its box, reads the regions the
+  system reports for it (override first, then the gated reader), maps Dynamic
+  Type to the policy's font scale (`SyrmosDynamicType.fontScale`, body size over
+  17 pt) and resolves the task-aware workspace. `single` renders the shipped
+  `combined` column; `sideBySide` puts the task pane beside the companion;
+  `stacked` puts the companion (map, overview) above and the task with its
+  controls below. GO passes `task: .go` and Plan `task: .plan`; Explore has no
+  iOS two-pane yet, so its stacked preference is policy-only until an Explore
+  companion exists (per-flow work, delivery step 3 continued in a later slice).
+- **Fallback (the shipping path, CI and release builds)**: `HStack` on the
+  horizontal axis with the task column at the policy's task-pane right edge, and
+  `VStack` on the vertical axis with the companion band at the policy's
+  companion bottom edge. An occluding hinge's thickness is left empty between
+  the panes; a division gets a hairline. `SyrmosArrangementRule` holds these
+  numbers so tests can pin them.
+- **Native path (27.1 SDK, `SYRMOS_DUO_SDK`)**: `ArrangementView` with the
+  `.split` style; the policy contributes the pane ORDER (companion first on a
+  stacked decision so it lands on top) and the ratio. FINDING: restricting the
+  axis with `.arrangementViewStyle(.split.axes(.horizontal))` or `.axes(.vertical)`
+  made the Duo runtime HIDE the secondary pane (landscape Plan probe rendered
+  the task pane only; the GO screen rendered its single column), so the axis
+  restriction is not used and the system keeps owning the axis on the Duo.
+- **Outcomes on the Duo inner display (fallback path)**: GO upright is stacked
+  (map band 427 of 951 above, instruction and controls below); Plan upright is
+  side by side at 334 | 335; both wide are side by side (task 384, gap 24, map
+  519); an occluding horizontal hinge stacks any task on the fold and leaves
+  the hinge band empty; the keyboard shrinks the measured box, so Plan on a
+  laptop fold collapses to the query above the keyboard (P6 fixture).
+- **Tests**: `DuoPostureFixturesTests` grew to 49 (arrangement numbers from the
+  P3, P5 and hinge workspaces, share clamps, the Dynamic Type mapping and its
+  collapse threshold at xxxLarge); `DuoSnapshotTests` grew to 9 with three new
+  probes and renders: `arrangement-duo-inner-portrait-go.png` (blue band on
+  top, red below), `arrangement-duo-inner-portrait-plan.png` (red left, blue
+  right), `arrangement-duo-inner-landscape-hinge.png` (blue above, empty band
+  at 314 to 354, red below). Positional assertions apply to the fallback; under
+  `SYRMOS_DUO_SDK` they assert presence only because the native split owns the
+  axis. The committed `go-duo-inner-portrait.png` reference changed on purpose:
+  GO upright is now the stacked map-over-timeline layout.
+- **Evidence tier**: iOS 27.0 simulator (default Xcode 27.0 SDK, CI-equivalent
+  compile): DuoPostureFixturesTests 49/49, DuoSnapshotTests 9/9,
+  ReservedRegionAdapterTests 26/26 (84 total). iOS 27.1 SDK with
+  `SYRMOS_DUO_SDK` on the booted iPhone Duo simulator: DuoPostureFixturesTests
+  49/49 and DuoSnapshotTests 9/9 (58 total) with the presence-only assertions,
+  after the axis-restriction finding above was applied. The committed renders
+  are the 27.0 run's (the Duo run was executed first, then the 27.0 run, so the
+  shipping fallback's images are the ones on disk). Explore two-pane and the
+  Android side of the stacked axis remain open.
+
+## Landed: foldable UI polish on iPhone Duo and Android fold devices (six-posture prompt, delivery step 4, first slice)
+
+Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 5 (P3 to P6) and 7.
+Owner direction (2026-09-26): a visual polish of the paired and stacked layouts on
+the iPhone Duo and Android fold devices only; GO stays.
+
+- **iOS GO companion**: the route map is a card inside the pane (16 pt gutters,
+  large radius, hairline outline) and the padding rule sees the card's rect; the
+  timeline is a continuous rail per leg in the leg's real line colour with a dot
+  per stop, the current stop emphasised, past stops dimmed, and the alight point
+  labelled Change here or Destination; the leg header uses `LinePill` (official
+  line colours) instead of a brand-tinted capsule. The stale footnote ("live
+  get-off alerts are coming next") now describes live guidance honestly. The
+  whole screen sits on the Calm Signal surface colour.
+- **iOS Plan**: the companion pane has a Routes title in every state and a calm
+  empty state before the first search (icon, one-line prompt, one-line
+  explanation on the muted surface), so the unfolded display never shows a blank
+  half; the screen sits on the Calm Signal surface colour.
+- **Android GO**: `GoJourneyScreenRoute` now resolves the shared policy for its
+  content box (`rememberContentWorkspace(WorkspaceTask.GO, ...)`): side by side
+  puts the instruction and its controls beside a new `JourneyTimeline` companion
+  (line-coloured pills from the seed's `Line.color`, a rail per leg, current stop
+  emphasised, Change here and Destination labels); stacked puts the timeline
+  above and the instruction below; a phone keeps the shipped single column. The
+  stale footnote was replaced.
+- **Android Plan**: the two-pane results column has a Routes title, the same
+  calm empty state before the first search, and a hairline between the panes.
+- **Tests and renders (iOS 27.0 simulator, default Xcode 27.0 SDK)**:
+  DuoSnapshotTests 12/12 (three new Plan renders `plan-duo-inner-landscape.png`,
+  `plan-duo-inner-portrait.png`, `plan-duo-cover.png`; GO references re-rendered
+  on purpose), DuoPostureFixturesTests 49/49, JourneyGuidanceTests 6/6,
+  GoJourneyViewModelTests 7/7, ReservedRegionAdapterTests 26/26 (100 total).
+- **Android running surface** (`syrmos_tablet` emulator, density 160, the app's
+  own seed data): at 841 x 673 dp (a fold's inner display, wide) Plan pairs the
+  query with the Routes pane (empty state, then a real Piraeus to Syntagma result
+  with its detail) and GO pairs the instruction with the timeline (M1 rail,
+  Change here at Monastiraki, M3 leg to Syntagma marked Destination); at
+  841 x 900 dp GO stacks the timeline above the instruction and controls.
+  Screenshots `fold-plan.png`, `fold-plan-results.png`, `fold-go-wide.png`,
+  `fold-go-tall.png` in the session scratchpad. Android pairs by content width,
+  so an upright fold (673 wide with the nav rail) keeps a single column unless
+  the device reports its fold region.
+- **Timeline, second pass (owner: "still looks basic")**: the timeline is now
+  leg cards. Each card's header carries the line pill (official colour), the
+  direction and the leg's stop count; the stops sit on a 4 pt rail with origin
+  and alight rings, small intermediate dots, a haloed current marker, and a
+  caption pill naming the moment (Now, Next, Change here, Destination); the rail
+  dims behind the rider; a dotted walking connector with "Change to M3" sits
+  between legs; a one-line summary ("Piraeus to Elliniko, 3 lines, 18 stops")
+  sits under the title. The row semantics live in a pure projection on both
+  platforms: `GoTimelineProjection` (iOS, 6 tests in JourneyGuidanceTests) and
+  `core/domain/.../go/GoTimeline.kt` (Kotlin, 7 tests), same journey and same
+  expected roles, states and counts on both. Android draws the same cards from
+  the shared projection. Renders: `go-duo-inner-landscape.png`,
+  `go-duo-inner-portrait.png`; emulator `fold-go-wide2.png`.
+- **Home direction board (owner request, both platforms)**: the Home hero used
+  to show only the soonest departure and a "then 13, 23 min" line that mixed
+  directions. It now shows, under the hero, one row per line and direction from
+  the nearest station with the next two times (soonest direction first, capped
+  to four rows); a single-direction station keeps the compact "then" line.
+  iOS: `DepartureGrouping.directionBoard` (2 tests) reuses the shared grouping;
+  Android: `HomeDirectionBoard.rows` in core/domain (2 tests) computed in
+  `HomeViewModel` from all lines and both directions before the hero's own
+  truncation, drawn by `DirectionBoard` in `HomeScreen.kt`. Verified on the iOS
+  simulator at Omonia (M2 to Anthoupoli 3 and 18, M2 to Elliniko 8, M1 to
+  Piraeus 10 and 25, M1 to Kifissia 12); on Android the board compiles and its
+  rows are unit-tested, and the emulator run is recorded below.
+- **Third pass (owner: "polish it more")**: a segmented per-leg progress bar in
+  the line colours with "Stop X of Y" and the percentage replaces the grey bar
+  (`GoLegProgress` on iOS, `GoTimeline.legProgress` on Kotlin, twin tests); the
+  hero carries a state label (Ready to board, Riding, Alight soon, Transfer,
+  Arrived) on both platforms and the Android hero sits on a wash of the line
+  colour; the phone column shows the timeline cards under the controls instead
+  of empty space on both platforms.
+- **Two Android defects found while verifying**: (1) `LineColor.fromHexOrType`
+  matched the seed hex exactly or fell back by type, so M2 (#E61E2A) and M3
+  (#0083C9) rendered GREEN everywhere `Line.color` is used; it now snaps to the
+  nearest palette colour (`LineColorTest`, 3 cases), verified blue on the
+  emulator. (2) `GoJourneyScreenRoute` carried a non-serialisable journey, so a
+  rotation or fold (activity recreation) dropped GO back to the tab root; its
+  fields are now transient and the screen rebuilds the journey from the
+  persisted live session, verified by resizing the window mid-journey (D05,
+  D12 on Android).
+- **Evidence tier**: iOS simulator renders and a live simulator run plus the
+  Android emulator running surface (`go-colour.png`, `go-recreated.png`,
+  `phone-go.png` in the session scratchpad); no fold hardware, no Duo hardware.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -374,6 +575,19 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Six-posture policy P1 to P6 and transitions T1 to T6 (six-posture prompt, section 11) | Pass (synthetic) | `DuoPostureFixturesTest.kt` 20/20 and `DuoPostureFixturesTests.swift` twins, same names and numbers on both platforms. |
 | Swift policy mirror reproduces the Kotlin fixtures | Pass (XCTest) | `DuoPostureFixturesTests.swift` on the iOS 27.0 simulator; includes the 640 pairing-floor parity guard against the shipped `SyrmosArrangement`. |
 | Android Plan two-pane on a medium-width plain window (parent prompt section 5, 688 to 839 band) | Pass | Tablet emulator at 768 x 1024 dp: two-pane; at 669 x 951 dp with the rail: single column, unchanged. |
+| Reserved regions normalised into the content box; fold beside the box never splits it; cutout is not a division (parent 9.4 rules 1 to 3) | Pass (synthetic) | `ReservedRegionAdapterTests.swift` normalisation cases. |
+| Map padding from visible panel and occupied regions, no camera reset (parent 9.4 rule 6; D15) | Pass (render) | `SyrmosMapPadding` cases plus `go-duo-inner-landscape-hinge.png`: current stop at the padded centre, route clear of the injected bar. |
+| Gated `reservedRegions` reader on the Duo runtime | Partial | Compiles and runs under 27.1 with `SYRMOS_DUO_SDK` (32/32 on the Duo sim); the headless probe read no regions, so the reported frames and their coordinate space are unconfirmed. |
+| GO on the tall inner display stacks map above timeline and controls (P5, section 5) | Pass (render) | `go-duo-inner-portrait.png` and `arrangement-duo-inner-portrait-go.png`, iOS 27.0 simulator. |
+| Plan on the tall inner display pairs side by side at half width (P5) | Pass (render) | `arrangement-duo-inner-portrait-plan.png`. |
+| An occluding horizontal fold stacks on the fold and leaves the band empty (P6, parent 9.4) | Pass (render, injected region) | `arrangement-duo-inner-landscape-hinge.png`; the system's own regions on hardware remain Pending. |
+| Dynamic Type raises pane floors; accessibility sizes collapse to one column (D21) | Pass (synthetic) | `test_dynamicTypeScale_*` in `DuoPostureFixturesTests.swift`. |
+| Native `ArrangementView` honours a requested axis on the Duo runtime | Fail (recorded) | `.split.axes(_:)` hid the secondary pane on the Duo simulator; the unrestricted `.split` shows both panes and the system owns the axis. |
+| Paired panes read as their own surfaces: titles, empty states, no blank half (section 5) | Pass (render + emulator) | iOS `plan-duo-inner-*.png`; Android `fold-plan.png`. |
+| GO companion is a map card plus a line-coloured timeline rail (sections 5, 7) | Pass (render) | iOS `go-duo-inner-landscape.png`, `go-duo-inner-portrait.png`. |
+| Android GO pairs and stacks on a fold-sized window (parent prompt section 6, GO) | Pass (emulator) | `fold-go-wide.png` side by side, `fold-go-tall.png` stacked. |
+| Timeline rows (roles, states, counts) agree on iOS and Android | Pass (synthetic) | `GoTimelineTest.kt` 7/7 and the six `test_timeline_*` twins in `JourneyGuidanceTests.swift`. |
+| Home shows the next train in every direction of the nearest station | Pass (iOS simulator), Partial (Android: unit-tested, emulator location pending) | `DepartureGroupingTests` board cases, `HomeDirectionBoardTest.kt`; iOS run at Omonia. |
 
 ## Remaining phases (prompt section 11)
 

@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -692,12 +693,44 @@ class PlanScreenRoute : Screen {
                             QueryBlock()
                             SavedBlock()
                         }
+                        VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                         Column(
                             modifier = Modifier.weight(1f).fillMaxHeight()
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            ResultsBlock()
+                            // The companion pane reads as its own surface: a title in
+                            // every state, and a calm empty state before the first
+                            // search so the unfolded display never shows a blank half.
+                            Text(
+                                t("Routes", "Διαδρομές", "Rrugët", "Percorsi"),
+                                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                            )
+                            if (planned) {
+                                ResultsBlock()
+                                // Clear the floating assistant launcher so Start
+                                // journey on the last card stays fully tappable.
+                                Spacer(Modifier.height(88.dp))
+                            } else {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                                        .padding(24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        t("Choose where you are going.", "Διάλεξε πού πηγαίνεις.", "Zgjidh ku po shkon.", "Scegli dove vai."),
+                                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        t("Routes and the selected journey's details appear here.",
+                                          "Οι διαδρομές και οι λεπτομέρειες του επιλεγμένου ταξιδιού εμφανίζονται εδώ.",
+                                          "Rrugët dhe detajet e udhëtimit të zgjedhur shfaqen këtu.",
+                                          "I percorsi e i dettagli del viaggio selezionato compaiono qui."),
+                                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {
