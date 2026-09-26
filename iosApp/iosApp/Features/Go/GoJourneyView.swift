@@ -350,6 +350,14 @@ struct GoJourneyView: View {
                     .onChange(of: geo.size.height) { _, h in timelineViewportHeight = h }
             })
             .onPreferenceChange(GoCurrentRowFrameKey.self) { currentRowFrame = $0 }
+            // An advance is not browsing: when the position moves the timeline
+            // follows the new current row; a manual scroll in between is never
+            // snapped back (Back to now covers that).
+            .onChange(of: model.position) { _, _ in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    proxy.scrollTo(GoTimelineAnchor.current, anchor: UnitPoint(x: 0.5, y: 0.33))
+                }
+            }
             .overlay(alignment: .bottom) {
                 if let frame = currentRowFrame, timelineViewportHeight > 0,
                    !GoTimelineFocus.isVisible(rowTop: frame.minY, rowBottom: frame.maxY,

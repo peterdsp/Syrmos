@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The GO timeline follows each advance.** Tapping Next stop (or an advance
+  from live guidance) scrolls the paired timeline to the new current stop;
+  a view you scrolled by hand between advances is still left alone, with
+  "Back to now" to return. Same on iOS and Android.
 ## 3.0.0-beta.4 - 2026-09-26
 
 Polish rounds 4 to 20 for the iPhone Duo, Android foldables and tablets: the
