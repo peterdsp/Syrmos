@@ -117,6 +117,29 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                     onRequestLocationOrigin = { resolveNearestOrigin(requestPermission = true) },
                 )
             }
+            // Entry into the 3.0 Plan flow. Interim launch point until Journeys
+            // becomes a primary destination; keeps the flow reachable and testable.
+            // On a paired layout it lives inside the list pane so it never covers
+            // the companion's rows.
+            val planFab: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {
+                androidx.compose.material3.ExtendedFloatingActionButton(
+                    onClick = { navigator.push(PlanScreenRoute()) },
+                    modifier = Modifier
+                        // Sits ABOVE the Ariadne launcher pill (which owns bottom=96dp,
+                        // end=16dp) so the two never overlap in the bottom-right corner.
+                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 168.dp),
+                ) {
+                    Text(
+                        when (lang) {
+                            AppLanguage.GREEK -> "Σχεδίασε διαδρομή"
+                            AppLanguage.ALBANIAN -> "Planifiko udhëtim"
+                            AppLanguage.ITALIAN -> "Pianifica un viaggio"
+                            else -> "Plan a journey"
+                        },
+                    )
+                }
+            }
             val companion: @Composable () -> Unit = {
                 val lineId = selectedLineId
                 if (lineId != null) {
@@ -133,7 +156,7 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                 WorkspaceArrangement.SIDE_BY_SIDE -> {
                     val taskW = ws.pane(PaneRole.TASK)?.rect?.right ?: (maxWidth.value.toInt() / 2)
                     Row(Modifier.fillMaxSize()) {
-                        Box(Modifier.width(taskW.dp).fillMaxHeight()) { list() }
+                        Box(Modifier.width(taskW.dp).fillMaxHeight()) { list(); planFab() }
                         VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                         Box(Modifier.weight(1f).fillMaxHeight()) { companion() }
                     }
@@ -143,29 +166,10 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                     Column(Modifier.fillMaxSize()) {
                         Box(Modifier.fillMaxWidth().height(companionH.dp)) { companion() }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                        Box(Modifier.weight(1f).fillMaxWidth()) { list() }
+                        Box(Modifier.weight(1f).fillMaxWidth()) { list(); planFab() }
                     }
                 }
-                WorkspaceArrangement.SINGLE -> list()
-            }
-            // Entry into the 3.0 Plan flow. Interim launch point until Journeys
-            // becomes a primary destination; keeps the flow reachable and testable.
-            androidx.compose.material3.ExtendedFloatingActionButton(
-                onClick = { navigator.push(PlanScreenRoute()) },
-                modifier = androidx.compose.ui.Modifier
-                    // Sits ABOVE the Ariadne launcher pill (which owns bottom=96dp,
-                    // end=16dp) so the two never overlap in the bottom-right corner.
-                    .align(androidx.compose.ui.Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 168.dp),
-            ) {
-                androidx.compose.material3.Text(
-                    when (lang) {
-                        AppLanguage.GREEK -> "Σχεδίασε διαδρομή"
-                        AppLanguage.ALBANIAN -> "Planifiko udhëtim"
-                        AppLanguage.ITALIAN -> "Pianifica un viaggio"
-                        else -> "Plan a journey"
-                    },
-                )
+                WorkspaceArrangement.SINGLE -> { list(); planFab() }
             }
         }
     }
