@@ -439,18 +439,21 @@ private fun MapInspectorPane(
                 lineDisruptions = lineDisruptions,
                 onClose = onCloseStation,
                 modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
             )
             simulatedTrain != null -> SimulatedTrainDetailCard(
                 train = simulatedTrain,
                 line = uiState.lines.find { it.id == simulatedTrain.lineId },
                 onClose = onCloseTrain,
                 modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
             )
             uiState.selectedTrain != null -> TrainDetailCard(
                 train = uiState.selectedTrain,
                 line = uiState.lines.find { it.id == uiState.selectedTrain?.lineId },
                 onClose = onCloseTrain,
                 modifier = Modifier.fillMaxWidth(),
+                dragHandle = false,
             )
             else -> Column(
                 modifier = Modifier
@@ -488,6 +491,7 @@ private fun StationSheetCard(
     lineDisruptions: Map<String, AlertSeverity>,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     val lang by LocalizationManager.language.collectAsState()
     val station = uiState.selectedStation ?: return
@@ -503,7 +507,9 @@ private fun StationSheetCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
@@ -756,6 +762,7 @@ private fun SimulatedTrainDetailCard(
     line: Line?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     val lang by LocalizationManager.language.collectAsState()
     val lineColor = line?.color?.toComposeColor() ?: train.lineColor.toComposeColor()
@@ -770,7 +777,9 @@ private fun SimulatedTrainDetailCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
@@ -959,6 +968,7 @@ private fun TrainDetailCard(
     line: Line?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    dragHandle: Boolean = true,
 ) {
     train ?: return
     val uriHandler = LocalUriHandler.current
@@ -975,7 +985,9 @@ private fun TrainDetailCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
+            // The sheet grabber: only when the card is the slide-up presentation,
+            // not when it is hosted in the paired inspector pane.
+            if (dragHandle) Box(
                 modifier = Modifier
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 36.dp, height = 4.dp)
