@@ -1104,6 +1104,29 @@ question was whether the longest languages still fit the narrowest surface.
 - **Rule**: when a round changes copy in a language, re-run these four
   renders and look at them; the suite only asserts that they are not blank.
 
+## Landed: polish round 26 (Android fold walk in Albanian and Greek)
+
+Source: the twin of round 25 on the other platform. The iOS cover renders
+are captured by a test; the Android fold has no render suite, so the walk
+was driven on the Pixel emulator at 841x673.
+
+- **Plan** in Albanian pairs the form with "Udhëtimi i zgjedhur"; the
+  station picker, the "Tani / Mbërri / I fundit" chips, "Rrugë pa shkallë"
+  and "Gjej rrugët" all fit the 380 dp form column; the selected journey
+  reads "Hip M1 drejt Monastiraki · 6 ndalesa të ndërmjetme · Zbrit
+  Monastiraki · Ndërrim · 8 min" with "Nis udhëtimin" as the primary.
+- **GO** in Albanian: "GATI PËR TË HIPUR", "Hip në M1 drejt Monastiraki",
+  "Ndalesa 0 nga 8", "Prapa / Ndalesa tjetër", "Përfundo", map pills
+  "Ndalesë e konfirmuar / Gjithë rruga", timeline chips "Tani / Tjetra".
+  Word for word the iOS cover render.
+- **GO** in Greek (switched in More while the journey ran; Explore resumed
+  it): "ΕΤΟΙΜΟΣ ΓΙΑ ΕΠΙΒΙΒΑΣΗ", the heading wraps cleanly to two lines,
+  "Στάση 0 από 8", "Πίσω / Επόμενη στάση", "Τέλος", "Επιβεβαιωμένη στάση /
+  Όλη η διαδρομή", "Τώρα / Επόμενη". The rail labels "Εξερεύνηση" and
+  "Περισσότερα" fit the 80 dp rail at the label size.
+- **Result**: nothing to change. Both platforms now have evidence for the
+  two longest languages on their folded surfaces.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
