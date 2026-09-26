@@ -821,7 +821,7 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
         return summary.issues.prefix(5).map { issue in
             PulseFeedItem(
                 id: issue.id,
-                title: issue.scopeLabel,
+                title: localizedScopeLabel(issue.scopeLabel, language),
                 detail: ichnosIssueLabel(issue, language: language),
                 status: countLabel(issue.count, language, en: ("report", "reports"), el: ("αναφορά", "αναφορές"), sq: ("raport", "raporte"), it: ("segnalazione", "segnalazioni")),
                 color: ichnosIssueColor(issue.signal)

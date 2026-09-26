@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.extensions.countLabel
+import com.syrmos.core.common.extensions.localizedScopeLabel
 import com.syrmos.core.common.RailPulseLocalStore
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.network.CommunityReportService
@@ -570,7 +571,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
             }
             PulseActivityRow(
                 "!",
-                issue.scopeLabel,
+                localizedScopeLabel(issue.scopeLabel, lang),
                 listOf(signal, issue.detail.takeIf { it.isNotBlank() }, "${issue.count}").filterNotNull().joinToString(" · "),
                 pulseText(lang, "Active", "Ενεργό", "Aktiv", "Attivo"),
                 if (issue.signal in setOf("delayed", "stopped", "safety")) SyrmosColorTokens.disruption else SyrmosColorTokens.warning,

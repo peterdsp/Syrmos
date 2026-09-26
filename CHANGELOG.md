@@ -12,6 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Ichnos rows read in your language.** A report's place label used to
+  arrive in the reporter's language ("Ichnos at Florina" in a Greek or
+  Albanian UI). The station-form label is now put back into the reader's
+  language on both platforms; line and train contexts are untouched.
+
 ## 3.0.0-beta.5 - 2026-09-26
 
 Polish rounds 21 to 25: the GO timeline follows each advance, Albanian, Greek
