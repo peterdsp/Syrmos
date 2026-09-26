@@ -549,6 +549,9 @@ struct PlanView: View {
         NavigationStack {
             SyrmosArrangement(
                 pairs: true,
+                // A stacked pair only while there is a selected journey to show;
+                // an invitation card is worth a column, never the upper region.
+                companionHasContent: planned && selectedResult != nil,
                 task: .plan,
                 primary: {
                     // Task pane: the editable query and the route alternatives
