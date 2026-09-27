@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.extensions.browseAllStationsLabel
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
@@ -636,6 +637,11 @@ private fun BrowseAllStationsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The real count, so the label never drifts from the list it opens.
+    val stationRepo = koinInject<StationRepositoryImpl>()
+    val allStations by stationRepo.getAllStations().collectAsState(initial = emptyList())
+    val stationCount = allStations.size
+
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
@@ -663,7 +669,7 @@ private fun BrowseAllStationsRow(
             Spacer(Modifier.width(13.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = L.BROWSE_ALL_STATIONS.text(lang),
+                    text = browseAllStationsLabel(stationCount, lang),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )

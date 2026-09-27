@@ -608,12 +608,7 @@ struct LinesView: View {
     }
 
     private var browseAllLabel: String {
-        switch loc.language {
-        case .greek: return "Περιήγηση σε όλους τους 389 σταθμούς"
-        case .albanian: return "Shfleto të gjitha 389 stacionet"
-        case .italian: return "Sfoglia tutte le 389 stazioni"
-        case .english: return "Browse all 389 stations"
-        }
+        browseAllStationsLabel(count: SyrmosData.bundleStations.count, loc.language)
     }
 
     private var browseAllSubtitle: String {
