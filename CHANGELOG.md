@@ -12,6 +12,17 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+## 3.0.0-beta.6 - 2026-09-27
+
+Polish rounds 27 to 39: Ichnos rows and counts read in the reader's
+language, the Android widgets follow the app's language, Reduce Motion is
+honoured on the GO timeline, the airport tiles and the Home board keep
+their status words whole, the assistant keeps its draft through a fold,
+the Home "Live" pill is honest offline, the iOS map stays on the network
+when you are far from it, the last unlabelled controls are named for
+screen readers, and Home joins the cover renders in Greek and Albanian.
+Android versionCode 229.
+
 - **Home on the folded cover is captured in Greek and Albanian too.** Two
   more render tests join the GO and Explore covers; both captures are
   clean, with the Greek track buttons side by side and every chip whole.
