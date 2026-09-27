@@ -514,7 +514,9 @@ private func communityIssueList(language: AppLanguage, summary: IchnosCommunityS
         ForEach(summary.issues) { issue in
             pulseActivityRow(
                 symbol: "!",
-                title: localizedScopeLabel(issue.scopeLabel, language),
+                title: resolvedScopeLabel(scopeId: issue.scopeId, scopeLabel: issue.scopeLabel, language) {
+                    StationCoords.localizedStationName(for: $0, language)
+                },
                 detail: ichnosIssueLabel(issue, language: language),
                 status: countLabel(issue.count, language, en: ("report", "reports"), el: ("αναφορά", "αναφορές"), sq: ("raport", "raporte"), it: ("segnalazione", "segnalazioni")),
                 color: ichnosIssueColor(issue.signal)

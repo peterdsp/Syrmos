@@ -62,7 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.extensions.countLabel
-import com.syrmos.core.common.extensions.localizedScopeLabel
+import com.syrmos.core.common.extensions.resolveIchnosScopeLabel
 import com.syrmos.core.common.RailPulseLocalStore
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.transit.Station
@@ -263,7 +263,8 @@ internal fun ExploreRailPulseContent(
         onAction = onSeeAll,
     )
 
-    val feed = remember(lang, networkSummary) { communityFeed(lang, networkSummary) }
+    val stationName = rememberStationNameResolver(lang)
+    val feed = remember(lang, networkSummary, stationName) { communityFeed(lang, networkSummary, stationName) }
     feed.forEachIndexed { index, item ->
         PulseFeedRow(
             item = item,
@@ -318,7 +319,7 @@ internal fun ExploreRailPulseContent(
         color = Color(0xFF6F2DA8).copy(alpha = 0.10f),
     ) {
         Text(
-            text = communityAriadneText(lang, networkSummary),
+            text = communityAriadneText(lang, networkSummary, stationName),
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF6F2DA8),
@@ -737,7 +738,11 @@ private fun stableCommunityScopeId(value: String): String {
     return "origin_${hash.toString(16)}"
 }
 
-private fun communityFeed(lang: AppLanguage, summary: CommunitySummary?): List<PulseFeedItem> {
+private fun communityFeed(
+    lang: AppLanguage,
+    summary: CommunitySummary?,
+    stationName: (String) -> String? = { null },
+): List<PulseFeedItem> {
     if (summary == null) {
         return listOf(
             PulseFeedItem(
@@ -759,14 +764,14 @@ private fun communityFeed(lang: AppLanguage, summary: CommunitySummary?): List<P
             )
         )
     }
-    return summary.issues.map { issue -> issue.toFeedItem(lang) }
+    return summary.issues.map { issue -> issue.toFeedItem(lang, stationName) }
 }
 
-private fun CommunityIssue.toFeedItem(lang: AppLanguage): PulseFeedItem {
+private fun CommunityIssue.toFeedItem(lang: AppLanguage, stationName: (String) -> String?): PulseFeedItem {
     val signalLabel = communitySignalLabel(signal, lang)
     val countLabel = countLabel(count, lang, "report" to "reports", "αναφορά" to "αναφορές", "raport" to "raporte", "segnalazione" to "segnalazioni")
     return PulseFeedItem(
-        title = localizedScopeLabel(scopeLabel, lang),
+        title = resolveIchnosScopeLabel(scopeId, scopeLabel, lang, stationName),
         detail = listOf(signalLabel, detail.takeIf { it.isNotBlank() }, countLabel).filterNotNull().joinToString(" · "),
         status = pulseText(lang, "Active", "Ενεργό", "Aktiv", "Attivo"),
         color = when (signal) {
@@ -787,13 +792,18 @@ private fun communitySignalLabel(signal: String, lang: AppLanguage): String = wh
     else -> pulseText(lang, "Other issue", "Άλλο πρόβλημα", "Problem tjetër", "Altro problema")
 }
 
-private fun communityAriadneText(lang: AppLanguage, summary: CommunitySummary?): String {
+private fun communityAriadneText(
+    lang: AppLanguage,
+    summary: CommunitySummary?,
+    stationName: (String) -> String? = { null },
+): String {
     if (summary == null) {
         return pulseText(lang, "Ariadne: Community status is offline. Official schedules still work.", "Ariadne: Η κοινοτική κατάσταση είναι εκτός σύνδεσης. Τα επίσημα δρομολόγια λειτουργούν.", "Ariadne: Gjendja e komunitetit është offline. Oraret zyrtare funksionojnë.", "Ariadne: Lo stato della comunità e offline. Gli orari ufficiali funzionano.")
     }
     val issue = summary.issues.firstOrNull()
     if (issue != null) {
-        return pulseText(lang, "Ariadne: ${localizedScopeLabel(issue.scopeLabel, lang)} has an active ${communitySignalLabel(issue.signal, lang).lowercase()} report.", "Ariadne: Υπάρχει ενεργή αναφορά ${communitySignalLabel(issue.signal, lang).lowercase()} στο ${localizedScopeLabel(issue.scopeLabel, lang)}.", "Ariadne: ${localizedScopeLabel(issue.scopeLabel, lang)} ka raport aktiv për ${communitySignalLabel(issue.signal, lang).lowercase()}.", "Ariadne: ${localizedScopeLabel(issue.scopeLabel, lang)} ha una segnalazione attiva: ${communitySignalLabel(issue.signal, lang).lowercase()}.")
+        val place = resolveIchnosScopeLabel(issue.scopeId, issue.scopeLabel, lang, stationName)
+        return pulseText(lang, "Ariadne: $place has an active ${communitySignalLabel(issue.signal, lang).lowercase()} report.", "Ariadne: Υπάρχει ενεργή αναφορά ${communitySignalLabel(issue.signal, lang).lowercase()} στο $place.", "Ariadne: $place ka raport aktiv për ${communitySignalLabel(issue.signal, lang).lowercase()}.", "Ariadne: $place ha una segnalazione attiva: ${communitySignalLabel(issue.signal, lang).lowercase()}.")
     }
     return pulseText(lang, "Ariadne: No active community issues. Official alerts still take priority.", "Ariadne: Δεν υπάρχουν ενεργά κοινοτικά προβλήματα. Οι επίσημες ειδοποιήσεις έχουν προτεραιότητα.", "Ariadne: Nuk ka probleme aktive të komunitetit. Njoftimet zyrtare kanë përparësi.", "Ariadne: Nessun problema attivo della comunità. Gli avvisi ufficiali hanno priorità.")
 }
