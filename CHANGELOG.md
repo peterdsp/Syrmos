@@ -17,6 +17,13 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   and the airport calendar card's minus and plus buttons say "Ten minutes
   earlier" and "Ten minutes later" in the app's language.
 
+- **The Home hero counts in your language and the Live pill flips on time.**
+  The big countdown on Android read "8 min" in a Greek UI where the rows
+  said "8 λεπ"; it uses the same abbreviations now (λεπ and ω), as iOS
+  already did. Offline, "Live" stayed lit on Android because a failed
+  announcements refresh was counted as a live fetch; it is not any more,
+  the board reads offline the moment the network drops, and both platforms
+  re-check every 15 seconds while live.
 - **Ariadne keeps your question through a fold or resize on Android.** The
   assistant's conversation and an unsent question used to vanish when the
   window changed size, because the shell was handed a fresh assistant. It
