@@ -9,7 +9,18 @@ data class HeroCountdownState(
     val secondsAway: Int,
 )
 
-fun heroCountdown(secondsAway: Int, nowLabel: String): HeroCountdownState {
+/**
+ * The Home hero's countdown: "Now", a live "m:ss" under two minutes, then
+ * minutes, then hours. [minuteLabel] and [hourLabel] are the reader's
+ * abbreviations ("λεπ" and "ω" in Greek), passed in so this stays a pure
+ * function; twin of `heroCountdownText` in iOS HomeView.swift.
+ */
+fun heroCountdown(
+    secondsAway: Int,
+    nowLabel: String,
+    minuteLabel: String = "min",
+    hourLabel: String = "h",
+): HeroCountdownState {
     val imminent = secondsAway <= 60
     val text = when {
         secondsAway <= 0 -> nowLabel
@@ -20,12 +31,12 @@ fun heroCountdown(secondsAway: Int, nowLabel: String): HeroCountdownState {
         }
         secondsAway < 3600 -> {
             val m = (secondsAway + 59) / 60
-            "$m min"
+            "$m $minuteLabel"
         }
         else -> {
             val h = secondsAway / 3600
             val m = (secondsAway % 3600) / 60
-            if (m == 0) "${h}h" else "${h}h ${m}min"
+            if (m == 0) "$h$hourLabel" else "$h$hourLabel $m$minuteLabel"
         }
     }
     return HeroCountdownState(text = text, isImminent = imminent, secondsAway = secondsAway)

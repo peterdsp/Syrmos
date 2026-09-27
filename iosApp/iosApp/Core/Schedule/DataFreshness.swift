@@ -62,7 +62,9 @@ final class LiveDataFreshness: ObservableObject {
     var onRetryRequested: (() -> Void)?
 
     private init() {
-        ticker = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        // 15 s, not 30: the pill should flip within seconds of the 90-second
+        // window closing; the Android ticker uses the same cadence while live.
+        ticker = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.objectWillChange.send() }
         }
         connectivityTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
