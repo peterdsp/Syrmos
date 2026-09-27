@@ -831,20 +831,32 @@ private fun NextAirportServices(lang: AppLanguage, dayOffset: Int, departures: L
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ServiceTile(route: String, icon: ImageVector, main: String, destination: String, detail: String, status: String, color: Color, modifier: Modifier, onClick: (() -> Unit)? = null) {
     val tileModifier = if (onClick != null) modifier.clip(RoundedCornerShape(18.dp)).clickable { onClick() } else modifier
     Surface(modifier = tileModifier, shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(5.dp))
-                Text(route, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = color)
-                Spacer(Modifier.weight(1f))
-                Text(status, style = MaterialTheme.typography.labelSmall, color = color)
-                // Chevron signals the tile opens the station's full departures.
-                if (onClick != null) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            // The status word is atomic: when the tile is too narrow for the
+            // route and the status side by side (Greek "Προγραμματισμένο" in a
+            // paired pane), the whole word drops to a second line instead of
+            // breaking mid-word.
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text(route, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = color)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(status, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1, softWrap = false)
+                    // Chevron signals the tile opens the station's full departures.
+                    if (onClick != null) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    }
                 }
             }
             Text(main, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = if (route == "M3") SyrmosColorTokens.warning else color, maxLines = 1)

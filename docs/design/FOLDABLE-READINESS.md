@@ -1179,6 +1179,26 @@ nothing read the flag on either platform.
   mid-pane with "Μοναστηράκι · Αλλαγή εδώ" below and no Back to now pill:
   the jump path lands where the glide did.
 
+## Landed: polish round 30 (Airport tile status atomicity)
+
+Source: the Greek walk of Home and Airport on the Android fold after round
+29. The Airport hub's next-service tiles, at half a 380 dp pane, broke
+"Προγραμματισμένο" as "Προγραμματισμέ / νο" beside the M3 and A1 pills:
+the chip-and-status atomicity rule (a status word never wraps or
+compresses) had not reached this tile.
+
+- **Android**: the tile header is a `FlowRow` with `SpaceBetween`; the
+  route group and the status group (status `maxLines = 1, softWrap =
+  false` plus the chevron) sit side by side when they fit and the status
+  group drops to a second line when they do not.
+- **iOS**: `ViewThatFits(in: .horizontal)` tries the side-by-side `HStack`
+  first and falls back to a two-line `VStack`; the status text is
+  `lineLimit(1).fixedSize()` so it can never be squeezed mid-word.
+- **Home in Greek on the fold**: fine; "Παρακολούθηση συρμού" wraps at a
+  word boundary inside its button, which is a label, not a chip.
+- **Verified**: feature/schedule compile, iOS build; on the Pixel fold in
+  Greek the tiles now read "M3" over "Προγραμματισμένο" on its own line.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

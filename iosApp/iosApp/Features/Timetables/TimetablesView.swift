@@ -975,14 +975,19 @@ private struct AirportNextServiceTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(route, systemImage: icon).font(.caption.weight(.bold)).foregroundStyle(color)
-                Spacer()
-                Text(status).font(.caption2.weight(.semibold)).foregroundStyle(color)
-                if navigable {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+            // The status word is atomic: when the tile is too narrow for the
+            // route and the status side by side (Greek "Προγραμματισμένο" in a
+            // paired pane), the whole status drops to a second line instead of
+            // breaking mid-word.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    routeLabel
+                    Spacer()
+                    statusLabel
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    routeLabel
+                    statusLabel
                 }
             }
             Text(primary)
@@ -997,6 +1002,21 @@ private struct AirportNextServiceTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .glassCardBackground(cornerRadius: 18)
+    }
+
+    private var routeLabel: some View {
+        Label(route, systemImage: icon).font(.caption.weight(.bold)).foregroundStyle(color)
+    }
+
+    private var statusLabel: some View {
+        HStack(spacing: 4) {
+            Text(status).font(.caption2.weight(.semibold)).foregroundStyle(color).lineLimit(1).fixedSize()
+            if navigable {
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 }
 
