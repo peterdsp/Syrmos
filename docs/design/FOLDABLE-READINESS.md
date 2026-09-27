@@ -1212,6 +1212,24 @@ the Android card had `maxLines = 2`.
   title to two lines at the same weight.
 - **Verified**: iOS build; the iPad Airport hub in Greek (below).
 
+## Landed: polish round 32 (keyboard through a posture change; emulator ANR diagnosis)
+
+- **Scenario 12.1 #10**: with the station search focused and a filter typed,
+  changing the window from upright to landscape keeps the picker, the
+  filter and its result; the keyboard dismisses on the resize as the system
+  does. Recorded in the acceptance snapshot.
+- **"Syrmos isn't responding" on the emulator is environmental.** During the
+  session's parallel builds the emulator's load average reached 30 with CPU
+  pressure above 90 percent and 138 MB free of 2.5 GB; every system process
+  ANR'd in the same minutes (phone, gms, bluetooth, contacts). The one Syrmos
+  ANR was an input-dispatch timeout waiting for a focus event under that
+  load. A SIGQUIT dump of the Syrmos process afterwards showed the main
+  thread idle in `MessageQueue.nativePollOnce`, and the dialog that kept
+  returning was the same stale one until the app was closed and relaunched.
+  Recipe: `adb root`, `kill -3 <pid>`, read `/data/anr/trace_*` for
+  `Cmd line: com.syrmos.android` and check the `"main"` thread before
+  treating a dialog as an app hang.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -1473,6 +1491,7 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android compact single column (12.1 #1) | Pass | Plan at 411dp: shipped single scrolling column, floating bottom bar. |
 | Android cover display, inner display both orientations, narrow inner content (12.1 #2-4) | Pass (emulated window sizes) | Pixel emulator with `wm size 466x678` (cover), `841x673` and `673x841` (inner), `1280x800` (tablet): Home, Explore, Plan, GO, Map, Departures, Airport and More walked in rounds 12 to 27 in all four languages; the T7 tall-narrow and T9 stack rules pair or stack as the policy says. A phone AVD at those sizes, not a foldable AVD: no fold region is reported, so this proves the window-size path only. |
 | Android postures, occluding hinge, off-center or outside fold (12.1 #5-8) | Pending (synthetic only) | No foldable AVD here; `AdaptiveWorkspaceTest` and `DuoPostureFixturesTest` cover the geometry, the emulator cannot report a FoldingFeature. |
+| Keyboard open during endpoint editing, then posture change (12.1 #10) | Pass (emulated sizes) | Pixel emulator: Plan origin picker open with "Pei" typed and the keyboard up at 673x841, resized to 841x673: the picker stays open with the filter and its result, Plan pairs with the selected-journey pane, the keyboard dismisses on the resize as the system does. Fold and rotate on a foldable AVD remain unexercised. |
 | Large font scale (12.1 #16, first half) | Pass (emulated) | Android `font_scale 1.3` and the iOS xxl Dynamic Type render (`plan-duo-inner-portrait-xxl.png`) collapse to one column where the scaled floors no longer fit. TalkBack, keyboard navigation and reduced animations remain Pending. |
 | All supported locales in light and dark (12.1 #17) | Pass (emulator + simulators) | Rounds 20 to 27: en, el, sq, it walked on the Pixel fold and the iPhone and iPad simulators in light and dark; diacritics restored and guarded by `LocalizationDiacriticsTest` and the iOS twin; cover renders in Albanian and Greek committed (round 25). |
 | Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection, the GO session, the map camera, the Explore filters, and detail-screen scroll all survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Residual: singleton view-model browse state (Explore segment/filters) resets on a cold launch after process death, accepted as lower priority than a live journey; the iOS side is separate. |
