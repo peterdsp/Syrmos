@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Airport tiles keep their status word whole.** In a paired pane the
+  Greek "Προγραμματισμένο" broke mid-word beside the line pill; the status
+  now drops to its own line as a whole on both platforms.
+
 - **Ichnos rows read in your language.** A report's place label used to
   arrive in the reporter's language ("Ichnos at Florina" in a Greek or
   Albanian UI). The station-form label is now put back into the reader's
