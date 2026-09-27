@@ -12,6 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Screen readers get names for the last unlabeled controls on Android.**
+  The Explore search field announces its hint instead of a bare edit box,
+  and the airport calendar card's minus and plus buttons say "Ten minutes
+  earlier" and "Ten minutes later" in the app's language.
+
 - **Ariadne keeps your question through a fold or resize on Android.** The
   assistant's conversation and an unsent question used to vanish when the
   window changed size, because the shell was handed a fresh assistant. It
