@@ -1230,6 +1230,20 @@ the Android card had `maxLines = 2`.
   `Cmd line: com.syrmos.android` and check the `"main"` thread before
   treating a dialog as an app hang.
 
+## Landed: polish round 34 (twenty posture cycles with GO running)
+
+Source: acceptance rows 12.1 #11 and #12, which had only the single
+recreation evidence from round 12.
+
+- **Run**: Plan Piraeus to Syntagma, start GO, advance twice, then twenty
+  window-size cycles (673x841 to 841x673 and back, three seconds apart).
+- **Result**: identical GO state before and after (stop 2 of 8, "Μοσχάτο ·
+  Τώρα", the same fitted camera), the docked map rebuilt each time without
+  a reset, and the app's active notification count unchanged at two, so the
+  journey notifier did not post duplicates across the recreations.
+- **Scope**: window-size recreation on a phone AVD; a foldable AVD's
+  FoldingFeature transitions remain unexercised.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
@@ -1494,6 +1508,8 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Keyboard open during endpoint editing, then posture change (12.1 #10) | Pass (emulated sizes) | Pixel emulator: Plan origin picker open with "Pei" typed and the keyboard up at 673x841, resized to 841x673: the picker stays open with the filter and its result, Plan pairs with the selected-journey pane, the keyboard dismisses on the resize as the system does. Fold and rotate on a foldable AVD remain unexercised. |
 | Large font scale (12.1 #16, first half) | Pass (emulated) | Android `font_scale 1.3` and the iOS xxl Dynamic Type render (`plan-duo-inner-portrait-xxl.png`) collapse to one column where the scaled floors no longer fit. TalkBack, keyboard navigation and reduced animations remain Pending. |
 | All supported locales in light and dark (12.1 #17) | Pass (emulator + simulators) | Rounds 20 to 27: en, el, sq, it walked on the Pixel fold and the iPhone and iPad simulators in light and dark; diacritics restored and guarded by `LocalizationDiacriticsTest` and the iOS twin; cover renders in Albanian and Greek committed (round 25). |
+| Running GO through twenty open/close cycles, same session, no duplicate side effects (12.1 #12) | Pass (emulated sizes) | Pixel emulator: GO started (Piraeus to Syntagma) and advanced to stop 2 of 8, then twenty `wm size` cycles between 673x841 and 841x673 at three-second intervals. Afterwards the same session at stop 2 of 8 with the same current row and map camera, and `dumpsys notification` counts two Syrmos notifications before and after (no duplicates). |
+| Selected route and scrolled list through the cycles (12.1 #11) | Pass (emulated sizes) | Same run: the Plan selection and the GO timeline position survived every cycle; the map's manual pan is covered by the round 13 camera persistence. |
 | Android continuity through recreation (12.1 #11-13) | Partial | Plan draft/selection, the GO session, the map camera, the Explore filters, and detail-screen scroll all survive activity recreation; the GO session also survives process death (auto-restored on cold launch). Residual: singleton view-model browse state (Explore segment/filters) resets on a cold launch after process death, accepted as lower priority than a live journey; the iOS side is separate. |
 | iPhone/iPad narrow and wide layouts, Dynamic Type (12.1 #20, layouts) | Pass (simulator + renders) | Syrmos 27 iPhone (402 pt) single column; Syrmos iPad (1032 pt) pairs Home, Explore, Plan, Map and GO; Duo inner and cover renders in `__DuoSnapshots__`; xxl Plan render stacks. |
 | iPhone/iPad scene recovery and map state (12.1 #20, continuity) | Pending | The iOS scene host replacement is not implemented; GO restores from its persisted session on relaunch, other tabs do not. |
