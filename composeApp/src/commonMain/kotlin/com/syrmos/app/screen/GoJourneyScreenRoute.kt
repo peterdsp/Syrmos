@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.movableContentOf
+import com.syrmos.core.designsystem.layout.LocalReduceMotion
 import com.syrmos.core.domain.go.GoTimelineFocus
 import kotlin.math.roundToInt
 import androidx.compose.material3.FilledTonalButton
@@ -504,12 +505,17 @@ class GoJourneyScreenRoute(
         // the viewport; a manual scroll in between is never snapped back (that is
         // what Back to now is for). The row reports its position after the
         // recomposition, so wait for that report before scrolling.
+        val reduceMotion = LocalReduceMotion.current
         if (scrollable) {
             LaunchedEffect(position) {
                 val top = snapshotFlow { currentTop }.filterNotNull().first()
                 if (viewportHeight <= 0f) return@LaunchedEffect
                 val inContent = (top - viewportTop) + scrollState.value
-                scrollState.animateScrollTo(GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat()).roundToInt())
+                val target = GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat()).roundToInt()
+                when (GoTimelineFocus.motion(reduceMotion)) {
+                    GoTimelineFocus.Motion.GLIDE -> scrollState.animateScrollTo(target)
+                    GoTimelineFocus.Motion.JUMP -> scrollState.scrollTo(target)
+                }
             }
         }
         Box(if (scrollable) modifier else Modifier) {
@@ -557,7 +563,12 @@ class GoJourneyScreenRoute(
                     val top = currentTop ?: return@FilledTonalButton
                     val inContent = (top - viewportTop) + scrollState.value
                     val target = GoTimelineFocus.targetOffset(inContent, viewportHeight, scrollState.maxValue.toFloat())
-                    scope.launch { scrollState.animateScrollTo(target.roundToInt()) }
+                    scope.launch {
+                        when (GoTimelineFocus.motion(reduceMotion)) {
+                            GoTimelineFocus.Motion.GLIDE -> scrollState.animateScrollTo(target.roundToInt())
+                            GoTimelineFocus.Motion.JUMP -> scrollState.scrollTo(target.roundToInt())
+                        }
+                    }
                 },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
             ) { Text(t("Back to now", "Πίσω στο τώρα", "Kthehu te tani", "Torna a ora"), maxLines = 1) }

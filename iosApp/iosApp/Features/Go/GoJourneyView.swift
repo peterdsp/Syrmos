@@ -18,6 +18,7 @@ struct TransferRisk: Equatable {
 // journey); GPS / live-position auto-advance is a later phase, so the control is
 // labelled "Next stop" rather than implying live tracking.
 struct GoJourneyView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var model: GoJourneyViewModel
     @StateObject private var location = LocationService()
     @Environment(\.dismiss) private var dismiss
@@ -354,7 +355,7 @@ struct GoJourneyView: View {
             // follows the new current row; a manual scroll in between is never
             // snapped back (Back to now covers that).
             .onChange(of: model.position) { _, _ in
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(GoTimelineFocus.animation(reduceMotion: reduceMotion)) {
                     proxy.scrollTo(GoTimelineAnchor.current, anchor: UnitPoint(x: 0.5, y: 0.33))
                 }
             }
@@ -363,7 +364,7 @@ struct GoJourneyView: View {
                    !GoTimelineFocus.isVisible(rowTop: frame.minY, rowBottom: frame.maxY,
                                               viewportTop: 0, viewportBottom: timelineViewportHeight) {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
+                        withAnimation(GoTimelineFocus.animation(reduceMotion: reduceMotion)) {
                             proxy.scrollTo(GoTimelineAnchor.current, anchor: UnitPoint(x: 0.5, y: 0.33))
                         }
                     } label: {
@@ -1103,6 +1104,13 @@ enum GoTimelineFocus {
     /// clamped to the scrollable range.
     static func targetOffset(rowTopInContent: CGFloat, viewportHeight: CGFloat, maxOffset: CGFloat) -> CGFloat {
         min(max(rowTopInContent - viewportHeight / 3, 0), max(maxOffset, 0))
+    }
+
+    /// A reader who asked the system for reduced motion gets the row placed
+    /// without a scroll animation; everyone else gets the glide. Twin of
+    /// `GoTimelineFocus.motion` in core/domain.
+    static func animation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.25)
     }
 }
 

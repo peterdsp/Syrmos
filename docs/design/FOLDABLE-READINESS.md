@@ -1151,6 +1151,34 @@ submission and served back verbatim.
   3/3 (iOS), Compose app compile; the two Explore cover renders rebuilt
   and unchanged apart from live data (not committed).
 
+## Landed: polish round 29 (Reduce Motion on the GO timeline)
+
+Source: remaining phase 4 (reduced motion) and acceptance row 12.1 #16. The
+motion tokens promised that the train glide "degrades to a cross-fade under
+Reduce Motion; the accessibility flag itself is read per platform", but
+nothing read the flag on either platform.
+
+- **Shared decision**: `GoTimelineFocus.motion(reduceMotion)` returns GLIDE
+  or JUMP (core/domain, tested) and its Swift twin
+  `GoTimelineFocus.animation(reduceMotion:)` returns the ease-in-out or nil.
+- **Android**: `rememberPlatformReduceMotion()` (core/designsystem, expect
+  with Android, iOS and wasm actuals: animator duration scale of zero,
+  `UIAccessibilityIsReduceMotionEnabled`, `prefers-reduced-motion`) feeds
+  `LocalReduceMotion`, provided once at the app root. GO's follow-on-advance
+  and Back to now call `scrollTo` instead of `animateScrollTo` under it.
+- **iOS**: `@Environment(\.accessibilityReduceMotion)` in GoJourneyView; the
+  two `withAnimation` sites take the shared decision, so `nil` performs the
+  scroll without animation.
+- **Not yet**: the map camera keeps its fly animation (it conveys distance);
+  the rest of the app's transitions still animate under the flag. Row 12.1
+  #16 stays partial for TalkBack and keyboard navigation.
+- **Verified**: GoTimelineFocusTest (Kotlin), JourneyGuidanceTests (iOS),
+  Compose app compile plus the iOS-simulator and wasm compiles of the
+  design system. On the Pixel fold with `animator_duration_scale 0`
+  ("Remove animations"), six advances from Piraeus placed "Θησείο · Τώρα"
+  mid-pane with "Μοναστηράκι · Αλλαγή εδώ" below and no Back to now pill:
+  the jump path lands where the glide did.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

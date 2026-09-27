@@ -20,6 +20,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   displays the iOS card was one caption line too short, so "Your fastest
   route to the terminal" truncated where Android wrapped it. The card is
   taller by that line.
+- **Reduce Motion is honoured on the GO timeline.** When the reader has asked
+  the system for reduced motion (Reduce Motion on iOS, "Remove animations"
+  on Android, `prefers-reduced-motion` on the web build), the timeline
+  places the current stop without the glide instead of animating to it.
+  The preference is read once at the app root and shared through the
+  design system.
 
 ## 3.0.0-beta.5 - 2026-09-26
 
