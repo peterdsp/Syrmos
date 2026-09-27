@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home on the folded cover is captured in Greek and Albanian too.** Two
+  more render tests join the GO and Explore covers; both captures are
+  clean, with the Greek track buttons side by side and every chip whole.
+
 - **The Home hero counts in your language and the Live pill flips on time.**
   The big countdown on Android read "8 min" in a Greek UI where the rows
   said "8 λεπ"; it uses the same abbreviations now (λεπ and ω), as iOS

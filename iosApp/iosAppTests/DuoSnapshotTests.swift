@@ -443,6 +443,29 @@ final class DuoSnapshotTests: XCTestCase {
     }
 
     @MainActor
+    func test_homeScreen_duoCover_albanian_render() throws {
+        let image = try renderCover(HomeView(), in: .albanian)
+        try save(image, "home-duo-cover-albanian.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home cover render (Albanian) should not be blank")
+    }
+
+    @MainActor
+    func test_homeScreen_duoCover_greek_render() throws {
+        let image = try renderCover(HomeView(), in: .greek)
+        try save(image, "home-duo-cover-greek.png")
+        XCTAssertTrue(hasVisibleVariance(image), "Home cover render (Greek) should not be blank")
+    }
+
+    @MainActor
+    private func renderCover(_ view: some View, in language: AppLanguage) throws -> UIImage {
+        let manager = LocalizationManager.shared
+        let previous = manager.language
+        manager.language = language
+        defer { manager.language = previous }
+        return render(view, size: duoCover)
+    }
+
+    @MainActor
     private func renderExploreCover(in language: AppLanguage) throws -> UIImage {
         let manager = LocalizationManager.shared
         let previous = manager.language
