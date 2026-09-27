@@ -15,6 +15,19 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 - **Home on the folded cover is captured in Greek and Albanian too.** Two
   more render tests join the GO and Explore covers; both captures are
   clean, with the Greek track buttons side by side and every chip whole.
+- **The iOS map stays on the network when you are far from it.** With
+  location allowed, the Map tab used to centre on you wherever you were,
+  so a traveller planning from abroad opened on an empty map. The automatic
+  recentre now happens only inside Greece; the Locate button still goes to
+  you anywhere. Android never auto-followed.
+- **"Browse all stations" counts the real list.** The Explore card said 389
+  while the list it opens holds 394; the label now carries the live count on
+  both platforms and drops the number until the stations have loaded.
+
+- **Screen readers get names for the last unlabeled controls on Android.**
+  The Explore search field announces its hint instead of a bare edit box,
+  and the airport calendar card's minus and plus buttons say "Ten minutes
+  earlier" and "Ten minutes later" in the app's language.
 
 - **The Home hero counts in your language and the Live pill flips on time.**
   The big countdown on Android read "8 min" in a Greek UI where the rows

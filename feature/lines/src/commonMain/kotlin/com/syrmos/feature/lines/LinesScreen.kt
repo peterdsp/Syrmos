@@ -55,7 +55,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.syrmos.core.common.extensions.browseAllStationsLabel
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.L
@@ -634,6 +637,11 @@ private fun BrowseAllStationsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The real count, so the label never drifts from the list it opens.
+    val stationRepo = koinInject<StationRepositoryImpl>()
+    val allStations by stationRepo.getAllStations().collectAsState(initial = emptyList())
+    val stationCount = allStations.size
+
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
@@ -661,7 +669,7 @@ private fun BrowseAllStationsRow(
             Spacer(Modifier.width(13.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = L.BROWSE_ALL_STATIONS.text(lang),
+                    text = browseAllStationsLabel(stationCount, lang),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -719,15 +727,19 @@ private fun SearchBar(
                 modifier = Modifier.size(20.dp),
             )
 
+            // The placeholder is a sibling, not the field's label, so a screen
+            // reader would announce a bare edit box; give the field the same
+            // words as its semantics description.
+            val searchHint = when (lang) {
+                AppLanguage.GREEK -> "Προορισμός, σταθμός, γραμμή ή τρένο..."
+                AppLanguage.ALBANIAN -> "Destinacion, stacion, linjë ose tren..."
+                AppLanguage.ITALIAN -> "Destinazione, stazione, linea o treno..."
+                else -> "Destination, station, line or train..."
+            }
             Box(modifier = Modifier.weight(1f).padding(vertical = 10.dp)) {
                 if (query.isEmpty()) {
                     Text(
-                        text = when (lang) {
-                            AppLanguage.GREEK -> "Προορισμός, σταθμός, γραμμή ή τρένο..."
-                            AppLanguage.ALBANIAN -> "Destinacion, stacion, linjë ose tren..."
-                            AppLanguage.ITALIAN -> "Destinazione, stazione, linea o treno..."
-                            else -> "Destination, station, line or train..."
-                        },
+                        text = searchHint,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )
@@ -739,7 +751,7 @@ private fun SearchBar(
                         color = MaterialTheme.colorScheme.onSurface,
                     ),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = searchHint },
                 )
             }
 

@@ -1316,6 +1316,62 @@ recreation evidence from round 12.
   header row in every language, including the existing English render; it
   is the pulse indicator's frame at capture time, not a layout fault, and
   is noted here so a later reviewer does not chase it as a regression.
+## Landed: polish round 36 (unlabeled controls, 12.1 #16)
+
+Source: TalkBack is on the emulator image but cannot be driven reliably
+over adb, so the accessibility tree was dumped instead (`uiautomator dump`)
+on Home, Explore, Map and Airport, filtering clickable nodes that carry no
+text or description themselves or in a descendant.
+
+- **Found**: the Explore search field (a `BasicTextField` whose placeholder
+  is a sibling `Text`, so the field itself had no label) and the airport
+  calendar card's minus and plus steppers (`Icon(..., null)`). Home and Map
+  were clean apart from a 3 px sliver at the pane edge.
+- **Fix**: the field takes `semantics { contentDescription = searchHint }`
+  with the same words as its placeholder; the steppers announce "Ten
+  minutes earlier / later" through `airportText`. iOS has no steppers on
+  that card and its text fields carry prompts VoiceOver reads.
+- **Verified**: lines and schedule compile; the trees re-dumped after the
+  build show the three nodes named and no unlabeled clickable control of
+  24 px or more on the four screens.
+
+## Landed: polish round 38 (map opening far from the network)
+
+Source: the iPad simulator, whose default location is Cupertino, opened
+the Map tab on Cupertino streets with no station in reach, while the
+Android emulator (also parked in California) opened on Athens.
+
+- **Cause**: two things. iOS auto-recentred on the user as soon as the Map
+  tab appeared with permission granted, through the same ping as the
+  Locate button and with no regard to distance; and the coordinator's
+  remembered ping started at -1 while the view's started at 0, so the very
+  first `updateUIView` already read as a recentre request and, with a fix
+  in hand, moved the Athens frame to the user before any tap. Android has
+  no automatic follow.
+- **Fix**: the coordinator's pings are seeded with the view's values in
+  `makeUIView`, so only a change is a request; the automatic ping is
+  separate and honoured only when the fix lies in `SyrmosServiceArea` (the
+  box around Greece); otherwise the Athens frame stays. The Locate button
+  is unchanged: a reader's own tap is never gated. `SyrmosServiceAreaTests` covers Greek cities inside and Cupertino,
+  London and (0, 0) outside.
+- **Verified**: iOS build + the new tests; on the iPad (location Cupertino)
+  the Map tab now opens on the Athens frame (below).
+## Landed: polish round 37 (back from a detail; the station count)
+
+Source: scenario 12.1 #22 on the Pixel fold. Explore scrolled to "Explore
+farther", Browse-all opened, back pressed: Explore came back at the same
+scroll position with the same paired companion. The walk also showed the
+card reading "389 stations" while the list header counted 394.
+
+- **Fix**: the shared `BROWSE_ALL_STATIONS` string takes `{n}` and
+  `browseAllStationsLabel(count, lang)` (core/common, tested) fills it from
+  the station repository on Android and the bundled stations on iOS; at
+  zero, before the stations load, the number is dropped rather than shown.
+  The Swift twin has the same tests.
+- **Verified**: StationCountLabelTest 2/2 and LocalizationDiacriticsTest
+  3/3 (Kotlin), StationCountLabelTests + GreekTypographyTests (iOS),
+  Compose app compile, iOS build; on the Pixel fold the card reads the
+  list's own count (below).
 
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
@@ -1579,6 +1635,7 @@ Synthetic-geometry policy fixtures cannot satisfy a native-runtime requirement.
 | Android cover display, inner display both orientations, narrow inner content (12.1 #2-4) | Pass (emulated window sizes) | Pixel emulator with `wm size 466x678` (cover), `841x673` and `673x841` (inner), `1280x800` (tablet): Home, Explore, Plan, GO, Map, Departures, Airport and More walked in rounds 12 to 27 in all four languages; the T7 tall-narrow and T9 stack rules pair or stack as the policy says. A phone AVD at those sizes, not a foldable AVD: no fold region is reported, so this proves the window-size path only. |
 | Android postures, occluding hinge, off-center or outside fold (12.1 #5-8) | Pending (synthetic only) | No foldable AVD here; `AdaptiveWorkspaceTest` and `DuoPostureFixturesTest` cover the geometry, the emulator cannot report a FoldingFeature. |
 | Keyboard open during endpoint editing, then posture change (12.1 #10) | Pass (emulated sizes) | Pixel emulator: Plan origin picker open with "Pei" typed and the keyboard up at 673x841, resized to 841x673: the picker stays open with the filter and its result, Plan pairs with the selected-journey pane, the keyboard dismisses on the resize as the system does. Fold and rotate on a foldable AVD remain unexercised. |
+| Accessibility tree: every clickable control named (12.1 #16, screen reader half) | Pass (uiautomator dump) | Home, Explore, Map and Airport dumped on the Pixel fold in Greek with `uiautomator dump`; clickable nodes without text or description were two icon-only time steppers on the Airport card and the Explore search field, all labelled in round 36. TalkBack itself (installed on the image) and keyboard navigation remain unexercised. |
 | Large font scale (12.1 #16, first half) | Pass (emulated) | Android `font_scale 1.3` and the iOS xxl Dynamic Type render (`plan-duo-inner-portrait-xxl.png`) collapse to one column where the scaled floors no longer fit. TalkBack, keyboard navigation and reduced animations remain Pending. |
 | All supported locales in light and dark (12.1 #17) | Pass (emulator + simulators) | Rounds 20 to 27: en, el, sq, it walked on the Pixel fold and the iPhone and iPad simulators in light and dark; diacritics restored and guarded by `LocalizationDiacriticsTest` and the iOS twin; cover renders in Albanian and Greek committed (round 25). |
 | Running GO through twenty open/close cycles, same session, no duplicate side effects (12.1 #12) | Pass (emulated sizes) | Pixel emulator: GO started (Piraeus to Syntagma) and advanced to stop 2 of 8, then twenty `wm size` cycles between 673x841 and 841x673 at three-second intervals. Afterwards the same session at stop 2 of 8 with the same current row and map camera, and `dumpsys notification` counts two Syrmos notifications before and after (no duplicates). |

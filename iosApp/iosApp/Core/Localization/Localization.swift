@@ -81,6 +81,23 @@ func localizedScopeLabel(_ label: String, _ language: AppLanguage) -> String {
     return own + name
 }
 
+/// "Browse all 394 stations" with the real count. The number used to be typed
+/// into the string and read 389 while the list held 394. Before the stations
+/// have loaded (count of zero) the label drops the number rather than
+/// announcing "all 0 stations". Twin of `browseAllStationsLabel` in core/common.
+func browseAllStationsLabel(count: Int, _ language: AppLanguage) -> String {
+    let template: String
+    switch language {
+    case .greek: template = "Περιήγηση σε όλους τους {n} σταθμούς"
+    case .albanian: template = "Shfleto të gjitha {n} stacionet"
+    case .italian: template = "Sfoglia tutte le {n} stazioni"
+    case .english: template = "Browse all {n} stations"
+    }
+    return count > 0
+        ? template.replacingOccurrences(of: "{n}", with: String(count))
+        : template.replacingOccurrences(of: "{n} ", with: "")
+}
+
 @MainActor
 final class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
