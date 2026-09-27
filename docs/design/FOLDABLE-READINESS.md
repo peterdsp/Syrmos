@@ -1318,6 +1318,28 @@ text or description themselves or in a descendant.
   build show the three nodes named and no unlabeled clickable control of
   24 px or more on the four screens.
 
+## Landed: polish round 38 (map opening far from the network)
+
+Source: the iPad simulator, whose default location is Cupertino, opened
+the Map tab on Cupertino streets with no station in reach, while the
+Android emulator (also parked in California) opened on Athens.
+
+- **Cause**: two things. iOS auto-recentred on the user as soon as the Map
+  tab appeared with permission granted, through the same ping as the
+  Locate button and with no regard to distance; and the coordinator's
+  remembered ping started at -1 while the view's started at 0, so the very
+  first `updateUIView` already read as a recentre request and, with a fix
+  in hand, moved the Athens frame to the user before any tap. Android has
+  no automatic follow.
+- **Fix**: the coordinator's pings are seeded with the view's values in
+  `makeUIView`, so only a change is a request; the automatic ping is
+  separate and honoured only when the fix lies in `SyrmosServiceArea` (the
+  box around Greece); otherwise the Athens frame stays. The Locate button
+  is unchanged: a reader's own tap is never gated. `SyrmosServiceAreaTests` covers Greek cities inside and Cupertino,
+  London and (0, 0) outside.
+- **Verified**: iOS build + the new tests; on the iPad (location Cupertino)
+  the Map tab now opens on the Athens frame (below).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS

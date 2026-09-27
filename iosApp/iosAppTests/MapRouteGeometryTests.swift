@@ -55,3 +55,20 @@ final class MapRouteGeometryTests: XCTestCase {
         XCTAssertEqual(MapRouteGeometry.closeLoop(pts, isLoop: true).count, 1)
     }
 }
+
+// MARK: - Service area for the automatic recentre
+
+final class SyrmosServiceAreaTests: XCTestCase {
+    func testGreekCitiesAreInside() {
+        XCTAssertTrue(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 37.9838, longitude: 23.7275)))  // Athens
+        XCTAssertTrue(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 40.6401, longitude: 22.9444)))  // Thessaloniki
+        XCTAssertTrue(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 35.3387, longitude: 25.1442)))  // Heraklion
+    }
+
+    func testFarAwayFixesAreOutside() {
+        XCTAssertFalse(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 37.3349, longitude: -122.0090)))  // Cupertino
+        XCTAssertFalse(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 51.5072, longitude: -0.1276)))    // London
+        XCTAssertFalse(SyrmosServiceArea.contains(CLLocationCoordinate2D(latitude: 0, longitude: 0)))
+    }
+}
+

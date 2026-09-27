@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The iOS map stays on the network when you are far from it.** With
+  location allowed, the Map tab used to centre on you wherever you were,
+  so a traveller planning from abroad opened on an empty map. The automatic
+  recentre now happens only inside Greece; the Locate button still goes to
+  you anywhere. Android never auto-followed.
+
 - **Screen readers get names for the last unlabeled controls on Android.**
   The Explore search field announces its hint instead of a bare edit box,
   and the airport calendar card's minus and plus buttons say "Ten minutes

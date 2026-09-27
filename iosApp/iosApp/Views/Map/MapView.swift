@@ -283,6 +283,10 @@ struct TransitMapView: View {
     /// The map asks us to recenter via this trigger. UIViewRepresentable
     /// reads it in update() and calls setRegion on the wrapped MKMapView.
     @State private var recenterToUserPing: Int = 0
+    /// Bumped when the Map tab appears with permission already granted. Unlike
+    /// the Locate button it is not a request from the reader, so it only
+    /// recentres when the fix lies inside the network's service area.
+    @State private var autoRecenterPing: Int = 0
     // Drives periodic re-evaluation so real-GPS train markers age out even with
     // NO new data (offline / dropped feed): the live-train fleet only changes on
     // a poll, so without this a stale position would freeze on screen as "live".
@@ -334,7 +338,7 @@ struct TransitMapView: View {
                     let status = locationManager.authorizationStatus
                     if status == .authorizedWhenInUse || status == .authorizedAlways {
                         try? await Task.sleep(nanoseconds: 300_000_000)
-                        recenterToUserPing &+= 1
+                        autoRecenterPing &+= 1
                     }
                 }
             .toolbar(.hidden, for: .navigationBar)
@@ -495,6 +499,7 @@ struct TransitMapView: View {
                     busVehicles: vehiclesHidden ? [] : airportBusService.vehicles,
                     stationDisruptions: stasyService.stationDisruptions,
                     recenterToUserPing: recenterToUserPing,
+                    autoRecenterPing: autoRecenterPing,
                     onStationTap: { stationId in
                         tappedStation = stations.first(where: { $0.id == stationId })
                     },
@@ -1224,6 +1229,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
     /// user. Reading it in updateUIView() lets us tell a fresh request
     /// apart from the no-op redraws triggered by annotation churn.
     let recenterToUserPing: Int
+    /// Automatic recentre on appear; honoured only inside the service area.
+    var autoRecenterPing: Int = 0
     let onStationTap: (String) -> Void
     var onTrainTap: ((MapVehicleSelection) -> Void)?
 
@@ -1245,6 +1252,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let mv = MKMapView()
         mv.delegate = context.coordinator
+        // The coordinator's remembered pings start at -1 while the view's start
+        // at 0, so the very first updateUIView read as a recentre request and,
+        // with a fix already available, flung the Athens frame to the user's
+        // position wherever they were. Seed them with the current values.
+        context.coordinator.lastRecenterPing = recenterToUserPing
+        context.coordinator.lastAutoRecenterPing = autoRecenterPing
         mv.pointOfInterestFilter = .excludingAll
         mv.showsUserLocation = true
         mv.isPitchEnabled = false
@@ -1380,6 +1393,25 @@ struct SyrmosMKMapView: UIViewRepresentable {
             )
         }
 
+        // The automatic recentre on appear. A reader far from Greece (a
+        // traveller planning from home, or a simulator parked in Cupertino)
+        // would otherwise open on an empty map with no station in reach; the
+        // Athens frame stays and the Locate button remains theirs to press.
+        if context.coordinator.lastAutoRecenterPing != autoRecenterPing {
+            context.coordinator.lastAutoRecenterPing = autoRecenterPing
+            if let userLoc = mv.userLocation.location?.coordinate,
+               CLLocationCoordinate2DIsValid(userLoc),
+               SyrmosServiceArea.contains(userLoc) {
+                mv.setRegion(
+                    MKCoordinateRegion(
+                        center: userLoc,
+                        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+                    ),
+                    animated: true
+                )
+            }
+        }
+
         // Sync simulated + live trains. Build a desired set and reconcile
         // against existing annotations so we move existing markers rather
         // than tearing them down each tick (smooth motion, less GPU churn).
@@ -1470,6 +1502,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         var parent: SyrmosMKMapView
         var lastRecenterPing: Int = -1
+        var lastAutoRecenterPing: Int = -1
         var lastStationDisruptions: [String: String] = [:]
         /// The active flat base-map tile overlay + its theme, so a light/dark
         /// flip can swap it without rebuilding the map.
@@ -2861,3 +2894,18 @@ enum AthensClockLabel {
         return text
     }
 }
+
+/// Where an automatic "centre on me" makes sense: the box around Greece the
+/// network serves (Evros to Crete, the Ionian to the Dodecanese). Outside it
+/// the map keeps its Athens frame; the reader's own Locate tap is never gated.
+enum SyrmosServiceArea {
+    static let minLatitude = 34.6
+    static let maxLatitude = 41.9
+    static let minLongitude = 19.2
+    static let maxLongitude = 29.7
+
+    static func contains(_ c: CLLocationCoordinate2D) -> Bool {
+        (minLatitude...maxLatitude).contains(c.latitude) && (minLongitude...maxLongitude).contains(c.longitude)
+    }
+}
+
