@@ -12,6 +12,10 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **"Browse all stations" counts the real list.** The Explore card said 389
+  while the list it opens holds 394; the label now carries the live count on
+  both platforms and drops the number until the stations have loaded.
+
 - **Screen readers get names for the last unlabeled controls on Android.**
   The Explore search field announces its hint instead of a bare edit box,
   and the airport calendar card's minus and plus buttons say "Ten minutes

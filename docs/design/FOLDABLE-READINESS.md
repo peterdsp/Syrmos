@@ -1283,6 +1283,23 @@ text or description themselves or in a descendant.
   build show the three nodes named and no unlabeled clickable control of
   24 px or more on the four screens.
 
+## Landed: polish round 37 (back from a detail; the station count)
+
+Source: scenario 12.1 #22 on the Pixel fold. Explore scrolled to "Explore
+farther", Browse-all opened, back pressed: Explore came back at the same
+scroll position with the same paired companion. The walk also showed the
+card reading "389 stations" while the list header counted 394.
+
+- **Fix**: the shared `BROWSE_ALL_STATIONS` string takes `{n}` and
+  `browseAllStationsLabel(count, lang)` (core/common, tested) fills it from
+  the station repository on Android and the bundled stations on iOS; at
+  zero, before the stations load, the number is dropped rather than shown.
+  The Swift twin has the same tests.
+- **Verified**: StationCountLabelTest 2/2 and LocalizationDiacriticsTest
+  3/3 (Kotlin), StationCountLabelTests + GreekTypographyTests (iOS),
+  Compose app compile, iOS build; on the Pixel fold the card reads the
+  list's own count (below).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
