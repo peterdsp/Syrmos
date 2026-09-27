@@ -9,6 +9,7 @@ import com.syrmos.core.data.sync.FaresRepository
 import com.syrmos.core.data.sync.WeatherRepository
 import com.syrmos.core.model.weather.WeatherSnapshot
 import kotlinx.datetime.Clock
+import com.syrmos.core.domain.assistant.AssistantDraft
 import com.syrmos.core.domain.assistant.Exposure
 import com.syrmos.core.domain.assistant.StationComfort
 import com.syrmos.core.domain.assistant.AdvisorySeverity
@@ -132,6 +133,22 @@ class AssistantViewModel(
     fun downloadModel() = modelDownloader.start()
     private val _uiState = MutableStateFlow(AssistantUiState())
     val uiState: StateFlow<AssistantUiState> = _uiState.asStateFlow()
+
+    /**
+     * The unsent question. Held here rather than in the screen so it survives
+     * the assistant moving between its hosts (a docked pane on a paired
+     * window, a full-screen sheet on a single column) and activity
+     * recreation: the view model is a Koin single, the screen is not.
+     */
+    private val draftHolder = AssistantDraft()
+    val draft: StateFlow<String> = draftHolder.text
+    fun updateDraft(text: String) = draftHolder.update(text)
+
+    /** Send whatever is in the draft and clear it; nothing happens for a blank draft. */
+    fun askDraft() {
+        val question = draftHolder.take()
+        if (question.isNotEmpty()) ask(question)
+    }
 
     private var parser: AthensTransitParser? = null
     private var stations: List<Station> = emptyList()

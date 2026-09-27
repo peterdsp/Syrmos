@@ -1212,6 +1212,26 @@ the Android card had `maxLines = 2`.
   title to two lines at the same weight.
 - **Verified**: iOS build; the iPad Airport hub in Greek (below).
 
+## Landed: polish round 33 (assistant draft through a resize, 12.1 #14)
+
+Source: on the Pixel fold, Ariadne docked as the companion pane with
+"Piraeus to airport" typed and unsent; resizing to the upright window
+closed the panel and, reopened, the field was empty.
+
+- **Cause**: `AssistantViewModel` was a Koin `factory`. A window-size change
+  recreates the activity, the shell recomposes and `koinInject` hands it a
+  new view model: conversation and draft gone. The panel's open flag was a
+  plain `remember`, so it also reset.
+- **Fix**: the view model is a Koin `single` (the tab-root view models
+  already are, for the same lifetime reason); the unsent text lives in a
+  small tested `AssistantDraft` holder owned by the view model, and the
+  screen reads it (`take()` hands the trimmed text over and clears it in
+  one step, so a question is never sent twice); `showAriadne` is
+  `rememberSaveable`.
+- **iOS**: no change needed; SwiftUI keeps `@State` through a size change
+  and the inspector stays presented.
+- **Verified**: AssistantDraftTest 2/2, Compose app compile; on the Pixel
+  fold the draft survives the resize (below).
 ## Landed: polish round 32 (keyboard through a posture change; emulator ANR diagnosis)
 
 - **Scenario 12.1 #10**: with the station search focused and a filter typed,

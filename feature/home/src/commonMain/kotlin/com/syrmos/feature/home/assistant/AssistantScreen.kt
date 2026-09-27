@@ -71,7 +71,7 @@ fun AssistantScreen(
     val lang by LocalizationManager.language.collectAsState()
     val modelState by viewModel.modelState.collectAsState()
     val modelProgress by viewModel.modelProgress.collectAsState()
-    var input by remember { mutableStateOf("") }
+    val input by viewModel.draft.collectAsState()
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.messages.size) {
@@ -167,18 +167,18 @@ fun AssistantScreen(
             ) {
                 OutlinedTextField(
                     value = input,
-                    onValueChange = { input = it },
+                    onValueChange = viewModel::updateDraft,
                     modifier = Modifier.weight(1f),
                     placeholder = { Text(placeholder(lang)) },
                     enabled = uiState.ready,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = {
-                        viewModel.ask(input); input = ""
+                        viewModel.askDraft()
                     }),
                 )
                 IconButton(
-                    onClick = { viewModel.ask(input); input = "" },
+                    onClick = { viewModel.askDraft() },
                     enabled = uiState.ready && input.isNotBlank(),
                 ) {
                     Text("➤", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
