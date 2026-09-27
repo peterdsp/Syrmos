@@ -521,10 +521,11 @@ private struct AirportCalendarHub: View {
                         .foregroundStyle(.secondary)
                     Text(calendarEvent?.title ?? airportText(language, "No saved airport trip", "Δεν υπάρχει αποθηκευμένο ταξίδι", "Nuk ka udhëtim të ruajtur", "Nessun viaggio salvato"))
                         .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                        // Longer locales (EL/SQ/IT) shrink to fit one line
-                        // instead of truncating next to the time picker.
-                        .minimumScaleFactor(0.8)
+                        // Longer locales (EL/SQ/IT) wrap to a second line next
+                        // to the time picker, as the Android card does, instead
+                        // of shrinking and then truncating in a narrow pane.
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Button(action: onConnectCalendar) {
                         Label(calendarStatusText, systemImage: calendarStatusIcon)
                             .font(.caption2)

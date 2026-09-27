@@ -12,6 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The airport calendar card wraps its title.** "No saved airport trip" in
+  Greek, Albanian or Italian shrank and then truncated beside the time
+  picker on iOS; it wraps to a second line now, as it already did on
+  Android.
+
 - **Airport tiles keep their status word whole.** In a paired pane the
   Greek "Προγραμματισμένο" broke mid-word beside the line pill; the status
   now drops to its own line as a whole on both platforms.

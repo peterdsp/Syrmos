@@ -1199,6 +1199,19 @@ compresses) had not reached this tile.
 - **Verified**: feature/schedule compile, iOS build; on the Pixel fold in
   Greek the tiles now read "M3" over "Προγραμματισμένο" on its own line.
 
+## Landed: polish round 31 (airport calendar card title)
+
+Source: the Greek Airport walk on the iPad after round 30. The calendar
+hub's planned-departure card read "Δεν υπάρχει αποθηκευμένο τα..." beside
+the time picker: iOS had `lineLimit(1)` with `minimumScaleFactor(0.8)`,
+which shrinks first and truncates anyway once the pane is narrow, while
+the Android card had `maxLines = 2`.
+
+- **Fix**: iOS takes `lineLimit(2)` with `fixedSize(horizontal: false,
+  vertical: true)` and drops the scale factor; both platforms now wrap the
+  title to two lines at the same weight.
+- **Verified**: iOS build; the iPad Airport hub in Greek (below).
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
