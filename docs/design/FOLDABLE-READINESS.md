@@ -1250,6 +1250,41 @@ closed the panel and, reopened, the field was empty.
   `Cmd line: com.syrmos.android` and check the `"main"` thread before
   treating a dialog as an app hang.
 
+## Landed: polish round 35 (offline during a fold, 12.1 #18)
+
+Source: the network cut on the Pixel fold. A few seconds offline the board
+is honest (source chip "Εκτίμηση", then "Πρόγραμμα"); at 100 seconds the
+header still said "● Ζωντανά" while the chip said "Πρόγραμμα", and the
+hero read "8 min" in a Greek UI whose rows said "7 λεπ".
+
+- **Hero units**: `heroCountdown` (core/designsystem) hard-coded "min"/"h";
+  it takes the reader's abbreviations now (`minAbbr`/`hAbbr`, "λεπ"/"ω" in
+  Greek), the twin of iOS `heroCountdownText`, with `HeroCountdownTest`
+  (the module gained a test source set for it).
+- **Pill stuck on Live (root cause)**: the pill was still "Ζωντανά" 110
+  seconds offline with every live poll failing. `STASYAnnouncementService`
+  returned an empty feed on a failed fetch, and `AnnouncementsRepository`
+  stamped `markLive()` on any feed it received, so each failed refresh
+  renewed the live timestamp. The fetch now yields `null` on failure and
+  the repository stamps only a real feed (an empty feed on a quiet day still
+  counts); `STASYAnnouncementServiceFailureTest` covers both with a Ktor
+  mock engine (the network module gained `ktor-client-mock`). iOS was
+  already correct: it stamps only after a successful decode.
+- **Pill lag**: the Home view model also ignored the platform's instant
+  network flag and re-evaluated on a 60-second tick against a 90-second
+  window. It now reads offline the moment `isNetworkAvailable` drops, and
+  ticks every 15 seconds while live (60 once predicted); iOS's ticker goes
+  from 30 to 15 seconds for the same lag.
+- **Header layout**: with the long offline pill beside the ICHNOS context
+  tag the header folded into three lines in a 380 dp pane; the header is a
+  `FlowRow` with `SpaceBetween`, so the pill drops whole to its own line
+  under the tag when the two do not fit side by side.
+- **Verified**: HeroCountdownTest 2/2, STASYAnnouncementServiceFailureTest
+  2/2, the full KMP unit suite, Compose app compile, wasm and iOS-simulator
+  compiles of the changed modules, iOS build. On the Pixel fold in Greek the
+  hero reads "4 λεπ"; twenty seconds after the network drops the header
+  reads "Εκτός σύνδεσης · Πρόβλεψη από το πρόγραμμα" on its own line, and
+  "Ζωντανά" returns once the network is back.
 ## Landed: polish round 34 (twenty posture cycles with GO running)
 
 Source: acceptance rows 12.1 #11 and #12, which had only the single

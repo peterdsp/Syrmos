@@ -122,14 +122,21 @@ class STASYAnnouncementService(
     private val json = Json { ignoreUnknownKeys = true }
 
     fun fetchAnnouncements(): Flow<List<STASYAnnouncement>> = flow {
-        emit(fetchFeedOnce().announcements)
+        emit(fetchFeedOnce()?.announcements ?: emptyList())
     }
 
-    fun fetchFeed(): Flow<STASYFeed> = flow {
+    /**
+     * One fetch of the live feed, or `null` when the network call failed. The
+     * failure used to surface as an empty feed, which the repository could
+     * not tell apart from a quiet day and stamped as a live fetch, so the
+     * home "Live" pill stayed lit offline for as long as refreshes kept
+     * failing.
+     */
+    fun fetchFeed(): Flow<STASYFeed?> = flow {
         emit(fetchFeedOnce())
     }
 
-    private suspend fun fetchFeedOnce(): STASYFeed {
+    private suspend fun fetchFeedOnce(): STASYFeed? {
         return try {
             val response = httpClient.get(ANNOUNCEMENTS_URL)
             val body = response.bodyAsText()
@@ -172,7 +179,7 @@ class STASYAnnouncementService(
             }
             STASYFeed(status, items)
         } catch (_: Exception) {
-            STASYFeed(null, emptyList())
+            null
         }
     }
 
