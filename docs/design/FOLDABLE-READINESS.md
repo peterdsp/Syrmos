@@ -1299,6 +1299,23 @@ recreation evidence from round 12.
 - **Scope**: window-size recreation on a phone AVD; a foldable AVD's
   FoldingFeature transitions remain unexercised.
 
+## Landed: polish round 39 (Home cover renders in Greek and Albanian)
+
+- **Added**: `home-duo-cover-albanian` and `home-duo-cover-greek` in
+  `DuoSnapshotTests`, through a shared `renderCover(_:in:)` that switches
+  the language manager and restores it. Home reads the shared manager, so
+  the Explore helper generalised.
+- **Result**: clean. The board fits 466 pt in both: "GJENDJA JOTE ICHNOS /
+  Drejtpërdrejt" and "Η ΚΑΤΑΣΤΑΣΗ ICHNOS / Ζωντανά" on one line, the hero,
+  the four departure rows, the source chip and both track buttons side by
+  side ("Παρακολούθηση" and "Παρακολούθηση συρμού" fit without wrapping on
+  iOS; Android wraps the second inside its button, which is a label).
+- **Parity check**: the living-map strip says "N live" in Albanian and
+  Italian on both platforms and "N ζωντανά" in Greek; consistent, so left.
+- **Observation, not changed**: a small green dot floats in the hero's
+  header row in every language, including the existing English render; it
+  is the pulse indicator's frame at capture time, not a layout fault, and
+  is noted here so a later reviewer does not chase it as a regression.
 ## Landed: polish round 36 (unlabeled controls, 12.1 #16)
 
 Source: TalkBack is on the emulator image but cannot be driven reliably

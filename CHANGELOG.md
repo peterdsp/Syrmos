@@ -12,6 +12,9 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Home on the folded cover is captured in Greek and Albanian too.** Two
+  more render tests join the GO and Explore covers; both captures are
+  clean, with the Greek track buttons side by side and every chip whole.
 - **The iOS map stays on the network when you are far from it.** With
   location allowed, the Map tab used to centre on you wherever you were,
   so a traveller planning from abroad opened on an empty map. The automatic
