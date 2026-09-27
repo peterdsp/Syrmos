@@ -67,9 +67,10 @@ class AnnouncementsRepository(
 
     /** Live refresh from /api/announcements. Silent on network failure. */
     suspend fun refresh() {
+        // Null means the network call failed: nothing reached the API, so the
+        // home pill must not be stamped live. A real feed, even an empty one on
+        // a quiet day, did reach it.
         val latest = service.fetchFeed().firstOrNull() ?: return
-        // The feed came back from the network, so something reached the API.
-        // Record it so the home offline-alive pill flips to "live".
         LiveDataFreshness.markLive()
         if (latest.status != null || latest.announcements.isNotEmpty()) {
             updateFeed(latest)

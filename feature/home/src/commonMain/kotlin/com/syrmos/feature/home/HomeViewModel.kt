@@ -107,20 +107,36 @@ class HomeViewModel(
         scope.launch { runCatching { weatherRepository.refresh() } }
     }
 
+    /** Live only when the device has a network and a live fetch landed inside the window. */
+    private fun currentFreshness(): DataFreshness =
+        if (!LiveDataFreshness.isNetworkAvailable.value) DataFreshness.PREDICTED else LiveDataFreshness.freshnessNow()
+
     private fun observeFreshness() {
         scope.launch {
             LiveDataFreshness.lastLiveUpdate.collect {
-                _uiState.update { state -> state.copy(freshness = LiveDataFreshness.freshnessNow()) }
+                _uiState.update { state -> state.copy(freshness = currentFreshness()) }
+            }
+        }
+        scope.launch {
+            // The platform's connectivity observer is the instant signal: the
+            // moment the default network goes away the pill reads offline,
+            // instead of waiting for the last live fetch to age out.
+            LiveDataFreshness.isNetworkAvailable.collect {
+                _uiState.update { state -> state.copy(freshness = currentFreshness()) }
             }
         }
         scope.launch {
             while (true) {
-                val freshness = LiveDataFreshness.freshnessNow()
+                val freshness = currentFreshness()
                 _uiState.update { state -> state.copy(freshness = freshness) }
                 if (freshness == DataFreshness.PREDICTED) {
                     triggerConnectivityProbe()
                 }
-                delay(60_000)
+                // While live, re-check often enough that the pill flips within
+                // seconds of the 90-second window closing (a 60-second tick let
+                // "Live" outlive the window by up to a minute offline). Once
+                // predicted, the slower cadence is the connectivity probe's.
+                delay(if (freshness == DataFreshness.LIVE) 15_000 else 60_000)
             }
         }
         scope.launch {

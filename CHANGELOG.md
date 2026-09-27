@@ -12,6 +12,14 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The Home hero counts in your language and the Live pill flips on time.**
+  The big countdown on Android read "8 min" in a Greek UI where the rows
+  said "8 λεπ"; it uses the same abbreviations now (λεπ and ω), as iOS
+  already did. Offline, "Live" stayed lit on Android because a failed
+  announcements refresh was counted as a live fetch; it is not any more,
+  the board reads offline the moment the network drops, and both platforms
+  re-check every 15 seconds while live.
+
 - **The airport calendar card wraps its title.** "No saved airport trip" in
   Greek, Albanian or Italian shrank and then truncated beside the time
   picker on iOS; it wraps to a second line now, as it already did on

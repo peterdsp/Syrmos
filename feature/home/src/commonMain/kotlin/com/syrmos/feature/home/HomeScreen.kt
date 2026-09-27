@@ -794,7 +794,7 @@ private fun AnswerHero(
                 val athensNow = currentAthensTime()
                 val departure = parseTime(next.time)
                 val secsAway = athensNow.secondsUntil(departure)
-                val countdown = heroCountdown(secsAway, L.NOW.text(lang))
+                val countdown = heroCountdown(secsAway, L.NOW.text(lang), minuteLabel = minAbbr(lang), hourLabel = hAbbr(lang))
                 val countdownColor = heroCountdownColor(countdown, accent)
 
                 Text(
