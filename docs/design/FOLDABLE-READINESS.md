@@ -1373,6 +1373,23 @@ card reading "389 stations" while the list header counted 394.
   Compose app compile, iOS build; on the Pixel fold the card reads the
   list's own count (below).
 
+## Landed: polish round 40 (Italian walk on the fold; the translation gap)
+
+- **Italian on the Pixel fold**: Home ("IL TUO STATO ICHNOS / Live",
+  "Traccia / Traccia un treno", "Programmato"), Explore ("Esplora tutte le
+  394 stazioni" with the live count, "Metro, tram, suburbano e intercity"
+  on one line) and Airport ("M3 Programmato ›", "Servizi aeroportuali",
+  the calendar card, "In tempo reale" chips) all fit and read correctly.
+  Nothing to change.
+- **Found, not a client fault**: the "Cosa conta adesso" cards show Greek
+  text in the Italian UI. Both clients fall back Italian to English to
+  Greek (`bestText(titleIt, titleEn, title)` on Android, the same chain in
+  `STASYService.swift`), and the live `/api/announcements` feed today has
+  five items with no `titleEn` and no `titleIt` at all, so the server-side
+  translation step (the Ariadne translation backend) has not produced any
+  translation for the current items. Every non-Greek reader sees Greek
+  alerts until it runs again. This needs the server, not the apps.
+
 ## Build gating: the native ArrangementView path (SYRMOS_DUO_SDK)
 
 `ArrangementView` and its modifiers are iOS 27.1 **SDK** symbols. `#available(iOS
