@@ -17,6 +17,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -722,6 +724,7 @@ private fun emergencyLabelOASA(lang: AppLanguage): String = when (lang) {
 
 // MARK: Answer-first hero
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AnswerHero(
     next: UpcomingDeparture?,
@@ -773,9 +776,14 @@ private fun AnswerHero(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
+            // Context tag and freshness pill side by side when they fit; in a
+            // narrow pane the long offline pill ("Εκτός σύνδεσης · Πρόβλεψη
+            // από το πρόγραμμα") drops to its own line instead of folding into
+            // three beside the tag.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 PulseContextTag(
                     text = pulseContextLabel(
@@ -786,7 +794,6 @@ private fun AnswerHero(
                     ),
                     color = stateColor,
                 )
-                Spacer(modifier = Modifier.weight(1f))
                 FreshnessPill(freshness = freshness, lang = lang)
             }
 

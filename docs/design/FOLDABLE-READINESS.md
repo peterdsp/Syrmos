@@ -1275,11 +1275,16 @@ hero read "8 min" in a Greek UI whose rows said "7 λεπ".
   window. It now reads offline the moment `isNetworkAvailable` drops, and
   ticks every 15 seconds while live (60 once predicted); iOS's ticker goes
   from 30 to 15 seconds for the same lag.
-- **Verified**: HeroCountdownTest 2/2, Compose app compile, iOS build; on
-  the Pixel fold in Greek the hero reads in λεπ and, offline, the pill
-  flips to "Λειτουργία εκτός σύνδεσης · Πρόβλεψη από το πρόγραμμα" within
-  seconds of the network dropping and back to "Ζωντανά" after it returns
-  (below); STASYAnnouncementServiceFailureTest 2/2.
+- **Header layout**: with the long offline pill beside the ICHNOS context
+  tag the header folded into three lines in a 380 dp pane; the header is a
+  `FlowRow` with `SpaceBetween`, so the pill drops whole to its own line
+  under the tag when the two do not fit side by side.
+- **Verified**: HeroCountdownTest 2/2, STASYAnnouncementServiceFailureTest
+  2/2, the full KMP unit suite, Compose app compile, wasm and iOS-simulator
+  compiles of the changed modules, iOS build. On the Pixel fold in Greek the
+  hero reads "4 λεπ"; twenty seconds after the network drops the header
+  reads "Εκτός σύνδεσης · Πρόβλεψη από το πρόγραμμα" on its own line, and
+  "Ζωντανά" returns once the network is back.
 ## Landed: polish round 34 (twenty posture cycles with GO running)
 
 Source: acceptance rows 12.1 #11 and #12, which had only the single
