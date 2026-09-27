@@ -17,6 +17,9 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
   so a traveller planning from abroad opened on an empty map. The automatic
   recentre now happens only inside Greece; the Locate button still goes to
   you anywhere. Android never auto-followed.
+- **"Browse all stations" counts the real list.** The Explore card said 389
+  while the list it opens holds 394; the label now carries the live count on
+  both platforms and drops the number until the stations have loaded.
 
 - **Screen readers get names for the last unlabeled controls on Android.**
   The Explore search field announces its hint instead of a bare edit box,

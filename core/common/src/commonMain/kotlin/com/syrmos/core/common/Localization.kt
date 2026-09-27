@@ -699,10 +699,12 @@ enum class L {
             else -> "Your Network"
         }
         BROWSE_ALL_STATIONS -> when (lang) {
-            AppLanguage.GREEK -> "Περιήγηση σε όλους τους 389 σταθμούς"
-            AppLanguage.ALBANIAN -> "Shfleto të gjitha 389 stacionet"
-            AppLanguage.ITALIAN -> "Esplora tutte le 389 stazioni"
-            else -> "Browse all 389 stations"
+            // {n} is the live station count (see browseAllStationsLabel); the
+            // number used to be typed in and drifted from the real list.
+            AppLanguage.GREEK -> "Περιήγηση σε όλους τους {n} σταθμούς"
+            AppLanguage.ALBANIAN -> "Shfleto të gjitha {n} stacionet"
+            AppLanguage.ITALIAN -> "Esplora tutte le {n} stazioni"
+            else -> "Browse all {n} stations"
         }
         DEST_AIRPORT -> when (lang) {
             AppLanguage.GREEK -> "Αεροδρόμιο Αθηνών"

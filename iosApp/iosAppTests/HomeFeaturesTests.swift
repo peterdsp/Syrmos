@@ -236,3 +236,22 @@ final class IchnosScopeLabelTests: XCTestCase {
     }
 }
 
+// MARK: - Browse-all station count (twin of StationCountLabelTest in core/common)
+
+final class StationCountLabelTests: XCTestCase {
+    func testTheRealCountIsWrittenIntoEveryLanguage() {
+        XCTAssertEqual(browseAllStationsLabel(count: 394, .english), "Browse all 394 stations")
+        XCTAssertEqual(browseAllStationsLabel(count: 394, .greek), "Περιήγηση σε όλους τους 394 σταθμούς")
+        XCTAssertEqual(browseAllStationsLabel(count: 394, .albanian), "Shfleto të gjitha 394 stacionet")
+        XCTAssertEqual(browseAllStationsLabel(count: 394, .italian), "Sfoglia tutte le 394 stazioni")
+    }
+
+    func testBeforeTheStationsLoadTheNumberIsDropped() {
+        XCTAssertEqual(browseAllStationsLabel(count: 0, .english), "Browse all stations")
+        for language in AppLanguage.allCases {
+            XCTAssertFalse(browseAllStationsLabel(count: 0, language).contains("0"), language.rawValue)
+            XCTAssertFalse(browseAllStationsLabel(count: 0, language).contains("{n}"), language.rawValue)
+        }
+    }
+}
+
