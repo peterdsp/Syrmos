@@ -12,6 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **The iOS map stays on the network when you are far from it.** With
+  location allowed, the Map tab used to centre on you wherever you were,
+  so a traveller planning from abroad opened on an empty map. The automatic
+  recentre now happens only inside Greece; the Locate button still goes to
+  you anywhere. Android never auto-followed.
 - **"Browse all stations" counts the real list.** The Explore card said 389
   while the list it opens holds 394; the label now carries the live count on
   both platforms and drops the number until the stations have loaded.
