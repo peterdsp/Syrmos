@@ -119,6 +119,37 @@ struct TimetablesView: View {
     @State private var nowTick = SyrmosClock.now
     @StateObject private var calendarStore = AirportCalendarStore()
 
+    init() {
+        // Phase B scene restoration: seed the day-plan selection from the last
+        // session so a background return or cold launch lands where the user was,
+        // not on Athens / M3 / today. Seeded in init (not onAppear) so the city
+        // change does not fire its route-reset onChange over the restored route.
+        if case .ok(let restored) = DeparturesRestorationContract.decode(
+            SceneRestorationStore.load(DeparturesRestorationContract.storageKey)
+        ) {
+            _dayOffset = State(initialValue: max(0, min(6, restored.dayOffset)))
+            if let raw = restored.selectedCity, let city = AirportCity(rawValue: raw) {
+                _selectedCity = State(initialValue: city)
+            }
+            if let route = restored.selectedRoute, !route.isEmpty {
+                _selectedRoute = State(initialValue: route)
+            }
+        }
+    }
+
+    private func persistRestoration() {
+        SceneRestorationStore.save(
+            DeparturesRestorationContract.storageKey,
+            DeparturesRestorationContract.encode(
+                DeparturesRestorationState(
+                    selectedCity: selectedCity.rawValue,
+                    selectedRoute: selectedRoute,
+                    dayOffset: dayOffset
+                )
+            )
+        )
+    }
+
     private var hub: AirportHub { AirportHub.hub(selectedCity) }
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
@@ -181,10 +212,15 @@ struct TimetablesView: View {
             .onChange(of: selectedCity) { _, _ in
                 selectedRoute = "M3"
                 reload()
+                persistRestoration()
+            }
+            .onChange(of: selectedRoute) { _, _ in
+                persistRestoration()
             }
             .onChange(of: dayOffset) { _, _ in
                 reload()
                 if let event = selectedCalendarEvent { flightTime = event.startDate }
+                persistRestoration()
             }
             .onChange(of: selectedCalendarEvent) { _, event in
                 if let event { flightTime = event.startDate }
