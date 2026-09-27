@@ -32,7 +32,11 @@ val featureModule = module {
             railNews = get(),
         )
     }
-    factory {
+    // single, not factory: the assistant is hosted by the shell, and on a
+    // window-size change (fold, unfold, resize) the activity is recreated;
+    // a factory handed the new shell a fresh view model and the conversation
+    // and the unsent draft were lost (12.1 #14). One instance keeps both.
+    single {
         AssistantViewModel(
             stationRepository = get(),
             getLinesUseCase = get(),

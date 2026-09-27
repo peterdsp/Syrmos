@@ -72,6 +72,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.syrmos.app.platform.consumePendingAssistantQuery
 import com.syrmos.app.platform.markOnboardingCompleted
@@ -201,7 +202,7 @@ fun SyrmosApp() {
                             val initialTab = remember { tabFromId(readSelectedTabId()) }
                             TabNavigator(initialTab) {
                                 val pendingQuery = remember { consumePendingAssistantQuery() }
-                                var showAriadne by remember { mutableStateOf(pendingQuery != null) }
+                                var showAriadne by rememberSaveable { mutableStateOf(pendingQuery != null) }
                                 androidx.compose.runtime.CompositionLocalProvider(
                                     LocalAriadneOpener provides { showAriadne = true }
                                 ) {

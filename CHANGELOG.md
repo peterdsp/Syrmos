@@ -12,6 +12,12 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Ariadne keeps your question through a fold or resize on Android.** The
+  assistant's conversation and an unsent question used to vanish when the
+  window changed size, because the shell was handed a fresh assistant. It
+  is one instance now, the draft lives with it, and the panel's open state
+  is restored after the change.
+
 - **The airport calendar card wraps its title.** "No saved airport trip" in
   Greek, Albanian or Italian shrank and then truncated beside the time
   picker on iOS; it wraps to a second line now, as it already did on
