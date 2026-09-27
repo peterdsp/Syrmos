@@ -596,11 +596,11 @@ private fun CalendarHub(
                     }
                 }
                 IconButton(onClick = { onFlightMinutesChanged(flightMinutes - 10) }, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Filled.Remove, null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Remove, airportText(lang, "Ten minutes earlier", "Δέκα λεπτά νωρίτερα", "Dhjetë minuta më herët", "Dieci minuti prima"), modifier = Modifier.size(18.dp))
                 }
                 Text(clockString(flightMinutes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SyrmosColorTokens.metroBlue)
                 IconButton(onClick = { onFlightMinutesChanged(flightMinutes + 10) }, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Add, airportText(lang, "Ten minutes later", "Δέκα λεπτά αργότερα", "Dhjetë minuta më vonë", "Dieci minuti dopo"), modifier = Modifier.size(18.dp))
                 }
             }
         }

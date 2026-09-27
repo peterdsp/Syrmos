@@ -12,6 +12,11 @@ Product direction: Syrmos is a companion, not a schedule. Every feature is measu
 
 ## Unreleased
 
+- **Screen readers get names for the last unlabeled controls on Android.**
+  The Explore search field announces its hint instead of a bare edit box,
+  and the airport calendar card's minus and plus buttons say "Ten minutes
+  earlier" and "Ten minutes later" in the app's language.
+
 - **The Home hero counts in your language and the Live pill flips on time.**
   The big countdown on Android read "8 min" in a Greek UI where the rows
   said "8 λεπ"; it uses the same abbreviations now (λεπ and ω), as iOS
