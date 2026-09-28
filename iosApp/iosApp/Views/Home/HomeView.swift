@@ -14,6 +14,7 @@ struct HomeView: View {
     @ObservedObject private var tracking = DepartureTracking.shared
     @ObservedObject private var weather = WeatherStore.shared
     @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var navigationPath = NavigationPath()
     @State private var webViewURL: URL?
     @State private var isNearMeExpanded = true
@@ -899,11 +900,17 @@ struct HomeView: View {
                         .font(.subheadline.weight(isFeatured ? .semibold : .regular))
                         .lineLimit(1)
                     Spacer(minLength: 8)
+                    // At accessibility text sizes a second countdown cannot fit
+                    // beside the (already truncated) destination and the two times
+                    // collide, so show only the soonest one there.
+                    let shownTimes = dynamicTypeSize.isAccessibilitySize ? Array(row.times.prefix(1)) : row.times
                     HStack(spacing: 6) {
-                        ForEach(Array(row.times.enumerated()), id: \.offset) { tIdx, time in
+                        ForEach(Array(shownTimes.enumerated()), id: \.offset) { tIdx, time in
                             Text(boardCountdown(time.minutesAway))
                                 .font(tIdx == 0 ? .subheadline.weight(.bold) : .subheadline)
                                 .monospacedDigit()
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                                 .foregroundStyle(tIdx == 0 ? (time.minutesAway <= 1 ? SyrmosTokens.arrivalImminent : accent) : Color.secondary)
                         }
                     }
