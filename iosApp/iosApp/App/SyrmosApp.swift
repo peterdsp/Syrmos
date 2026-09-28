@@ -205,7 +205,7 @@ struct ContentView: View {
                 // and follow the keyboard when a field becomes active.
                 HomeView()
                     .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
+                    .overlay(alignment: .bottomTrailing) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.home], systemImage: "house")
                     }
@@ -213,8 +213,7 @@ struct ContentView: View {
 
                 LinesView()
                     .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
-                    // Explore hosts its own opaque Plan-pill band (finding 4a).
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher(occluding: false) }
+                    .overlay(alignment: .bottomTrailing) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.explore], systemImage: "safari")
                     }
@@ -228,7 +227,7 @@ struct ContentView: View {
 
                 TimetablesView()
                     .modifier(ReadableTabContent(maximum: ReadableTabContent.pairedMaximumWidth))
-                    .safeAreaInset(edge: .bottom, spacing: 0) { assistantLauncher() }
+                    .overlay(alignment: .bottomTrailing) { assistantLauncher() }
                     .tabItem {
                         Label(loc[.departures], systemImage: "airplane")
                     }
@@ -285,19 +284,13 @@ struct ContentView: View {
         }
     }
 
-    // The launcher is a bottom safe-area inset that reserves its height, but a
-    // ScrollView still bleeds its lower rows into that band, so a scrolled airport
-    // route-overview strip showed its tail labels half-under the owl (finding 4b).
-    // When `occluding` is true the band carries a full-width opaque backing so that
-    // bleed is cleanly occluded instead of competing with the button. The backing
-    // is NOT hit-testable, so taps pass straight through the empty region exactly
-    // as before (an earlier hit-testable opaque bar swallowed taps meant for the
-    // content underneath); only the owl pill itself, drawn on top, takes a tap.
-    //
-    // Explore passes `occluding: false`: it hosts its own opaque Plan-pill band
-    // just above this launcher (finding 4a), which already occludes the bleed, and
-    // a second opaque band here would paint over that Plan pill.
-    private func assistantLauncher(occluding: Bool = true) -> some View {
+    // The launcher floats over the bottom-trailing corner of the tab content, above
+    // the tab bar. It used to be a full-width bottom safe-area inset with an opaque
+    // backing band, which reserved an empty strip across the whole width above the
+    // nav bar (the owl sits only on the right). Floating it keeps the owl in reach
+    // without that empty band; the pill carries its own opaque circular background,
+    // so scrolled content reads cleanly behind it.
+    private func assistantLauncher() -> some View {
         AriadneLauncherPill(
             label: askAriadneLabel,
             // Toggle, not set: on a regular width the pill stays visible beside the
@@ -305,19 +298,8 @@ struct ContentView: View {
             // not take (a tap during launch) is recoverable with the next tap.
             onTap: { showAriadne.toggle() }
         )
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(maxWidth: ReadableTabContent.maximumWidth)
-        .frame(maxWidth: .infinity)
-        .background(alignment: .top) {
-            if occluding {
-                Color.syrmosBackground
-                    .ignoresSafeArea(edges: .bottom)
-                    .overlay(alignment: .top) { Divider().opacity(0.12) }
-                    .allowsHitTesting(false)
-            }
-        }
+        .padding(.trailing, 16)
+        .padding(.bottom, 12)
     }
 
     private var askAriadneLabel: String {
