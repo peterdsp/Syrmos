@@ -174,6 +174,22 @@ final class SceneRestorationContractsTests: XCTestCase {
             backgroundedAt: SceneRestorationBackground.lastBackgrounded(defaults: defaults), now: now))
     }
 
+    // MARK: Map camera (Phase D)
+
+    func testMapRoundTrip() {
+        let s = MapRestorationState(centerLat: 37.98, centerLon: 23.73, latDelta: 0.2, lonDelta: 0.3)
+        XCTAssertEqual(MapRestorationContract.decode(MapRestorationContract.encode(s)), .ok(s))
+    }
+
+    func testMapValidityRejectsGarbage() {
+        XCTAssertTrue(MapRestorationState(centerLat: 37.98, centerLon: 23.73, latDelta: 0.2, lonDelta: 0.3).isValid)
+        XCTAssertFalse(MapRestorationState(centerLat: .nan, centerLon: 23.73, latDelta: 0.2, lonDelta: 0.3).isValid)
+        XCTAssertFalse(MapRestorationState(centerLat: 91, centerLon: 23.73, latDelta: 0.2, lonDelta: 0.3).isValid)
+        XCTAssertFalse(MapRestorationState(centerLat: 37.98, centerLon: 200, latDelta: 0.2, lonDelta: 0.3).isValid)
+        XCTAssertFalse(MapRestorationState(centerLat: 37.98, centerLon: 23.73, latDelta: 0, lonDelta: 0.3).isValid)
+        XCTAssertFalse(MapRestorationState(centerLat: 37.98, centerLon: 23.73, latDelta: 0.2, lonDelta: -1).isValid)
+    }
+
     func testPushExistsMatchesKind() {
         let station = RestorablePush(kind: RestorablePushKind.station, id: "A1_AIR")
         XCTAssertTrue(station.exists(stationExists: { $0 == "A1_AIR" }, lineExists: { _ in false }))

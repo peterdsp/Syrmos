@@ -235,3 +235,40 @@ enum DeparturesRestorationContract {
         SceneRestorationCodec.decode(raw, schemaVersion: schemaVersion, as: DeparturesRestorationState.self)
     }
 }
+
+// MARK: - Map
+
+/// The map camera: centre plus span, as plain doubles so this stays MapKit-free
+/// and unit-testable. The Map tab treats the camera as a deep push (freshness
+/// gated): a recent background return keeps the last view, a cold or old launch
+/// lets the map auto-recentre on the user. The selected-station callout is a modal
+/// sheet and is intentionally not restored, so the app never opens a sheet on
+/// launch.
+struct MapRestorationState: Codable, Equatable {
+    var centerLat: Double
+    var centerLon: Double
+    var latDelta: Double
+    var lonDelta: Double
+
+    /// Guards against a NaN, an out-of-range coordinate or a degenerate span from a
+    /// corrupt blob before it is handed to MapKit.
+    var isValid: Bool {
+        centerLat.isFinite && centerLon.isFinite && latDelta.isFinite && lonDelta.isFinite
+            && abs(centerLat) <= 90 && abs(centerLon) <= 180
+            && latDelta > 0 && latDelta <= 180
+            && lonDelta > 0 && lonDelta <= 360
+    }
+}
+
+enum MapRestorationContract {
+    static let schemaVersion = 1
+    static let storageKey = "syrmos.restore.map.v1"
+
+    static func encode(_ state: MapRestorationState) -> String {
+        SceneRestorationCodec.encode(state, schemaVersion: schemaVersion)
+    }
+
+    static func decode(_ raw: String?) -> RestorationDecode<MapRestorationState> {
+        SceneRestorationCodec.decode(raw, schemaVersion: schemaVersion, as: MapRestorationState.self)
+    }
+}
