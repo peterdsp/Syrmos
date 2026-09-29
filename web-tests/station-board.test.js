@@ -227,3 +227,91 @@ test('board: an empty input is an empty board, not a crash', () => {
   assert.equal(board.partial, false);
   assert.equal(board.timedGroupCount, 0);
 });
+
+// ------------------------------------------------- real trip interpretation
+
+const bundle = (id) => JSON.parse(
+  fs.readFileSync(path.join(ROOT, `iosApp/iosApp/Resources/seed-schedules-v2/${id}.json`), 'utf8'),
+);
+
+test('trips: travel order is derived from times, not from array order', () => {
+  // The suburban A-lines list an inbound trip's stops in outbound geographic
+  // order, so the array descends in time. Reading it blindly produced "Athens
+  // to Athens".
+  const a3 = bundle('A3').trips.find((t) => t.trainNo === '1531');
+  const order = Board.tripTravelOrder(a3);
+  assert.equal(order.reversed, true, 'A3 inbound array is reversed relative to travel');
+  assert.equal(order.stops[order.stops.length - 1].stationId, 'A3_ATH', 'the trip ends at Athens');
+  // The intercity corridor already lists them in travel order.
+  const ic = bundle('IC1').trips.find((t) => t.trainNo === 'IC51');
+  const icOrder = Board.tripTravelOrder(ic);
+  assert.equal(icOrder.reversed, false);
+  assert.equal(icOrder.stops[icOrder.stops.length - 1].stationId, 'GR_ATH');
+});
+
+test('trips: a terminal arrival at this stop is not a departure', () => {
+  // IC51 ENDS at Athens, so standing at GR_ATH it offers nothing to board.
+  const ic51 = bundle('IC1').trips.find((t) => t.trainNo === 'IC51');
+  assert.equal(Board.tripBoarding(ic51, 'GR_ATH').boardsHere, false);
+  // IC50 leaves Athens for Thessaloniki, so it does.
+  const ic50 = bundle('IC1').trips.find((t) => t.trainNo === 'IC50');
+  const boarding = Board.tripBoarding(ic50, 'GR_ATH');
+  assert.equal(boarding.boardsHere, true);
+  assert.equal(boarding.destinationStopId, 'GR_THE');
+});
+
+test('trips: derived destinations sit on the side the trip direction names', () => {
+  // The trip's own stop times are more specific than its `direction` flag: a
+  // short-turn inbound A1 train ends at Tavros, not at the Piraeus terminal.
+  // So the check is that the derived destination lies on the correct SIDE of
+  // the trip's origin, which catches a reversed reading without forcing every
+  // trip onto a terminal it never reaches.
+  const linesById = new Map(lines.map((l) => [l.id, l]));
+  let checked = 0;
+  let shortTurns = 0;
+  for (const id of ['A1', 'A2', 'A3', 'A4', 'IC1', 'RG1']) {
+    const line = linesById.get(id);
+    const ordered = (line.stations || []).map((s) => s.id);
+    for (const trip of bundle(id).trips || []) {
+      const order = Board.tripTravelOrder(trip);
+      if (!order) continue;
+      const originIdx = ordered.indexOf(order.stops[0].stationId);
+      const destIdx = ordered.indexOf(order.stops[order.stops.length - 1].stationId);
+      if (originIdx < 0 || destIdx < 0) continue;
+      if (trip.direction === 'inbound') {
+        assert.ok(destIdx < originIdx, `${id} ${trip.trainNo} inbound must travel toward ${line.terminalA}`);
+        if (destIdx !== 0) shortTurns++;
+      } else {
+        assert.ok(destIdx > originIdx, `${id} ${trip.trainNo} outbound must travel toward ${line.terminalB}`);
+        if (destIdx !== ordered.length - 1) shortTurns++;
+      }
+      checked++;
+    }
+  }
+  assert.ok(checked > 400, `expected a meaningful sample, checked ${checked}`);
+  assert.ok(shortTurns > 0, 'the bundled data really does contain short turns');
+});
+
+test('trips: a short turn keeps its own headsign instead of the line terminal', () => {
+  // A1 3201 runs Airport -> Tavros late at night and never reaches Piraeus.
+  // Labelling it "to Piraeus" from the direction flag would invent a headsign.
+  const trip = bundle('A1').trips.find((t) => t.trainNo === '3201');
+  const boarding = Board.tripBoarding(trip, 'A1_ATH');
+  assert.equal(boarding.destinationStopId, 'A1_TAY');
+  assert.equal(boarding.boardsHere, true);
+  assert.equal(boarding.departureMinutes, 23 * 60 + 2);
+  // And at its real terminus it offers nothing to board.
+  assert.equal(Board.tripBoarding(trip, 'A1_TAY').boardsHere, false);
+});
+
+test('directions: a terminal offers one direction, an intermediate stop two', () => {
+  const linesById = new Map(lines.map((l) => [l.id, l]));
+  const m2 = linesById.get('M2');
+  assert.deepEqual(
+    Board.lineDirectionsAt(m2, 'M2_STA').map((d) => d.destination).sort(),
+    ['Anthoupoli', 'Elliniko'],
+  );
+  assert.deepEqual(Board.lineDirectionsAt(m2, 'M2_ANT').map((d) => d.destination), ['Elliniko']);
+  assert.deepEqual(Board.lineDirectionsAt(m2, 'M2_ELL').map((d) => d.destination), ['Anthoupoli']);
+  assert.deepEqual(Board.lineDirectionsAt(m2, 'M1_PIR'), [], 'a stop not on the line offers nothing');
+});

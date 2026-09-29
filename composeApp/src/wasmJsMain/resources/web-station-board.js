@@ -184,6 +184,95 @@
     return order.map((id) => byId.get(id));
   }
 
+  // --------------------------------------------------- trip interpretation
+
+  // Minutes of day, or null.
+  function minutesOfDay(hhmm) {
+    const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || ''));
+    if (!m) return null;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
+    return h * 60 + min;
+  }
+
+  // A trip's stops in TRAVEL order, with minutes unwrapped past midnight.
+  //
+  // The bundled trip data is not consistent about array direction: the suburban
+  // A-lines list an inbound trip's stops in outbound geographic order (so the
+  // times descend), while the intercity and regional corridors list them in
+  // travel order. Reading the array blindly produced destinations like "a train
+  // from Athens to Athens". So the travel order is derived from the times, which
+  // are the same fact in both layouts, and the array order is only a tie break.
+  //
+  // Returns { stops: [{ stationId, minutes }], reversed } or null when the trip
+  // carries no usable times.
+  function tripTravelOrder(trip) {
+    const raw = (trip && trip.stops || [])
+      .map((s, i) => ({ stationId: s.stationId || s.station_id || s.id, index: i, minutes: minutesOfDay(s.departureTime || s.time) }))
+      .filter((s) => s.stationId && s.minutes != null);
+    if (raw.length < 2) return null;
+
+    // Unwrap a candidate ordering: every decrease is a midnight crossing. The
+    // real travel order is the one that needs no crossing, or the fewest.
+    function unwrap(list) {
+      let day = 0;
+      let crossings = 0;
+      const out = [];
+      for (let i = 0; i < list.length; i++) {
+        if (i > 0 && list[i].minutes + day < out[i - 1].minutes) { day += 24 * 60; crossings++; }
+        out.push({ stationId: list[i].stationId, index: list[i].index, minutes: list[i].minutes + day });
+      }
+      return { out, crossings, span: out[out.length - 1].minutes - out[0].minutes };
+    }
+
+    const forward = unwrap(raw);
+    const backward = unwrap(raw.slice().reverse());
+    // A real trip spans a few hours. The wrong orientation spans nearly a day
+    // because every step has to cross midnight, so the smaller span wins.
+    const useBackward = backward.crossings < forward.crossings ||
+      (backward.crossings === forward.crossings && backward.span < forward.span);
+    const chosen = useBackward ? backward : forward;
+    return { stops: chosen.out, reversed: useBackward };
+  }
+
+  // What this trip offers a rider standing at `stopId`.
+  //
+  //   { departureMinutes, destinationStopId, destinationIndex, boardsHere }
+  //
+  // `boardsHere` is false at the trip's own final stop: a terminal arrival is
+  // not a departure, and offering "to this very station" is the defect this
+  // check exists to prevent. It is also false when the stop is not served.
+  function tripBoarding(trip, stopId) {
+    const order = tripTravelOrder(trip);
+    if (!order) return null;
+    const idx = order.stops.findIndex((s) => s.stationId === stopId);
+    if (idx < 0) return null;
+    const last = order.stops[order.stops.length - 1];
+    return {
+      departureMinutes: order.stops[idx].minutes % (24 * 60),
+      absoluteMinutesOfTrip: order.stops[idx].minutes,
+      destinationStopId: last.stationId,
+      destinationIndex: order.stops.length - 1,
+      boardsHere: idx < order.stops.length - 1,
+    };
+  }
+
+  // Which directions a rider can actually leave in from `stopId` on a line whose
+  // ordered stop list is `orderedStopIds`. A terminal offers one direction, not
+  // two: projecting both is how a board invents a train to nowhere.
+  //
+  //   -> [{ destination, towardIndex }] using the line's own terminal names.
+  function lineDirectionsAt(line, stopId) {
+    const ordered = (line && line.stations || []).map((s) => s.id);
+    const idx = ordered.indexOf(stopId);
+    if (idx < 0) return [];
+    const out = [];
+    if (idx < ordered.length - 1 && line.terminalB) out.push({ destination: line.terminalB, towardIndex: ordered.length - 1 });
+    if (idx > 0 && line.terminalA) out.push({ destination: line.terminalA, towardIndex: 0 });
+    return out;
+  }
+
   // ------------------------------------------------------------- the board
 
   // Stable group id. Built from identity, never from an array offset: rows
@@ -373,7 +462,11 @@
       if (!k) continue;
       states[k] = (states[k] || 0) + 1;
     }
-    const partial = coverage.some((c) => c && c.state !== COVERAGE.LOADED);
+    // Partial means a service could not be READ, not that a service has no
+    // train in the window. A quiet night is complete information; a failed
+    // fetch is not, and conflating them would cry wolf every night.
+    const partial = coverage.some((c) => c &&
+      (c.state === COVERAGE.LOADING || c.state === COVERAGE.UNAVAILABLE));
 
     return {
       complexId: complex ? complex.id : '',
@@ -416,6 +509,10 @@
     fold,
     sourceRank,
     resolveComplexServices,
+    minutesOfDay,
+    tripTravelOrder,
+    tripBoarding,
+    lineDirectionsAt,
     complexForStop,
     memberStopIds,
     departureIdentity,

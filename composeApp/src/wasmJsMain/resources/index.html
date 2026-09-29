@@ -231,27 +231,9 @@
             <div id="searchResults" class="search-results"></div>
         </section>
 
-        <section id="answerHero" class="answer-hero">
-            <div class="answer-hero__overline">
-                <span id="heroOverline" class="answer-hero__station"></span>
-                <span id="heroLiveChip" class="live-chip" style="display:none">
-                    <span class="live-chip__dot"></span>
-                    <span class="live-chip__label">Live</span>
-                </span>
-            </div>
-            <div class="answer-hero__main">
-                <span id="heroBadge" class="line-badge" style="display:none"></span>
-                <span id="heroDestination" class="answer-hero__dest"></span>
-            </div>
-            <div class="answer-hero__countdown-row">
-                <span id="heroCountdown" class="answer-hero__countdown"></span>
-                <span id="heroMeta" class="answer-hero__meta"></span>
-            </div>
-            <div class="answer-hero__actions">
-                <button id="heroTrack" class="pill-button pill-button--primary" type="button" data-i18n="track">Track</button>
-                <button id="heroStation" class="pill-button pill-button--secondary" type="button" data-i18n="the_station">The station</button>
-            </div>
-        </section>
+        <!-- The all-directions station board. web-map.js fills this in, keyed by
+             stable group id, so a countdown tick never rebuilds the list. -->
+        <section id="answerHero" class="answer-hero station-board" aria-live="polite"></section>
 
         <section class="departures-card">
             <div class="departures-card__header" data-i18n="next_departures">Next departures</div>
@@ -550,6 +532,12 @@
      Kotlin StationGrouping. web-map.js uses it to collapse co-located same-name
      stops into one plan-selector option (finding 2). -->
 <script src="/web-station-grouping.js?v=1"></script>
+<!-- The station-complex all-directions board: reviewed complex membership,
+     per-service source reconciliation and stable group identity. Mirrored by the
+     Swift StationComplexBoard and the Kotlin StationComplexBoard against the
+     shared fixture. Loaded before web-map.js, which builds the Home board and the
+     station sheet from it. -->
+<script src="/web-station-board.js?v=1"></script>
 <!-- Pure itinerary ranking/dedup/cap (SyrmosJourneyRanker); mirrors Kotlin JourneyRanker. -->
 <script src="/web-journey-ranker.js?v=4"></script>
 <script src="/web-planner.js"></script>
