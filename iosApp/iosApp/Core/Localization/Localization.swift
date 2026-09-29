@@ -60,25 +60,54 @@ func countLabel(
     return "\(count) \(count == 1 ? forms.0 : forms.1)"
 }
 
+/// The Ichnos station prefix ("Ichnos at ", "Ichnos στο ", ...) in the reader's language.
+private func ichnosStationPrefix(_ language: AppLanguage) -> String {
+    switch language {
+    case .greek: return "Ichnos στο "
+    case .albanian: return "Ichnos në "
+    case .italian: return "Ichnos a "
+    case .english: return "Ichnos at "
+    }
+}
+
 /// An Ichnos report carries the label of the place it was made at, built in
 /// the reporter's language when it was submitted ("Ichnos at Florina") and
-/// served back verbatim. Until the server stores the station id instead, a
-/// reader in another language would see the reporter's language. This puts
-/// the station-form label back into the reader's language; any other form
-/// (a line or train context) is returned unchanged. Twin of
-/// `localizedScopeLabel` in core/common.
+/// served back verbatim. Until the reader can resolve the station id, this puts
+/// the station-form prefix back into the reader's language; the place name stays
+/// as the reporter wrote it. Any other form (a line or train context) is
+/// returned unchanged. Twin of `localizedScopeLabel` in core/common.
+///
+/// Prefer `resolvedScopeLabel` where a station lookup is available: it rebuilds
+/// the whole label, place name included, in the reader's language.
 func localizedScopeLabel(_ label: String, _ language: AppLanguage) -> String {
     let prefixes = ["Ichnos at ", "Ichnos στο ", "Ichnos në ", "Ichnos a "]
     guard let prefix = prefixes.first(where: { label.hasPrefix($0) }) else { return label }
-    let name = label.dropFirst(prefix.count)
-    let own: String
-    switch language {
-    case .greek: own = "Ichnos στο "
-    case .albanian: own = "Ichnos në "
-    case .italian: own = "Ichnos a "
-    case .english: own = "Ichnos at "
+    return ichnosStationPrefix(language) + label.dropFirst(prefix.count)
+}
+
+/// The permanent, id-based station label. When the reader's device can resolve
+/// the report's station id to a name in its own data, the whole label (prefix and
+/// place name) is built in the reader's language, independent of the reporter's
+/// language. Twin of `ichnosStationLabel` in core/common.
+func ichnosStationLabel(_ localizedStationName: String, _ language: AppLanguage) -> String {
+    ichnosStationPrefix(language) + localizedStationName
+}
+
+/// Resolves an Ichnos report label for the reader. If `localizedStationName`
+/// returns a name for the report's scope id (a known station in the reader's
+/// data), the label is rebuilt fully in the reader's language; otherwise it
+/// falls back to `localizedScopeLabel`, which only re-localizes the prefix.
+/// Twin of `resolveIchnosScopeLabel` in core/common.
+func resolvedScopeLabel(
+    scopeId: String,
+    scopeLabel: String,
+    _ language: AppLanguage,
+    localizedStationName: (String) -> String?
+) -> String {
+    if let name = localizedStationName(scopeId) {
+        return ichnosStationLabel(name, language)
     }
-    return own + name
+    return localizedScopeLabel(scopeLabel, language)
 }
 
 /// "Browse all 394 stations" with the real count. The number used to be typed
