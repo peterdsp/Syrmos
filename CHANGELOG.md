@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 uses **226**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-226; the next release must use 227+.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 uses **230**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-230; the next release must use 231+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
@@ -11,6 +11,35 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
 ## Unreleased
+
+## 3.0.0-beta.7 - 2026-09-30
+
+Scene state restoration on iOS, the Ichnos read-path localization, and a
+round of accessibility and layout fixes across iOS and web. Android
+versionCode 230.
+
+- **The app returns you where you left off.** After the app is sent to the
+  background and reopened, or after a relaunch, Departures keeps its airport,
+  city, route and day; Explore keeps its region and type filters and, within
+  a short window, the line detail you had open; Home keeps the nearby station
+  you had selected; and the Map keeps its camera instead of snapping back to
+  Athens. Deep links from a notification still take precedence, and a stale
+  place is dropped rather than restored. Only the selected tab was kept before.
+- **Ichnos reports read in your language, whoever filed them.** A report made
+  in Greek now shows its station name in English, Albanian or Italian for
+  those readers, resolved from the stored station id rather than the
+  reporter's own text; a line or train context is left as written.
+- **iOS: the assistant floats instead of an empty bar above the tab bar.** The
+  Ariadne launcher reserved an empty strip across the whole width above the
+  navigation bar; it now floats in the bottom-right corner and content runs
+  down to the tab bar.
+- **iOS: the Home board stays readable at large accessibility text.** Two
+  countdown times used to collide into overlapping digits at accessibility
+  text sizes; the board now shows the soonest one, on a single line.
+- **Web: the hidden assistant panel no longer traps keyboard focus.** The
+  Ariadne panel is marked inert while hidden, so keyboard and screen-reader
+  users can no longer tab into its invisible controls (axe reports zero
+  WCAG 2.1 A/AA violations on the live page).
 
 ## 3.0.0-beta.6 - 2026-09-27
 
