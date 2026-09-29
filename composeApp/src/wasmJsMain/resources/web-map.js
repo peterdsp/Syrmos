@@ -6063,6 +6063,11 @@
         function openPanel() {
             panel.classList.remove("ariadne-panel--hidden");
             panel.setAttribute("aria-hidden", "false");
+            // aria-hidden alone leaves the panel's buttons and input in the tab
+            // order while it is visually hidden, so a keyboard or screen-reader
+            // user could Tab into invisible content. inert removes the whole
+            // subtree from focus and the accessibility tree; drop it when open.
+            panel.removeAttribute("inert");
             launcher.style.display = "none";
             // Move the bottom-right map controls (zoom, locate) out from under the
             // chat panel while it is open. Inline style so it reliably wins the
@@ -6082,6 +6087,7 @@
         function closePanel() {
             panel.classList.add("ariadne-panel--hidden");
             panel.setAttribute("aria-hidden", "true");
+            panel.setAttribute("inert", "");
             launcher.style.display = "";
             document.body.classList.remove("ariadne-open");
         }

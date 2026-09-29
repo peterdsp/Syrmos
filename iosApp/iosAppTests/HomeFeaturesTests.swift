@@ -234,6 +234,48 @@ final class IchnosScopeLabelTests: XCTestCase {
         XCTAssertEqual(localizedScopeLabel("Kallithea to Monastiraki", .greek), "Kallithea to Monastiraki")
         XCTAssertEqual(localizedScopeLabel("Train 1635", .albanian), "Train 1635")
     }
+
+    func testAResolvableStationIdRebuildsTheWholeLabelInTheReadersLanguage() {
+        // A Greek reporter submitted "Ichnos στο Καλλιθέα"; a resolvable id lets an
+        // English reader see the English station name, not the Greek one.
+        let names: [String: String] = ["M1_KAL": "Kallithea"]
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "M1_KAL", scopeLabel: "Ichnos στο Καλλιθέα", .english) { names[$0] },
+            "Ichnos at Kallithea"
+        )
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "M1_KAL", scopeLabel: "Ichnos at Kallithea", .greek) { _ in "Kallithea" },
+            "Ichnos στο Kallithea"
+        )
+    }
+
+    func testAnUnresolvableIdFallsBackToPrefixRelocalization() {
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "h_9f2c", scopeLabel: "Ichnos at Florina", .albanian) { _ in nil },
+            "Ichnos në Florina"
+        )
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "train_1635", scopeLabel: "Train 1635", .italian) { _ in nil },
+            "Train 1635"
+        )
+    }
+
+    func testRealStationIdResolvesAgainstLocalCoordinateData() {
+        // M1_KAL and A1_AIR exist in the bundled coordinate data; a Greek reader
+        // reads the Greek name regardless of the reporter's language.
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "M1_KAL", scopeLabel: "Ichnos at Kallithea", .greek) {
+                StationCoords.localizedStationName(for: $0, .greek)
+            },
+            "Ichnos στο Καλλιθέα"
+        )
+        XCTAssertEqual(
+            resolvedScopeLabel(scopeId: "A1_AIR", scopeLabel: "Ichnos στο Αεροδρόμιο", .english) {
+                StationCoords.localizedStationName(for: $0, .english)
+            },
+            "Ichnos at Airport"
+        )
+    }
 }
 
 // MARK: - Browse-all station count (twin of StationCountLabelTest in core/common)
