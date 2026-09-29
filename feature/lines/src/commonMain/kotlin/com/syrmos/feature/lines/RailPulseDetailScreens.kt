@@ -45,9 +45,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.extensions.countLabel
-import com.syrmos.core.common.extensions.localizedScopeLabel
+import com.syrmos.core.common.extensions.resolveIchnosScopeLabel
 import com.syrmos.core.common.RailPulseLocalStore
+import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
+import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.CommunityReportService
 import com.syrmos.core.network.CommunityHistory
 import com.syrmos.core.network.CommunityHistoryBucket
@@ -97,6 +99,7 @@ internal fun RailPulseStationScreen(
     onReport: (RailPulseReportContext) -> Unit,
 ) {
     val communityService = koinInject<CommunityReportService>()
+    val stationName = rememberStationNameResolver(lang)
     val context = RailPulseReportContext(
         scopeId = "A1_AIR",
         title = pulseText(lang, "Airport", "Αεροδρόμιο", "Aeroporti", "Aeroporto"),
@@ -121,7 +124,7 @@ internal fun RailPulseStationScreen(
                 onReport = { onReport(context) },
             )
         }
-        communityIssueRows(lang, summary)
+        communityIssueRows(lang, summary, stationName)
         item { CommunityNotice(lang) }
     }
 }
@@ -133,6 +136,7 @@ internal fun RailPulseTrainScreen(
     onReport: (RailPulseReportContext) -> Unit,
 ) {
     val communityService = koinInject<CommunityReportService>()
+    val stationName = rememberStationNameResolver(lang)
     val context = RailPulseReportContext(
         scopeId = "train_1635",
         title = pulseText(lang, "Train 1635", "Τρένο 1635", "Treni 1635", "Treno 1635"),
@@ -158,7 +162,7 @@ internal fun RailPulseTrainScreen(
                 onReport = { onReport(context) },
             )
         }
-        communityIssueRows(lang, summary)
+        communityIssueRows(lang, summary, stationName)
         item { CommunityNotice(lang) }
     }
 }
@@ -166,6 +170,7 @@ internal fun RailPulseTrainScreen(
 @Composable
 internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
     val communityService = koinInject<CommunityReportService>()
+    val stationName = rememberStationNameResolver(lang)
     var summary by remember { mutableStateOf<CommunitySummary?>(null) }
     var selectedPeriod by remember { mutableStateOf(IchnosHistoryPeriod.DAY) }
     var history by remember { mutableStateOf<CommunityHistory?>(null) }
@@ -185,7 +190,7 @@ internal fun RailPulseFeedScreen(lang: AppLanguage, onBack: () -> Unit) {
         onBack = onBack,
     ) {
         item { CommunityNotice(lang) }
-        communityIssueRows(lang, summary)
+        communityIssueRows(lang, summary, stationName)
         item { PulseSectionTitle(pulseText(lang, "Greek railway history", "Ιστορικό ελληνικών σιδηροδρόμων", "Historia e hekurudhave greke", "Storico ferroviario greco")) }
         item {
             Text(
@@ -529,9 +534,33 @@ private fun summaryStatus(lang: AppLanguage, summary: CommunitySummary?): String
     else -> pulseText(lang, "Estimate", "Εκτίμηση", "Vlerësim", "Stima")
 }
 
+/**
+ * A station-name resolver for the reader's language, backed by the local station
+ * seed. Given a report's scope id, it returns the station name the reader would
+ * read, or null when the id is not a known station (a network, train or hashed
+ * scope), so [resolveIchnosScopeLabel] can fall back to prefix re-localization.
+ */
+@Composable
+internal fun rememberStationNameResolver(lang: AppLanguage): (String) -> String? {
+    val stationRepository = koinInject<StationRepositoryImpl>()
+    val stations by stationRepository.getAllStations().collectAsState(initial = emptyList())
+    return remember(stations, lang) {
+        val byId = stations.associateBy { it.id }
+        val resolver: (String) -> String? = { id -> byId[id]?.let { station -> stationLocalizedName(station, lang) } }
+        resolver
+    }
+}
+
+internal fun stationLocalizedName(station: Station, lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> station.nameEl
+    AppLanguage.ALBANIAN -> station.nameSq ?: station.name
+    else -> station.name
+}
+
 private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
     lang: AppLanguage,
     summary: CommunitySummary?,
+    stationName: (String) -> String? = { null },
 ) {
     if (summary == null) {
         item {
@@ -571,7 +600,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityIssueRows(
             }
             PulseActivityRow(
                 "!",
-                localizedScopeLabel(issue.scopeLabel, lang),
+                resolveIchnosScopeLabel(issue.scopeId, issue.scopeLabel, lang, stationName),
                 listOf(signal, issue.detail.takeIf { it.isNotBlank() }, "${issue.count}").filterNotNull().joinToString(" · "),
                 pulseText(lang, "Active", "Ενεργό", "Aktiv", "Attivo"),
                 if (issue.signal in setOf("delayed", "stopped", "safety")) SyrmosColorTokens.disruption else SyrmosColorTokens.warning,

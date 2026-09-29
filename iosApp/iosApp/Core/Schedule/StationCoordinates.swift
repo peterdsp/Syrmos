@@ -364,3 +364,27 @@ struct StationCoordinateLookup {
         byId[stationId]?.name
     }
 }
+
+extension StationCoords {
+    /// station id -> (English/romanized name, Greek name) for the local coordinate data.
+    private static let localizedNamesById: [String: (name: String, nameEl: String)] = {
+        var map: [String: (name: String, nameEl: String)] = [:]
+        for station in allStations where map[station.id] == nil {
+            map[station.id] = (station.name, station.nameEl)
+        }
+        return map
+    }()
+
+    /// The station's display name in the reader's language, or nil when the id is
+    /// not a known station (a network, train or hashed scope) so the Ichnos label
+    /// falls back to prefix re-localization. The coordinate data carries English and
+    /// Greek names only, so Albanian and Italian read the romanized name, which is
+    /// what the reporter's label already showed those readers.
+    static func localizedStationName(for id: String, _ language: AppLanguage) -> String? {
+        guard let entry = localizedNamesById[id] else { return nil }
+        switch language {
+        case .greek: return entry.nameEl
+        default: return entry.name
+        }
+    }
+}
