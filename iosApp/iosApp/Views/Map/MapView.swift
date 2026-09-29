@@ -293,6 +293,33 @@ struct TransitMapView: View {
     @State private var nowTick = SyrmosClock.now
     private let stations = PreloadedData.stations
     private let routeLines = PreloadedData.routeLines
+    /// Phase D scene restoration: the camera to open on, restored only within the
+    /// freshness window (a recent background return keeps the last view; a cold or
+    /// old launch is nil, so the map uses the Athens default and auto-recentres).
+    /// Computed once per mount, so each SceneDelegate rebuild re-evaluates freshness.
+    private let restoredRegion: MKCoordinateRegion?
+
+    init() {
+        if case .ok(let s) = MapRestorationContract.decode(
+            SceneRestorationStore.load(MapRestorationContract.storageKey)
+        ), s.isValid,
+           SceneRestorationFreshness.shouldRestoreDeepPush(
+               backgroundedAt: SceneRestorationBackground.lastBackgrounded(), now: SyrmosClock.now) {
+            restoredRegion = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: s.centerLat, longitude: s.centerLon),
+                span: MKCoordinateSpan(latitudeDelta: s.latDelta, longitudeDelta: s.lonDelta))
+        } else {
+            restoredRegion = nil
+        }
+    }
+
+    private func persistRegion(_ region: MKCoordinateRegion) {
+        let state = MapRestorationState(
+            centerLat: region.center.latitude, centerLon: region.center.longitude,
+            latDelta: region.span.latitudeDelta, lonDelta: region.span.longitudeDelta)
+        guard state.isValid else { return }
+        SceneRestorationStore.save(MapRestorationContract.storageKey, MapRestorationContract.encode(state))
+    }
 
     /// The real-GPS trains actually worth plotting: EXPIRED positions dropped so
     /// a dead/offline feed never leaves a frozen "live" ghost on the map. STALE
@@ -335,8 +362,12 @@ struct TransitMapView: View {
                     // granted (or has denied) we stay on the Athens fallback
                     // set in makeUIView. Wait a beat so MKMapView has time to
                     // start streaming CLLocation updates before we recenter.
+                    // A restored camera means the user is returning to where they
+                    // left off, so do not auto-recentre over it. A cold or old
+                    // launch (restoredRegion nil) recentres as before.
                     let status = locationManager.authorizationStatus
-                    if status == .authorizedWhenInUse || status == .authorizedAlways {
+                    if restoredRegion == nil,
+                       status == .authorizedWhenInUse || status == .authorizedAlways {
                         try? await Task.sleep(nanoseconds: 300_000_000)
                         autoRecenterPing &+= 1
                     }
@@ -505,7 +536,9 @@ struct TransitMapView: View {
                     },
                     onTrainTap: { vehicle in
                         tappedVehicle = vehicle
-                    }
+                    },
+                    initialRegion: restoredRegion,
+                    onRegionChange: { region in persistRegion(region) }
                 )
                 // Extend the map underneath the CompactTabHeader at the
                 // top and the system tab bar at the bottom. Without this,
@@ -1233,6 +1266,11 @@ struct SyrmosMKMapView: UIViewRepresentable {
     var autoRecenterPing: Int = 0
     let onStationTap: (String) -> Void
     var onTrainTap: ((MapVehicleSelection) -> Void)?
+    /// A camera to open on instead of the Athens default (scene restoration). Nil
+    /// keeps the default frame.
+    var initialRegion: MKCoordinateRegion? = nil
+    /// Reports the settled camera after every pan/zoom so the parent can persist it.
+    var onRegionChange: ((MKCoordinateRegion) -> Void)? = nil
 
     /// Keyless Esri "Gray Canvas" label-free base tiles that replace Apple's map
     /// content. Replaces CARTO Positron/Dark-Matter, which started returning
@@ -1289,7 +1327,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // not just the central 6km. The app is nationwide now, but launching on
         // Athens keeps metro + tram + suburban + trains on screen; the user zooms
         // out for the country and GPS "locate me" recenters on them.
-        mv.region = MKCoordinateRegion(
+        mv.region = initialRegion ?? MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.970, longitude: 23.730),
             span: MKCoordinateSpan(latitudeDelta: 0.24, longitudeDelta: 0.30)
         )
@@ -1935,6 +1973,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     view.isHidden = b < 2
                 }
             }
+            // Report the settled camera so scene restoration can persist it.
+            parent.onRegionChange?(region)
         }
 
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
