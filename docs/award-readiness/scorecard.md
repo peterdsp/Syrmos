@@ -7,7 +7,7 @@ verified evidence yet are left **Pending** on purpose rather than guessed.
 
 Scale: 0 absent - 1 poor - 2 partial - 3 solid - 4 strong - 5 exemplary.
 
-Last updated: 2026-08-29.
+Last updated: 2026-09-28.
 
 | # | Dimension | Score | Evidence | Gap to raise it |
 |---|-----------|-------|----------|-----------------|
@@ -15,7 +15,7 @@ Last updated: 2026-08-29.
 | 2 | Journey-task completion | Pending | No end-to-end task-success measurement yet. | Define core tasks (last train, A-to-B, airport buffer) and measure completion. |
 | 3 | Transit-data honesty | 3 | Typed provenance/freshness contract merged (PR #18: `core/model/.../status/DataStatus.kt`, 17 tests). Airport OASA feed correctly framed as vehicles approaching the airport, never fake city departures ([[chip-status-atomicity]] context, [[web-map-athens-time]]). | Surface the DataStatus contract in every web/iOS/Android arrival row with a visible live/scheduled/cached/offline chip + age. |
 | 4 | Offline usefulness | Pending | Seed bundles + cached schedules exist; not yet audited as an offline flow. | Audit airplane-mode behaviour on all three platforms; capture screenshots. |
-| 5 | Accessibility | 2 | Web nav has `aria-current`/`aria-label` (PR #22); no full audit, contrast/VoiceOver/TalkBack unverified. | Run axe/Lighthouse a11y + VoiceOver + TalkBack passes; log issues. |
+| 5 | Accessibility | 3 | Web nav has `aria-current`/`aria-label` (PR #22). Live axe-core WCAG 2.1 A/AA audit of syrmos.peterdsp.dev now runs clean: 0 violations, 28 passes, after fixing a serious `aria-hidden-focus` keyboard trap on the Ariadne panel (PR #232, `web-tests/ariadne-inert.test.js`). Android accessibility-tree labels verified by uiautomator (readiness round 36). | VoiceOver + TalkBack passes and web keyboard-nav focus-order review still outstanding; run and log. |
 | 6 | Localization | 3 | EN/EL/SQ/IT strings across web + native (Ariadne i18n in web-map.js; `airportText` on native). | Audit long-locale layouts (EL/SQ) for truncation; add pseudo-loc screenshots. |
 | 7 | Platform-native quality | 3 | Native SwiftUI (iOS) + Compose (Android) + hand-written web; chips now atomic across all three (PR #21). | Adaptive/large-screen (tablet) audit on Android; Dynamic Type sweep on iOS. |
 | 8 | Visual coherence | 3 | "Calm Signal" design system (DESIGN_SYSTEM.md) + `--sy-*` tokens; systemic chip/status fix (PR #21). | Token audit for stragglers; unify the three FlowLayout copies on iOS. |
@@ -41,7 +41,8 @@ Last updated: 2026-08-29.
 
 ## Current priority backlog (low score x high weight)
 
-1. Accessibility audit (weight 14, score 2) across all three platforms.
+1. Accessibility (weight 14, score 3): web axe audit is clean; VoiceOver and
+   TalkBack passes across native remain the gap.
 2. Three-second comprehension + journey-task completion measurement (the two
    highest-usefulness dimensions, currently unmeasured).
 3. Surface the DataStatus provenance/freshness chip in every arrival row so
