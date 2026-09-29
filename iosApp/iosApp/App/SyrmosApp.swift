@@ -124,6 +124,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidEnterBackground(_ scene: UIScene) {
         didBackgroundSinceLastRebuild = true
+        // Stamp the background time so scene restoration can gate a deep push to a
+        // freshness window on the next foreground/relaunch (see SceneRestoration).
+        SceneRestorationBackground.record(SyrmosClock.now)
         // Queue the next opportunistic weather/alerts refresh for the widget.
         BackgroundRefresh.schedule()
     }

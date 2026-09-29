@@ -141,6 +141,39 @@ final class SceneRestorationContractsTests: XCTestCase {
         )
     }
 
+    // MARK: Background timestamp (Phase C)
+
+    func testBackgroundTimestampRoundTrip() {
+        let suite = "test.scene.bg.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        XCTAssertNil(SceneRestorationBackground.lastBackgrounded(defaults: defaults))
+        let when = Date(timeIntervalSince1970: 1_700_000_000)
+        SceneRestorationBackground.record(when, defaults: defaults)
+        let back = SceneRestorationBackground.lastBackgrounded(defaults: defaults)
+        XCTAssertEqual(back?.timeIntervalSince1970 ?? -1, when.timeIntervalSince1970, accuracy: 0.001)
+    }
+
+    func testBackgroundStampFeedsTheFreshnessGate() {
+        let suite = "test.scene.bg2.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let now = Date(timeIntervalSince1970: 2_000_000)
+
+        // Never recorded (cold launch, no record) -> gate closed.
+        XCTAssertFalse(SceneRestorationFreshness.shouldRestoreDeepPush(
+            backgroundedAt: SceneRestorationBackground.lastBackgrounded(defaults: defaults), now: now))
+        // Backgrounded 5 minutes ago -> gate open.
+        SceneRestorationBackground.record(now.addingTimeInterval(-5 * 60), defaults: defaults)
+        XCTAssertTrue(SceneRestorationFreshness.shouldRestoreDeepPush(
+            backgroundedAt: SceneRestorationBackground.lastBackgrounded(defaults: defaults), now: now))
+        // Backgrounded 45 minutes ago -> gate closed.
+        SceneRestorationBackground.record(now.addingTimeInterval(-45 * 60), defaults: defaults)
+        XCTAssertFalse(SceneRestorationFreshness.shouldRestoreDeepPush(
+            backgroundedAt: SceneRestorationBackground.lastBackgrounded(defaults: defaults), now: now))
+    }
+
     func testPushExistsMatchesKind() {
         let station = RestorablePush(kind: RestorablePushKind.station, id: "A1_AIR")
         XCTAssertTrue(station.exists(stationExists: { $0 == "A1_AIR" }, lineExists: { _ in false }))

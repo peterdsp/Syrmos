@@ -26,6 +26,27 @@ struct HomeView: View {
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
 
+    init() {
+        // Phase C scene restoration: Home restores its nearby-station selection only.
+        // Its detail screens open through closure NavigationLinks that are not in
+        // navigationPath, and the only typed path entries are deep links, which must
+        // not replay on launch, so there is no push to restore here.
+        if case .ok(let restored) = HomeRestorationContract.decode(
+            SceneRestorationStore.load(HomeRestorationContract.storageKey)
+        ) {
+            _selectedNearbyId = State(initialValue: restored.selectedNearbyId)
+        }
+    }
+
+    private func persistRestoration() {
+        SceneRestorationStore.save(
+            HomeRestorationContract.storageKey,
+            HomeRestorationContract.encode(
+                HomeRestorationState(selectedNearbyId: selectedNearbyId, push: nil)
+            )
+        )
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ScrollViewReader { proxy in
@@ -154,6 +175,7 @@ struct HomeView: View {
             .onChange(of: deepLinkRouter.pending) { _, destination in
                 handleDeepLink(destination, proxy: proxy)
             }
+            .onChange(of: selectedNearbyId) { _, _ in persistRestoration() }
             }
         }
     }

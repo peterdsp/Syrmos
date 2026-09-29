@@ -26,10 +26,10 @@ struct LinesView: View {
     @StateObject private var locationService = LocationService()
 
     init() {
-        // Phase B scene restoration: seed the region/type filters from the last
-        // session so a background return or cold launch keeps the browsing filter.
-        // The selected line detail (a companion push) is deferred to Phase C.
-        // Seeded in init so no filter onChange fires over the restored values.
+        // Scene restoration: seed the region/type filters (Phase B) and the selected
+        // line companion (Phase C) from the last session, so a background return or
+        // cold launch keeps the browsing filter and, within the freshness window, the
+        // open line detail. Seeded in init so no filter onChange fires over the values.
         if case .ok(let restored) = ExploreRestorationContract.decode(
             SceneRestorationStore.load(ExploreRestorationContract.storageKey)
         ) {
@@ -38,6 +38,15 @@ struct LinesView: View {
             }
             if let raw = restored.selectedType {
                 _selectedType = State(initialValue: TransitType(rawValue: raw))
+            }
+            // Phase C: the selected line opens the companion detail, so it is a deep
+            // push. Restore it only within the freshness window, when no deep link is
+            // pending, and only if the line still exists in the seed.
+            let allowDeepPush = DeepLinkRouter.shared.pending == nil
+                && SceneRestorationFreshness.shouldRestoreDeepPush(
+                    backgroundedAt: SceneRestorationBackground.lastBackgrounded(), now: SyrmosClock.now)
+            if allowDeepPush, let lineId = restored.selectedLineId, let line = SyrmosData.line(for: lineId) {
+                _selectedLine = State(initialValue: line)
             }
         }
     }
@@ -49,7 +58,7 @@ struct LinesView: View {
                 ExploreRestorationState(
                     selectedRegion: selectedRegion?.rawValue,
                     selectedType: selectedType?.rawValue,
-                    selectedLineId: nil,
+                    selectedLineId: selectedLine?.id,
                     push: nil
                 )
             )
@@ -133,6 +142,7 @@ struct LinesView: View {
         .onAppear { locationService.requestIfNeeded() }
         .onChange(of: selectedRegion) { _, _ in persistRestoration() }
         .onChange(of: selectedType) { _, _ in persistRestoration() }
+        .onChange(of: selectedLine?.id) { _, _ in persistRestoration() }
     }
 
     // MARK: - Segmented Control

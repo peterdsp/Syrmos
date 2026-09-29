@@ -119,6 +119,22 @@ enum SceneRestorationFreshness {
     }
 }
 
+/// Records when the scene last entered the background, so the freshness gate above
+/// works across a real background cycle and a cold launch after a kill. Stored as
+/// an epoch double; zero (never recorded) reads back as nil, which closes the gate.
+enum SceneRestorationBackground {
+    static let storageKey = "syrmos.restore.backgroundedAt"
+
+    static func record(_ date: Date, defaults: UserDefaults = .standard) {
+        defaults.set(date.timeIntervalSince1970, forKey: storageKey)
+    }
+
+    static func lastBackgrounded(defaults: UserDefaults = .standard) -> Date? {
+        let epoch = defaults.double(forKey: storageKey)
+        return epoch > 0 ? Date(timeIntervalSince1970: epoch) : nil
+    }
+}
+
 // MARK: - Home
 
 struct HomeRestorationState: Codable, Equatable {
