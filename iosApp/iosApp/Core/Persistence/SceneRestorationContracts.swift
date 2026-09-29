@@ -88,6 +88,20 @@ enum SceneRestorationCodec {
     }
 }
 
+/// Thin UserDefaults adapter for restoration blobs. The pure contracts above do
+/// the encoding, versioning and validation; this only reads and writes the string
+/// under a key, so the tabs have one call site each and the testable logic stays
+/// free of persistence.
+enum SceneRestorationStore {
+    static func load(_ key: String, defaults: UserDefaults = .standard) -> String? {
+        defaults.string(forKey: key)
+    }
+
+    static func save(_ key: String, _ value: String, defaults: UserDefaults = .standard) {
+        defaults.set(value, forKey: key)
+    }
+}
+
 /// The freshness gate for deep pushes. Tab selection restores always; a pushed
 /// destination restores only within this window after the app was backgrounded
 /// (scope decision: 30 minutes). The timestamp is persisted so a cold launch

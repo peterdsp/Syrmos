@@ -120,6 +120,27 @@ final class SceneRestorationContractsTests: XCTestCase {
         XCTAssertEqual(validated.selectedType, "metro")
     }
 
+    // MARK: Store adapter (Phase B)
+
+    func testStoreRoundTripThroughUserDefaults() {
+        let suite = "test.scene.restoration.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let key = DeparturesRestorationContract.storageKey
+
+        XCTAssertNil(SceneRestorationStore.load(key, defaults: defaults), "nothing persisted yet")
+        XCTAssertEqual(DeparturesRestorationContract.decode(
+            SceneRestorationStore.load(key, defaults: defaults)), .empty)
+
+        let state = DeparturesRestorationState(selectedCity: "thessaloniki", selectedRoute: "X1", dayOffset: 3)
+        SceneRestorationStore.save(key, DeparturesRestorationContract.encode(state), defaults: defaults)
+
+        XCTAssertEqual(
+            DeparturesRestorationContract.decode(SceneRestorationStore.load(key, defaults: defaults)),
+            .ok(state)
+        )
+    }
+
     func testPushExistsMatchesKind() {
         let station = RestorablePush(kind: RestorablePushKind.station, id: "A1_AIR")
         XCTAssertTrue(station.exists(stationExists: { $0 == "A1_AIR" }, lineExists: { _ in false }))

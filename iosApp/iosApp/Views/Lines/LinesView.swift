@@ -25,6 +25,37 @@ struct LinesView: View {
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationService = LocationService()
 
+    init() {
+        // Phase B scene restoration: seed the region/type filters from the last
+        // session so a background return or cold launch keeps the browsing filter.
+        // The selected line detail (a companion push) is deferred to Phase C.
+        // Seeded in init so no filter onChange fires over the restored values.
+        if case .ok(let restored) = ExploreRestorationContract.decode(
+            SceneRestorationStore.load(ExploreRestorationContract.storageKey)
+        ) {
+            if let raw = restored.selectedRegion {
+                _selectedRegion = State(initialValue: TransitRegion(rawValue: raw))
+            }
+            if let raw = restored.selectedType {
+                _selectedType = State(initialValue: TransitType(rawValue: raw))
+            }
+        }
+    }
+
+    private func persistRestoration() {
+        SceneRestorationStore.save(
+            ExploreRestorationContract.storageKey,
+            ExploreRestorationContract.encode(
+                ExploreRestorationState(
+                    selectedRegion: selectedRegion?.rawValue,
+                    selectedType: selectedType?.rawValue,
+                    selectedLineId: nil,
+                    push: nil
+                )
+            )
+        )
+    }
+
     private var exploreOrigin: MapStationNode? {
         manualOrigin ?? locationService.nearbyStations.first?.station
     }
@@ -100,6 +131,8 @@ struct LinesView: View {
             }
         }
         .onAppear { locationService.requestIfNeeded() }
+        .onChange(of: selectedRegion) { _, _ in persistRestoration() }
+        .onChange(of: selectedType) { _, _ in persistRestoration() }
     }
 
     // MARK: - Segmented Control
