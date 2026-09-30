@@ -13,7 +13,13 @@ enum SyrmosLineTokens {
         case "M2": return SyrmosTokens.metroRed
         case "M3": return SyrmosTokens.metroBlue
         case "T6", "T7": return SyrmosTokens.tram
-        default: return SyrmosTokens.suburban
+        default:
+            // The Athens suburban lines share one house colour, but the
+            // intercity and regional corridors carry their own hex in
+            // lines.json. Falling through to suburban purple for all of them
+            // drew an IC1 badge and an RG1 badge in the same colour as A1.
+            if let hex = SyrmosData.line(for: normalize(lineId))?.color { return hex }
+            return SyrmosTokens.suburban
         }
     }
 

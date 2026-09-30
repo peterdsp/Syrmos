@@ -23,6 +23,13 @@ struct HomeView: View {
     @State private var showAllInsights = false
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    /// The board row the rider explicitly selected. Actions target THIS group,
+    /// so a refresh that reorders the board cannot retarget a tap.
+    @State private var selectedBoardGroupId: String?
+    /// The rider's explicit station choice for the all-directions board.
+    /// Location establishes the initial default only; it must never replace a
+    /// deliberate selection on a refresh.
+    @State private var pinnedBoardStationId: String?
     @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
@@ -268,54 +275,20 @@ struct HomeView: View {
                     freshnessPill
                 }
 
-                if let next {
-                    let seconds = next.secondsAway(from: SyrmosClock.now)
-                    let countdown = heroCountdownText(secondsAway: seconds, language: loc.language)
-                    let accent = SyrmosData.lineColor(for: next.lineId)
+                if let board = homeBoard(), board.timedGroupCount > 0 {
+                    let featured = board.groups.first(where: { $0.total > 0 })
+                    let accent = SyrmosLineTokens.color(for: featured?.lineId ?? "")
 
-                    Text(lateNight
-                         ? homeText("Last trains tonight", "Τελευταίοι συρμοί απόψε", "Trenat e fundit sonte", "Ultimi treni stasera")
-                         : loc[.nextTrain])
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(stateColor)
+                    // The whole station complex, every supported direction. The
+                    // soonest departure is emphasised inside its own row rather
+                    // than repeated in an oversized hero that pushes the other
+                    // directions below the fold.
+                    stationBoardHeader(board, lateNight: lateNight, stateColor: stateColor)
+                    stationBoardRows(board)
 
-                    HStack(spacing: 8) {
-                        LinePill(
-                            lineId: next.lineId,
-                            size: .small,
-                            disruptionSeverity: severity
-                        )
-                        Text("\(loc[.to]) \(DirectionL10n.localized(lineId: next.lineId, direction: next.direction, language: loc.language))")
-                            .font(.title3.weight(.semibold))
-                            .lineLimit(1)
+                    if let featured, let source = featured.times.first?.source {
+                        SourceConfidenceChip(confidence: source, language: loc.language)
                     }
-
-                    Text(countdown)
-                        .font(.system(size: SyrmosTokens.Font.displayPulseSize, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(seconds <= 60 ? SyrmosTokens.arrivalImminent : accent)
-                        .contentTransition(.numericText())
-                        .modifier(HeroImminentPulse(active: seconds <= 60))
-
-                    // Every direction, not just the soonest: one row per line and
-                    // destination with the next two times. A single-direction
-                    // station keeps the compact "then 13, 23 min" line instead.
-                    let upcoming = nearestUpcoming()
-                    let board = DepartureGrouping.directionBoard(upcoming)
-                    if board.count >= 2 {
-                        directionBoard(board, featured: next)
-                    } else {
-                        let later = upcoming.dropFirst().prefix(2)
-                            .filter { $0.minutesAway > next.minutesAway }
-                            .map { $0.minutesAwayDisplay(language: loc.language) }
-                        if !later.isEmpty {
-                            Text("\(homeText("then", "μετά", "pastaj", "poi")) \(later.joined(separator: ", "))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    SourceConfidenceChip(confidence: next.sourceConfidence, language: loc.language)
 
                     if disrupted {
                         Text(homeText(
@@ -339,11 +312,16 @@ struct HomeView: View {
                     }
 
                     HStack(spacing: 8) {
+                        // The button names the departure it will act on, so new
+                        // data arriving between the tap and its handler cannot
+                        // retarget it.
+                        let target = selectedBoardGroup(board) ?? featured
                         pulseAction(
                             icon: "bell.fill",
-                            label: homeText("Track", "Παρακολούθηση", "Ndiq", "Segui"),
+                            label: target.map { "\(homeText("Track", "Παρακολούθηση", "Ndiq", "Segui")) · \($0.destination)" }
+                                ?? homeText("Track", "Παρακολούθηση", "Ndiq", "Segui"),
                             color: accent,
-                            action: { trackNext(next) }
+                            action: { if let target { trackBoardGroup(target) } }
                         )
                         pulseAction(
                             icon: "scope",
@@ -819,8 +797,10 @@ struct HomeView: View {
                             .foregroundStyle(countdownColor)
                             .modifier(HeroImminentPulse(active: isImminent))
                     }
-                    let thenTimes = nearestUpcoming().dropFirst().prefix(2)
-                        .filter { $0.minutesAway > next.minutesAway }
+                    // "Then" applies only WITHIN a destination. Taking the next
+                    // two departures across every line printed a Piraeus train's
+                    // time under an Airport heading.
+                    let thenTimes = laterTimesInSameDirection(as: next)
                         .map { $0.minutesAwayDisplay(language: loc.language) }
                     if !thenTimes.isEmpty {
                         let thenWord = loc.language == .greek ? "μετά" : loc.language == .albanian ? "pastaj" : loc.language == .italian ? "poi" : "then"
@@ -907,39 +887,90 @@ struct HomeView: View {
         .accessibilityLabel("\(loc[.lastTrain]) \(last.lineId), \(loc[.leaveBy]) \(last.time)")
     }
 
-    /// The Home direction board: the nearest station's next train in every
-    /// direction. Each row is a line pill, the destination, and the next two
-    /// countdowns; the featured (soonest) direction leads and is emphasised.
-    private func directionBoard(_ rows: [GroupedDeparture], featured: Departure) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
-                let accent = SyrmosData.lineColor(for: row.lineId)
-                let isFeatured = row.lineId == featured.lineId
-                    && DepartureGrouping.destinationKey(row.destination) == DepartureGrouping.destinationKey(featured.direction)
-                HStack(spacing: 10) {
-                    LinePill(lineId: row.lineId, size: .small, disruptionSeverity: stasyService.lineDisruptions[row.lineId])
-                    Text("\(loc[.to]) \(DirectionL10n.localized(lineId: row.lineId, direction: row.destination, language: loc.language))")
-                        .font(.subheadline.weight(isFeatured ? .semibold : .regular))
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    // At accessibility text sizes a second countdown cannot fit
-                    // beside the (already truncated) destination and the two times
-                    // collide, so show only the soonest one there.
-                    let shownTimes = dynamicTypeSize.isAccessibilitySize ? Array(row.times.prefix(1)) : row.times
-                    HStack(spacing: 6) {
-                        ForEach(Array(shownTimes.enumerated()), id: \.offset) { tIdx, time in
-                            Text(boardCountdown(time.minutesAway))
-                                .font(tIdx == 0 ? .subheadline.weight(.bold) : .subheadline)
-                                .monospacedDigit()
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .foregroundStyle(tIdx == 0 ? (time.minutesAway <= 1 ? SyrmosTokens.arrivalImminent : accent) : Color.secondary)
-                        }
-                    }
+    // MARK: - The all-directions station board
+
+    /// The board for the rider's station complex.
+    ///
+    /// This replaces `nearestUpcoming()` + `DepartureGrouping.directionBoard`,
+    /// which asked for three departures per line of ONE map node and then capped
+    /// the result at four rows, so a less frequent railway destination could be
+    /// dropped before grouping ever ran. The node was not the station either:
+    /// Athens is five boarding stop ids that no client joined.
+    private func homeBoard() -> StationComplexBoard.Board? {
+        guard let node = boardStationNode() else { return nil }
+        return StationComplexBoardProvider.board(for: node)
+    }
+
+    /// An explicit choice outranks location on every refresh.
+    private func boardStationNode() -> MapStationNode? {
+        if let pinned = pinnedBoardStationId,
+           let node = SyrmosData.mapStations.first(where: { $0.id == pinned }) {
+            return node
+        }
+        return locationService.nearbyStations.first?.station
+    }
+
+    private func selectedBoardGroup(_ board: StationComplexBoard.Board) -> StationComplexBoard.Group? {
+        guard let id = selectedBoardGroupId else { return nil }
+        return board.groups.first { $0.id == id }
+    }
+
+    @ViewBuilder
+    private func stationBoardHeader(
+        _ board: StationComplexBoard.Board,
+        lateNight: Bool,
+        stateColor: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(lateNight
+                 ? homeText("Last trains tonight", "Τελευταίοι συρμοί απόψε", "Trenat e fundit sonte", "Ultimi treni stasera")
+                 : loc[.nextTrain])
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(stateColor)
+            Text(board.complex.localizedName(loc.language))
+                .font(.title3.weight(.bold))
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 6) {
+                Text(boardScopeLabel(board))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                if board.partial {
+                    // Partial means a service could not be READ. A quiet night
+                    // is complete information and never raises this.
+                    Text(homeText("Some services could not be loaded",
+                                  "Ορισμένες υπηρεσίες δεν φορτώθηκαν",
+                                  "Disa shërbime nuk u ngarkuan",
+                                  "Alcuni servizi non sono stati caricati"))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(SyrmosTokens.warning)
                 }
-                .padding(.vertical, 9)
-                .accessibilityElement(children: .combine)
-                if idx < rows.count - 1 {
+            }
+        }
+    }
+
+    private func boardScopeLabel(_ board: StationComplexBoard.Board) -> String {
+        let scope = homeText("All directions", "Όλες οι κατευθύνσεις",
+                             "Të gjitha drejtimet", "Tutte le direzioni")
+        let services = homeText("services", "υπηρεσίες", "shërbime", "servizi")
+        return "\(scope.uppercasedForDisplay(loc.language)) · \(board.timedGroupCount) \(services)"
+    }
+
+    /// One row per supported departure group. Rows are identified by the board's
+    /// stable group id, never by array offset, because rows reorder every time a
+    /// train leaves.
+    @ViewBuilder
+    private func stationBoardRows(_ board: StationComplexBoard.Board) -> some View {
+        let multiArea = board.complex.areas.count > 1
+        VStack(spacing: 0) {
+            ForEach(board.groups) { group in
+                Button {
+                    selectedBoardGroupId = group.id
+                } label: {
+                    stationBoardRow(group, board: board, multiArea: multiArea)
+                }
+                .buttonStyle(.plain)
+                .disabled(group.total == 0)
+                if group.id != board.groups.last?.id {
                     Divider().overlay(Color.syrmosSurfaceMuted)
                 }
             }
@@ -949,6 +980,97 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: SyrmosTokens.Radius.md, style: .continuous)
                 .fill(Color.syrmosSurfaceMuted.opacity(0.6))
         )
+    }
+
+    @ViewBuilder
+    private func stationBoardRow(
+        _ group: StationComplexBoard.Group,
+        board: StationComplexBoard.Board,
+        multiArea: Bool
+    ) -> some View {
+        // Same palette the pill beside it uses, so one row cannot show a purple
+        // badge next to a red countdown for the same service.
+        let accent = SyrmosLineTokens.color(for: group.lineId)
+        let isFeatured = group.id == board.groups.first(where: { $0.total > 0 })?.id
+        let isSelected = group.id == selectedBoardGroupId
+        HStack(spacing: 10) {
+            LinePill(lineId: group.lineId, size: .small,
+                     disruptionSeverity: stasyService.lineDisruptions[group.lineId])
+            VStack(alignment: .leading, spacing: 1) {
+                // Destinations wrap rather than truncate: cutting a headsign is
+                // how a board hides a direction it claims to show.
+                Text(DirectionL10n.localized(lineId: group.lineId, direction: group.destination,
+                                             language: loc.language))
+                    .font(.subheadline.weight(isFeatured ? .semibold : .regular))
+                    .fixedSize(horizontal: false, vertical: true)
+                if multiArea {
+                    Text(board.complex.localizedAreaName(group.areaId, loc.language))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 8)
+            if group.total > 0 {
+                // At accessibility text sizes a second countdown cannot fit
+                // beside the destination, so only the soonest is shown there.
+                let shown = dynamicTypeSize.isAccessibilitySize
+                    ? Array(group.times.prefix(1))
+                    : Array(group.times.prefix(3))
+                VStack(alignment: .trailing, spacing: 1) {
+                    ForEach(Array(shown.enumerated()), id: \.element.absoluteMinutes) { index, time in
+                        Text(boardCountdown(time.absoluteMinutes))
+                            .font(index == 0 ? .subheadline.weight(.bold) : .caption)
+                            .monospacedDigit()
+                            .strikethrough(time.cancelled)
+                            .foregroundStyle(index == 0
+                                ? (time.absoluteMinutes <= 1 ? SyrmosTokens.arrivalImminent : accent)
+                                : Color.secondary)
+                    }
+                }
+            } else {
+                Text(boardCoverageLabel(group))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(SyrmosTokens.warning)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 9)
+        .background(isSelected ? accent.opacity(0.10) : Color.clear)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    /// A service with nothing to show keeps its row in a clearly differentiated
+    /// state rather than disappearing, so partial coverage cannot look complete.
+    private func boardCoverageLabel(_ group: StationComplexBoard.Group) -> String {
+        switch group.coverage {
+        case .unavailable:
+            return homeText("Timetable unavailable", "Το δρομολόγιο δεν είναι διαθέσιμο",
+                            "Orari nuk është i disponueshëm", "Orario non disponibile")
+        case .notOperating:
+            return homeText("Not in service", "Εκτός λειτουργίας", "Jashtë shërbimit", "Fuori servizio")
+        default:
+            return homeText("No departure in the next 12 hours",
+                            "Καμία αναχώρηση τις επόμενες 12 ώρες",
+                            "Asnjë nisje në 12 orët e ardhshme",
+                            "Nessuna partenza nelle prossime 12 ore")
+        }
+    }
+
+    /// Track the explicitly selected group's next departure.
+    private func trackBoardGroup(_ group: StationComplexBoard.Group) {
+        guard let next = group.next else { return }
+        trackNext(Departure(
+            time: next.time,
+            lineId: group.lineId,
+            direction: group.destination,
+            minutesAway: next.absoluteMinutes,
+            serviceType: group.serviceType,
+            trainNo: next.trainNo,
+            sourceConfidence: next.source
+        ))
     }
 
     /// Short countdown for a board cell: Now, 4 min, 1h 5min (same words as the
@@ -975,17 +1097,19 @@ struct HomeView: View {
         return best
     }
 
-    /// The soonest few departures across the nearest station's lines, sorted, so
-    /// the hero can show "then 13, 23 min" after the featured one.
-    private func nearestUpcoming() -> [Departure] {
+    /// The next couple of departures on the SAME line toward the SAME
+    /// destination as `next`, so a "then 13, 23 min" tail always belongs to the
+    /// heading above it.
+    private func laterTimesInSameDirection(as next: Departure) -> [Departure] {
         guard let nearest = locationService.nearbyStations.first else { return [] }
         let node = nearest.station
-        var all: [Departure] = []
-        for lineId in node.lineIds {
-            let stationId = node.stationIdByLineId[lineId] ?? node.stationIds.first ?? node.id
-            all += ScheduleProjector.nextDepartures(for: stationId, lineIds: [lineId], limit: 3)
-        }
-        return all.sorted { $0.minutesAway < $1.minutesAway }
+        let stationId = node.stationIdByLineId[next.lineId] ?? node.stationIds.first ?? node.id
+        let key = StationComplexBoard.fold(next.direction)
+        return ScheduleProjector.nextDepartures(for: stationId, lineIds: [next.lineId], limit: 12)
+            .filter { StationComplexBoard.fold($0.direction) == key && $0.minutesAway > next.minutesAway }
+            .sorted { $0.minutesAway < $1.minutesAway }
+            .prefix(2)
+            .map { $0 }
     }
 
     /// Tonight's last train on the same line the next departure is on, so the
