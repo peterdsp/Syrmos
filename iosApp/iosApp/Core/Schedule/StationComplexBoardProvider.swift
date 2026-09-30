@@ -96,12 +96,24 @@ enum StationComplexRegistry {
             }
             let complexes: [Complex]
         }
-        guard let url = Bundle.main.url(forResource: "station-complexes", withExtension: "json",
-                                        subdirectory: "seed-schedules-v2")
-                ?? Bundle.main.url(forResource: "station-complexes", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let payload = try? JSONDecoder().decode(Payload.self, from: data)
-        else { return [] }
+        // Search every bundle that could carry the seed, not only `Bundle.main`:
+        // under a test host the main bundle is the host app, and a resource that
+        // silently fails to resolve would leave the registry empty, which
+        // quietly turns Athens back into five unrelated stops. Losing the
+        // registry must be loud, not invisible.
+        guard let url = SyrmosSeedBundle.url(named: "station-complexes"),
+              let data = try? Data(contentsOf: url)
+        else {
+            assertionFailure("station-complexes.json is missing from every bundle")
+            return []
+        }
+        let payload: Payload
+        do {
+            payload = try JSONDecoder().decode(Payload.self, from: data)
+        } catch {
+            assertionFailure("station-complexes.json failed to decode: \(error)")
+            return []
+        }
         return payload.complexes.map { c in
             StationComplexBoard.Complex(
                 id: c.id, name: c.name, nameEl: c.nameEl,

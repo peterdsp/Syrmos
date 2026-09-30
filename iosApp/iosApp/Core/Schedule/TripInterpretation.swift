@@ -86,6 +86,33 @@ enum TripInterpretation {
     }
 }
 
+/// Resolves a bundled seed file.
+///
+/// Searches every loaded bundle rather than only `Bundle.main`: under a test
+/// host the main bundle is the host app, and the widget extension carries its own
+/// copy of the seed. A resource that silently fails to resolve would leave the
+/// station-complex registry empty, which quietly turns Athens back into five
+/// unrelated stops, so the lookup is deliberately generous.
+enum SyrmosSeedBundle {
+    /// Anchors `Bundle(for:)` to the module that ships the seed.
+    private final class Token {}
+
+    static func url(named name: String) -> URL? {
+        var bundles: [Bundle] = [Bundle.main, Bundle(for: Token.self)]
+        bundles.append(contentsOf: Bundle.allBundles)
+        for bundle in bundles {
+            if let url = bundle.url(forResource: name, withExtension: "json",
+                                    subdirectory: "seed-schedules-v2") {
+                return url
+            }
+            if let url = bundle.url(forResource: name, withExtension: "json") {
+                return url
+            }
+        }
+        return nil
+    }
+}
+
 // MARK: - Line stop order
 
 /// The ordered boarding stops of every line, read from `lines.json`'s nested
@@ -115,9 +142,7 @@ enum SyrmosLineStops {
             }
             let lines: [Line]
         }
-        guard let url = Bundle.main.url(forResource: "lines", withExtension: "json",
-                                        subdirectory: "seed-schedules-v2")
-                ?? Bundle.main.url(forResource: "lines", withExtension: "json"),
+        guard let url = SyrmosSeedBundle.url(named: "lines"),
               let data = try? Data(contentsOf: url),
               let payload = try? JSONDecoder().decode(Payload.self, from: data)
         else { return [:] }
