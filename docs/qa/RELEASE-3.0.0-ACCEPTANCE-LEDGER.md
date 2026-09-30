@@ -94,16 +94,16 @@ mistaken for delivery.
 | 11 | No location, manual choice, region change, refresh, restoration preserve station scope | `pinnedBoardNodeId` / `pinnedBoardStationId` | `station-board-wiring.test.js` pin-before-location | | partial: pin logic in place; restoration across scenes not re-exercised |
 | 12 | Track/Station/row actions keep their target across data arrival | selected group id | wiring guardrails | iOS: tapping Anthoupoli changed the button to "Track · Anthoupoli" and highlighted that row only | verified complete (iOS, web) |
 | 13 | iOS, Android, web produce equivalent groups from one fixture and clock in 4 languages | shared fixture | `station-board-parity.test.js` + the three suites | | verified complete for the board contract; localized label rendering verified on iOS/web only |
-| 14 | Compact, unfolded, large text, dark/light, screen reader, reduced motion remain readable | | | iOS accessibility labels confirmed complete per row | pending |
+| 14 | Compact, unfolded, large text, dark/light, screen reader, reduced motion remain readable | accessibility-size row collapse; Duo cover-display fix | | iOS hierarchy dump: one merged element per row with a complete label; Duo cover pill collapse found and fixed | partial: large-text and dark captures not taken for the new board |
 | 15 | Actual app captures show the complete Athens board on each main platform | | | web + iOS captured | partial: Android capture pending |
 | 16 | Clean install, each language, Ariadne answers without model setup; offline provenance honest | web Ariadne now reads the board | | | pending |
-| 17 | "What leaves from here?" + correction yields board-equal results and a working action | web `departuresSummary` | wiring guardrail | | partial |
-| 18 | Provider timeout, cancellation, rapid turns, keyboard, pane replacement keep drafts and reject stale | | | | pending |
-| 19 | Ichnos scope fidelity | | | | pending |
-| 20 | Report submission, failure/retry, undo, expiry on a test backend | | | | pending |
+| 17 | "What leaves from here?" + correction yields board-equal results and a working action | both answered from the shared board | wiring guardrails | headless browser, offline: full board in 93 ms, "and toward Anthoupoli?" narrowed to that one direction in 89 ms, same numbers as the card | **verified complete** on web |
+| 18 | Provider timeout, cancellation, rapid turns, keyboard, pane replacement keep drafts and reject stale | turn ids, Stop, bounded optional steps | `testAStoppedTurnCannotAppendItsResultLater`, `testTheOptionalUnderstandingStepsAreBounded` | an unbounded optional call held a turn open for 391 s in the suite; bounded it completes in 3.4 s | partial: cancellation and stale rejection verified; keyboard and pane replacement not exercised |
+| 19 | Ichnos scope fidelity | narrowest-scope resolution, cross-line rejection, stale labelling | `StationBoardIchnosTests` (9) | | partial: unit-verified on iOS; no runtime capture, web and Android unchanged |
+| 20 | Report submission, failure/retry, undo, expiry on a test backend | idempotent report id, confirm-then-count, undo by the same id | | | **unverified**: not exercised against a test backend |
 | 21 | Ariadne labels community evidence as community | | | | pending |
 | 22 | Station row -> Ichnos -> Ariadne -> alternative -> return to the same selection | | | | pending |
-| 23 | Each Duo workflow works end to end on the installed app | | | | pending |
+| 23 | Each Duo workflow works end to end on the installed app | reserved-region adapter corrected to the real 27.1 API | | booted Duo simulator: the native ArrangementView path renders a BLANK content area, the fallback renders | **failed**: reproduced, and therefore deliberately not shipped |
 | 24 | Repeated fold/unfold, rotation, multitasking, keyboard, restoration keep state | | | | pending |
 | 25 | Compact and open walkthroughs demonstrate the benefit | | | | pending |
 | 26 | Language, accessibility, appearance, offline, unavailable checks cover the new Ichnos/Ariadne content | | | | pending |
