@@ -6549,11 +6549,20 @@
         // when the server cannot answer (unreachable, or provider=offline because
         // the LLM API keys are not configured on the Pi), so the caller falls back
         // to the deterministic reply.
-        async function askCloudAriadne(userText) {
+        /// Optional understanding for wording the deterministic parser could not
+        /// place. Bounded and cancellable: without a deadline a hung network left
+        /// the conversation showing a thinking placeholder forever, which reads as
+        /// a broken app rather than an unavailable optional layer.
+        const ARIADNE_CLOUD_TIMEOUT_MS = 6000;
+        async function askCloudAriadne(userText, signal) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), ARIADNE_CLOUD_TIMEOUT_MS);
+            if (signal) signal.addEventListener("abort", () => controller.abort(), { once: true });
             try {
                 const resp = await fetch("https://api-syrmos.peterdsp.dev/api/ariadne/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         messages: [{ role: "user", text: userText }],
                         lang: currentLang,
@@ -6566,6 +6575,8 @@
                 return reply.length >= 8 ? reply : null;
             } catch (_) {
                 return null;
+            } finally {
+                clearTimeout(timer);
             }
         }
 
@@ -7290,7 +7301,7 @@
             }
         };
 
-        form.addEventListener("submit", (ev) => {
+        form.addEventListener("submit", async (ev) => {
             ev.preventDefault();
             const value = (input.value || "").trim();
             if (!value) return;
@@ -7319,6 +7330,35 @@
 
             // Bare "what about tomorrow?" re-runs the last departures query.
             intent = applyDayFollowUp(value, intent);
+
+            // "What leaves from here?" and a bare directional follow-up ("and
+            // toward Anthoupoli?") are answered from the SAME all-directions
+            // board the card shows, so the chat and the panel can never disagree
+            // and Ariadne never runs a second departures calculation. The
+            // follow-up narrows the board rather than starting an unrelated
+            // station lookup, which is what "Anthoupoli" alone would mean.
+            const fromHere = isFromHereQuestion(value);
+            const directionFilter = isDirectionFollowUp(value)
+                ? boardDestinationFilter(value)
+                : null;
+            if (fromHere || directionFilter) {
+                const node = window.syrmosStationBoard &&
+                    (window.syrmosStationBoard.current() || {}).node;
+                if (node) {
+                    const summary = await departuresSummary(node, directionFilter);
+                    if (summary) {
+                        updateSession(intent);
+                        appendMessage(summary, "assistant", "scheduled");
+                        return;
+                    }
+                    if (directionFilter) {
+                        // A named destination the board does not serve right now
+                        // is a useful clarification, not a dead end.
+                        appendMessage(t("ariadne_try_asking"), "assistant");
+                        return;
+                    }
+                }
+            }
 
             if (intent.kind === "needsClarification") {
                 pendingIntent = intent.base;
@@ -7372,6 +7412,55 @@
                 deliver(intent);
             }
         });
+    }
+
+    /// Whether the message asks what leaves from the rider's current station, in
+    /// any of the four supported languages. Deliberately phrase-based rather than
+    /// model-based: this is the single most common question and it must never
+    /// depend on a network round trip.
+    function isFromHereQuestion(text) {
+        const folded = window.SyrmosStationBoard
+            ? window.SyrmosStationBoard.fold(text)
+            : String(text || "").toLowerCase();
+        const patterns = [
+            "from here", "leaves from here", "leave from here", "what leaves",
+            "departures from here", "next trains from here",
+            "apo edo", "απο εδω", "τι φευγει", "αναχωρησεις απο εδω",
+            "nga ketu", "cfare niset", "nisjet nga ketu",
+            "da qui", "cosa parte", "partenze da qui",
+        ];
+        return patterns.some((p) => folded.includes(p));
+    }
+
+    /// Whether the message is a follow-up ABOUT a direction rather than a fresh
+    /// question about a station. "Anthoupoli" alone means "tell me about
+    /// Anthoupoli station"; "and toward Anthoupoli?" means "narrow the board I
+    /// just gave you". The marker is what separates them.
+    function isDirectionFollowUp(text) {
+        const folded = window.SyrmosStationBoard
+            ? window.SyrmosStationBoard.fold(text)
+            : String(text || "").toLowerCase();
+        const markers = [
+            "and toward", "and towards", "what about", "and to ", "the other direction",
+            "και προς", "τι γινεται με", "η αλλη κατευθυνση", "και για",
+            "dhe drejt", "po per", "drejtimi tjeter",
+            "e verso", "che ne dici di", "l'altra direzione", "altra direzione",
+        ];
+        return markers.some((m) => folded.includes(m));
+    }
+
+    /// A bare destination follow-up narrows the board rather than starting a new
+    /// query. Returns the destination text, or null.
+    function boardDestinationFilter(text) {
+        const board = window.syrmosStationBoard && window.syrmosStationBoard.current();
+        if (!board || !window.SyrmosStationBoard) return null;
+        const folded = window.SyrmosStationBoard.fold(text);
+        for (const group of board.groups) {
+            if (group.destinationKey && folded.includes(group.destinationKey)) {
+                return group.destination;
+            }
+        }
+        return null;
     }
 
     // First-visit "what's new" card. Shows once per release (keyed in
