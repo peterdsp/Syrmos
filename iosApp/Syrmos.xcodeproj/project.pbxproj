@@ -206,6 +206,8 @@
 		4FFBC1CBF3DF4CFB81FF8A37 /* TripInterpretation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B32ECEFAA24928B8B2BC25 /* TripInterpretation.swift */; };
 		6CE9B4280A6F4BEA8DFE907A /* StationComplexBoardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1FFC69D98D4060A1003713 /* StationComplexBoardTests.swift */; };
 		D93ECD99B5B84F839EAF217E /* AriadneOrchestrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687083B3FF484FEC866F8217 /* AriadneOrchestrationTests.swift */; };
+		138A8243C5244111B01C7867 /* StationBoardIchnos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2AEA35EF224870B6625AC6 /* StationBoardIchnos.swift */; };
+		511EC33D51F14B25AA6E90C3 /* StationBoardIchnosTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55C3C60B86764829911C57C7 /* StationBoardIchnosTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -462,6 +464,8 @@
 		81B32ECEFAA24928B8B2BC25 /* TripInterpretation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/TripInterpretation.swift; sourceTree = SOURCE_ROOT; };
 		7F1FFC69D98D4060A1003713 /* StationComplexBoardTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StationComplexBoardTests.swift; sourceTree = "<group>"; };
 		687083B3FF484FEC866F8217 /* AriadneOrchestrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AriadneOrchestrationTests.swift; sourceTree = "<group>"; };
+		0E2AEA35EF224870B6625AC6 /* StationBoardIchnos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Ichnos/StationBoardIchnos.swift; sourceTree = SOURCE_ROOT; };
+		55C3C60B86764829911C57C7 /* StationBoardIchnosTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StationBoardIchnosTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -510,6 +514,7 @@
 		0E05CD2D65F51E3B7C19E908 /* iosAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				55C3C60B86764829911C57C7 /* StationBoardIchnosTests.swift */,
 				687083B3FF484FEC866F8217 /* AriadneOrchestrationTests.swift */,
 				7F1FFC69D98D4060A1003713 /* StationComplexBoardTests.swift */,
 				87C1AB3CF938A60DF7285C1F /* ScheduleProjectorTests.swift */,
@@ -790,6 +795,7 @@
 		AAAA000000000000000000F0 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				0E2AEA35EF224870B6625AC6 /* StationBoardIchnos.swift */,
 				2D67A43DD93145FBB9809123 /* WhatsNewView.swift */,
 				AAAA111111111111111111B0 /* Onboarding */,
 				AAAA000000000000000000F2 /* Timetables */,
@@ -1101,6 +1107,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				138A8243C5244111B01C7867 /* StationBoardIchnos.swift in Sources */,
 				63B57FA5DE3546A29A388872 /* TripInterpretation.swift in Sources */,
 				F68422FD019B4DF9A293E68D /* StationComplexBoardProvider.swift in Sources */,
 				97F6E724D1564B578081DF64 /* StationComplexBoard.swift in Sources */,
@@ -1232,6 +1239,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				511EC33D51F14B25AA6E90C3 /* StationBoardIchnosTests.swift in Sources */,
 				D93ECD99B5B84F839EAF217E /* AriadneOrchestrationTests.swift in Sources */,
 				6CE9B4280A6F4BEA8DFE907A /* StationComplexBoardTests.swift in Sources */,
 				3CC04D0831F54B17495246AC /* ScheduleProjectorTests.swift in Sources */,

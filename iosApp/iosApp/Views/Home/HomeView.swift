@@ -30,6 +30,10 @@ struct HomeView: View {
     /// Location establishes the initial default only; it must never replace a
     /// deliberate selection on a refresh.
     @State private var pinnedBoardStationId: String?
+    /// Community context for the selected board row, scoped to that exact
+    /// station complex, service and destination.
+    @StateObject private var boardIchnos = StationBoardIchnosModel()
+    @State private var showBoardReport = false
     @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
@@ -285,6 +289,14 @@ struct HomeView: View {
                     // directions below the fold.
                     stationBoardHeader(board, lateNight: lateNight, stateColor: stateColor)
                     stationBoardRows(board)
+
+                    // "Does this affect my departure?" answered beside the
+                    // departure itself, at the narrowest scope the backend
+                    // supports, and clearly labelled Community so it is never
+                    // mistaken for an operator notice or a schedule change.
+                    if let selected = selectedBoardGroup(board) {
+                        boardIchnosSection(board: board, group: selected)
+                    }
 
                     if let featured, let source = featured.times.first?.source {
                         SourceConfidenceChip(confidence: source, language: loc.language)
@@ -965,6 +977,7 @@ struct HomeView: View {
             ForEach(board.groups) { group in
                 Button {
                     selectedBoardGroupId = group.id
+                    boardIchnos.load(complex: board.complex, group: group)
                 } label: {
                     stationBoardRow(group, board: board, multiArea: multiArea)
                 }
@@ -1056,6 +1069,174 @@ struct HomeView: View {
                             "Καμία αναχώρηση τις επόμενες 12 ώρες",
                             "Asnjë nisje në 12 orët e ardhshme",
                             "Nessuna partenza nelle prossime 12 ore")
+        }
+    }
+
+    /// Community evidence for the selected departure. Loading, unavailable and
+    /// "no recent reports" are three different answers and never collapse into
+    /// one another: a failed request must never read as "everything is fine".
+    @ViewBuilder
+    private func boardIchnosSection(
+        board: StationComplexBoard.Board,
+        group: StationComplexBoard.Group
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "person.2.wave.2.fill")
+                    .font(.caption2)
+                Text(homeText("Community", "Κοινότητα", "Komuniteti", "Comunità")
+                        .uppercasedForDisplay(loc.language))
+                    .font(.caption2.weight(.bold))
+            }
+            .foregroundStyle(.secondary)
+
+            switch boardIchnos.state {
+            case .idle, .loading:
+                Text(homeText("Checking reports…", "Έλεγχος αναφορών…",
+                              "Duke kontrolluar raportet…", "Controllo delle segnalazioni…"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .unavailable:
+                // Explicitly not "no problems": the request failed.
+                Text(homeText("Community reports are unavailable right now.",
+                              "Οι αναφορές της κοινότητας δεν είναι διαθέσιμες αυτή τη στιγμή.",
+                              "Raportet e komunitetit nuk janë të disponueshme tani.",
+                              "Le segnalazioni della comunità non sono disponibili ora."))
+                    .font(.caption)
+                    .foregroundStyle(SyrmosTokens.warning)
+            case let .noRecentReports(scope):
+                Text(homeText("No recent reports for \(scopeText(scope, group: group)).",
+                              "Καμία πρόσφατη αναφορά για \(scopeText(scope, group: group)).",
+                              "Asnjë raport i fundit për \(scopeText(scope, group: group)).",
+                              "Nessuna segnalazione recente per \(scopeText(scope, group: group))."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case let .loaded(scope, issues):
+                if scope.breadth > .direction {
+                    // A broader scope is useful, but the rider must know it is
+                    // broader: a station-wide report is not a statement about
+                    // this direction.
+                    Text(homeText("Reported for \(scopeText(scope, group: group)), not only this direction.",
+                                  "Αναφέρθηκε για \(scopeText(scope, group: group)), όχι μόνο γι' αυτήν την κατεύθυνση.",
+                                  "Raportuar për \(scopeText(scope, group: group)), jo vetëm për këtë drejtim.",
+                                  "Segnalato per \(scopeText(scope, group: group)), non solo per questa direzione."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(issues.prefix(3)) { issue in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(issue.detail.isEmpty ? issue.signal : issue.detail)
+                            .font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 6)
+                        if let age = issue.age(now: SyrmosClock.now, language: loc.language) {
+                            Text(issue.expired
+                                 ? "\(age) · \(homeText("stale", "παλιό", "i vjetër", "obsoleto"))"
+                                 : age)
+                                .font(.caption2)
+                                .foregroundStyle(issue.expired ? SyrmosTokens.warning : .secondary)
+                        } else {
+                            Text(homeText("time unknown", "άγνωστη ώρα", "kohë e panjohur", "orario sconosciuto"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    showBoardReport = true
+                } label: {
+                    Text(homeText("Report something here", "Αναφορά εδώ",
+                                  "Raporto diçka këtu", "Segnala qualcosa qui"))
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.syrmosPrimary)
+
+                switch boardIchnos.submission {
+                case .sending:
+                    Text(homeText("Sending…", "Αποστολή…", "Duke dërguar…", "Invio…"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                case .sent:
+                    Text(homeText("Sent", "Στάλθηκε", "U dërgua", "Inviato"))
+                        .font(.caption2).foregroundStyle(SyrmosTokens.arrivalSoon)
+                    Button(homeText("Undo", "Αναίρεση", "Zhbëj", "Annulla")) { boardIchnos.undo() }
+                        .font(.caption2)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.syrmosPrimary)
+                case .failed:
+                    Text(homeText("Not sent", "Δεν στάλθηκε", "Nuk u dërgua", "Non inviato"))
+                        .font(.caption2).foregroundStyle(SyrmosTokens.disruption)
+                    // Retrying reuses the same report id, so a retry cannot
+                    // create a second accepted report.
+                    Button(homeText("Retry", "Επανάληψη", "Riprovo", "Riprova")) {
+                        boardIchnos.submit(
+                            complex: board.complex, group: group,
+                            signal: "delayed", detail: "", language: loc.language)
+                    }
+                    .font(.caption2)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.syrmosPrimary)
+                case .ready:
+                    EmptyView()
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: SyrmosTokens.Radius.md, style: .continuous)
+                .fill(Color.syrmosSurfaceMuted.opacity(0.45))
+        )
+        .confirmationDialog(
+            homeText("Report about \(group.destination)",
+                     "Αναφορά για \(group.destination)",
+                     "Raport për \(group.destination)",
+                     "Segnalazione su \(group.destination)"),
+            isPresented: $showBoardReport,
+            titleVisibility: .visible
+        ) {
+            // Structured categories only: the scope is the row the rider tapped,
+            // so nothing has to be typed for the report to be useful.
+            ForEach(["delayed", "crowded", "stopped", "normal"], id: \.self) { signal in
+                Button(reportSignalLabel(signal)) {
+                    boardIchnos.submit(
+                        complex: board.complex, group: group,
+                        signal: signal, detail: "", language: loc.language)
+                }
+            }
+            Button(homeText("Cancel", "Άκυρο", "Anulo", "Annulla"), role: .cancel) {}
+        }
+    }
+
+    /// What the scope covers, in the rider's language, so a broader scope is
+    /// never presented as a statement about this exact train.
+    private func scopeText(
+        _ scope: StationBoardIchnos.Scope,
+        group: StationComplexBoard.Group
+    ) -> String {
+        switch scope.breadth {
+        case .direction:
+            return "\(group.lineId) → \(group.destination)"
+        case .service:
+            return group.lineId
+        case .station:
+            return homeText("this station", "αυτόν τον σταθμό", "këtë stacion", "questa stazione")
+        case .network:
+            return homeText("the network", "το δίκτυο", "rrjetin", "la rete")
+        }
+    }
+
+    private func reportSignalLabel(_ signal: String) -> String {
+        switch signal {
+        case "delayed": return homeText("Delayed", "Καθυστέρηση", "Vonesë", "In ritardo")
+        case "crowded": return homeText("Crowded", "Συνωστισμός", "I mbushur", "Affollato")
+        case "stopped": return homeText("Stopped", "Σταματημένο", "I ndalur", "Fermo")
+        default: return homeText("Running normally", "Κανονική λειτουργία",
+                                 "Funksionon normalisht", "Funziona normalmente")
         }
     }
 
