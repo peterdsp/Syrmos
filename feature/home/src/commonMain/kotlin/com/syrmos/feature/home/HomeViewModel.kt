@@ -338,8 +338,11 @@ class HomeViewModel(
         val complexBoard = runCatching {
             buildStationComplexBoard(
                 stopIds = stops.map { it.first }.distinct(),
-                displayName = _uiState.value.nearestStations.firstOrNull()?.station?.name.orEmpty(),
-                displayNameEl = _uiState.value.nearestStations.firstOrNull()?.station?.nameEl.orEmpty(),
+                // NearestStationResult carries the resolved display name only;
+                // the complex registry supplies its own localized names when it
+                // claims the stop, so this is the fallback for a station it
+                // does not.
+                displayName = _uiState.value.nearestStations.firstOrNull()?.stationName.orEmpty(),
             )
         }.getOrNull()
         _uiState.update { state ->
