@@ -48,21 +48,12 @@ final class AriadneModel: ObservableObject {
     init() {
         messages = [greeting()]
         location.requestIfNeeded()
-        Task { await loadAlertNote() }
-    }
-
-    private func loadAlertNote() async {
-        await alertsService.fetchAnnouncements()
-        // One Heads up per distinct notice: the feed repeats a notice under two
-        // ids (shared InsightDedupe rule, as on Home).
-        let alerts = InsightDedupe.distinctByText(alertsService.announcements.filter { $0.category == .serviceAlert }) { $0.title }
-        guard !alerts.isEmpty else { return }
-        let titles = alerts.prefix(3).map { $0.displayTitle(language: loc.language) }.joined(separator: ". ")
-        messages.append(bot(t(
-            "Heads up: \(titles)",
-            "Προσοχή: \(titles)",
-            "Kujdes: \(titles)",
-            "Attenzione: \(titles)")))
+        // Warm the alert feed so an "any delays?" question answers from fresh
+        // data, but do NOT push it into the conversation. An unsolicited
+        // news-style bubble on open consumed the whole first-use area and
+        // pushed the suggestion chips off screen; Home already surfaces service
+        // notices, and Ariadne answers about them when asked.
+        Task { await alertsService.fetchAnnouncements() }
     }
 
     /// Monotonic turn identity. A result from an earlier or cancelled turn

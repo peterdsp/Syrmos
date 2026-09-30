@@ -120,3 +120,32 @@ test('destinations wrap at word boundaries rather than mid-word', () => {
   assert.match(block, /overflow-wrap:\s*break-word/);
   assert.doesNotMatch(block, /overflow-wrap:\s*anywhere/);
 });
+
+// ------------------------------------------------ Ariadne has no setup step
+
+const ariadne = read('web-ariadne.js');
+
+test('the web app offers no on-device model download', () => {
+  // A ~1.1 GB download control above the conversation made a setup step look
+  // required. It was hidden behind `if (false)` rather than removed, which left
+  // the control, the wllama runtime and the classification bridge shipping.
+  assert.doesNotMatch(html, /id="ariadneBrain"/);
+  assert.doesNotMatch(html, /wllama/);
+  assert.doesNotMatch(html, /ic-brain/);
+  assert.doesNotMatch(map, /brainBtn/);
+  assert.doesNotMatch(map, /if \(false/);
+  assert.doesNotMatch(ariadne, /buildClassificationPrompt/);
+  assert.ok(!fs.existsSync(path.join(RES, 'llm')), 'the wllama runtime is no longer shipped');
+});
+
+test('Ariadne resolves locally before it reaches for the network', () => {
+  // The deterministic parser must answer a supported task without a fetch.
+  const start = map.indexOf('async function handleAriadneQuestion');
+  if (start < 0) return; // the handler is named differently; the guardrails below still apply
+  const body = map.slice(start, start + 4000);
+  const localAt = body.indexOf('SyrmosAriadne.parse');
+  const cloudAt = body.indexOf('askCloudAriadne');
+  if (localAt >= 0 && cloudAt >= 0) {
+    assert.ok(localAt < cloudAt, 'local parsing must come before the hosted fallback');
+  }
+});

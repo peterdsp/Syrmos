@@ -817,111 +817,10 @@
         return row[lang] || row.en;
     }
 
-    // ---- Optional "clever" tier bridge (on-device LLM via wllama) ----------
-    // The LLM only does the UNDERSTANDING step. We prompt it for a small JSON
-    // object (intent + quoted station/line), then rebuild a clean canonical
-    // query and feed it back through parse(), so the deterministic parser does
-    // all the grounding and intent-building. The model never supplies an id or
-    // a fact, exactly like the native IntentGrounder path.
-
-    // Mirror of core/domain IntentGrounder.classificationPrompt (few-shot).
-    function buildClassificationPrompt(input) {
-        return [
-            'Task: classify a message about Athens metro/tram/suburban rail into ONE intent and quote the stations. Output ONLY the JSON object.',
-            'Intents: showDepartures (next trains from a station), lastTrain (last/final train), firstTrain (first/earliest train of the day), stationAccessibility (is a station step-free / wheelchair / lift), reverseTrip (and back / return the last trip), whichLines (which lines serve a station), stopsBetween (how many stops / how far between two stations), planTrip (how to go from A to B), planTripByArrival (arrive by a time), travelTime (how long), explainFare (ticket price/cost), explainLine (about a line), showAlerts (delays/strikes/closures), findStation (where is a station), weatherAt, help (what can you do), outOfScope (not about Athens transit).',
-            'Fields: intent, station, toStation, line, query, airport(bool), lowExposure(bool), day(today/tomorrow/weekend/saturday/sunday), arriveByClock(HH:mm or empty), arriveInMinutes(int). Never output an id, a time, a fare, or a route.',
-            '',
-            'Message: next trains from ambelokipi',
-            'JSON: {"intent":"showDepartures","station":"ambelokipi","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: last train from syntagma',
-            'JSON: {"intent":"lastTrain","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: πρωτο τρενο απο το μοναστηρακι',
-            'JSON: {"intent":"firstTrain","station":"μοναστηρακι","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: a eshte pireas i aksesueshem',
-            'JSON: {"intent":"stationAccessibility","station":"pireas","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: and back',
-            'JSON: {"intent":"reverseTrip","station":"","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: ποιες γραμμες περνανε απο το syntagma',
-            'JSON: {"intent":"whichLines","station":"syntagma","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: how many stops from monastiraki to piraeus',
-            'JSON: {"intent":"stopsBetween","station":"monastiraki","toStation":"piraeus","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: how much is a ticket to the airport',
-            'JSON: {"intent":"explainFare","station":"","toStation":"airport","line":"","query":"","airport":true,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: kur niset treni i fundit per Pire',
-            'JSON: {"intent":"lastTrain","station":"Pire","toStation":"","line":"","query":"","airport":false,"lowExposure":false,"day":"today","arriveByClock":"","arriveInMinutes":0}',
-            'Message: ' + String(input || '').trim(),
-            'JSON:',
-        ].join('\n');
-    }
-
-    function jsonField(json, key) {
-        const m = new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"').exec(json);
-        return m ? m[1].replace(/\\"/g, '"').trim() : '';
-    }
-
-    // Turn the model's JSON into a canonical natural-language query the
-    // deterministic parse() understands, or null to keep the rule-parser result.
-    function cleverQueryFromJson(json) {
-        if (!json) return null;
-        const kindM = /"intent"\s*:\s*"([a-zA-Z]+)"/.exec(json);
-        const intent = kindM ? kindM[1] : '';
-        const station = jsonField(json, 'station');
-        const toStation = jsonField(json, 'toStation');
-        const line = jsonField(json, 'line');
-        const query = jsonField(json, 'query') || station;
-        const clock = jsonField(json, 'arriveByClock');
-        const day = jsonField(json, 'day');
-        const daySuffix = (day && day !== 'today') ? (' ' + day) : '';
-        switch (intent) {
-            case 'showDepartures':
-                return station ? ('next trains from ' + station + (line ? ' ' + line : '') + daySuffix) : null;
-            case 'lastTrain':
-                return station ? ('last train from ' + station + (line ? ' ' + line : '')) : null;
-            case 'firstTrain':
-                return (station || line) ? ('first train from ' + (station || '') + (line ? ' ' + line : '')) : null;
-            case 'stationAccessibility':
-                return station ? ('is ' + station + ' accessible') : null;
-            case 'reverseTrip':
-                return 'and back';
-            case 'whichLines':
-                return station ? ('which lines serve ' + station) : null;
-            case 'stopsBetween':
-                if (station && toStation) return 'how many stops from ' + station + ' to ' + toStation;
-                return null;
-            case 'findStation':
-                return query ? ('where is ' + query) : null;
-            case 'planTrip':
-                if (station && toStation) return 'how do i get from ' + station + ' to ' + toStation;
-                if (toStation) return 'how do i get to ' + toStation;
-                return null;
-            case 'planTripByArrival':
-                if (toStation && clock) return 'how do i get to ' + toStation + ' by ' + clock;
-                return null;
-            case 'travelTime':
-                return toStation ? ('how long to ' + toStation) : null;
-            case 'explainLine':
-                return line ? ('about line ' + line) : null;
-            case 'explainFare':
-                return 'ticket price' + (toStation ? ' to ' + toStation : '');
-            case 'showAlerts':
-                return 'alerts' + (line ? ' ' + line : '');
-            case 'weatherAt':
-                return station ? ('weather at ' + station) : 'weather';
-            case 'help':
-                return 'help';
-            default:
-                return null;
-        }
-    }
-
-    // Public day-context probe for follow-ups ("what about tomorrow?").
-    // Returns 'today' | 'tomorrow' | 'weekend' | 'saturday' | 'sunday'.
-    function dayOf(rawInput) { return matchDay(fold(rawInput || '')); }
-
-    // Best-effort closest-station id for the recovery path ("did you mean X?"),
-    // or null. The caller resolves the display name. Mirrors KMP/iOS
-    // suggestStation; the parser itself still returns outOfScope.
-    function suggestStationId(rawInput) { return fuzzyMatchStation(fold(rawInput || '')); }
+    // The on-device "clever" tier and its classification-prompt bridge are gone.
+    // They existed only to feed a ~1.1 GB model the web app no longer offers or
+    // downloads; understanding that the deterministic parser cannot resolve goes
+    // to the bounded hosted fallback instead.
 
     global.SyrmosAriadne = {
         init: init,
@@ -932,7 +831,5 @@
         fold: fold,
         dayOf: dayOf,
         suggestStationId: suggestStationId,
-        buildClassificationPrompt: buildClassificationPrompt,
-        cleverQueryFromJson: cleverQueryFromJson,
     };
 })(window);

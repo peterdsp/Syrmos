@@ -6500,95 +6500,15 @@
         const launcher = document.getElementById("ariadneLauncher");
         const panel = document.getElementById("ariadnePanel");
         const closeBtn = document.getElementById("ariadneClose");
-        const brainBtn = document.getElementById("ariadneBrain");
         const messages = document.getElementById("ariadneMessages");
         const form = document.getElementById("ariadneForm");
         const input = document.getElementById("ariadneInput");
 
-        // The web's brain is the server cloud (askCloudAriadne) — no download from
-        // the user. The old on-device 1.1 GB wllama download UI is removed: hide
-        // the button and never wire the download/progress. (The legacy block is
-        // kept out with `if (false)` rather than a large deletion.)
-        if (brainBtn) brainBtn.style.display = "none";
-        if (false && brainBtn) {
-            const llm = window.AriadneLLM;
-            if (!llm) {
-                brainBtn.style.display = "none";
-            } else {
-                // A thin download-progress bar under the panel header, shown only
-                // while the ~1.1 GB model is downloading.
-                const progress = document.createElement("div");
-                progress.className = "ariadne-progress";
-                progress.innerHTML =
-                    '<div class="ariadne-progress__label"></div>' +
-                    '<div class="ariadne-progress__track"><div class="ariadne-progress__fill"></div></div>';
-                progress.style.display = "none";
-                (document.getElementById("ariadnePanel") || document.body).insertBefore(
-                    progress, document.getElementById("ariadneMessages"));
-                const pFill = progress.querySelector(".ariadne-progress__fill");
-                const pLabel = progress.querySelector(".ariadne-progress__label");
-
-                const pbStyle = document.createElement("style");
-                pbStyle.textContent = `
-                    .ariadne-progress { padding: 8px 14px 4px; }
-                    .ariadne-progress__label { font-size: 12px; opacity: 0.75; margin-bottom: 5px; }
-                    .ariadne-progress__track { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.12); overflow: hidden; }
-                    body.dark-mode .ariadne-progress__track { background: rgba(255,255,255,0.16); }
-                    .ariadne-progress__fill { height: 100%; width: 0%; border-radius: 999px; background: var(--sy-brand); transition: width 300ms ease; }
-                `;
-                document.head.appendChild(pbStyle);
-
-                const brainIcon = '<svg class="ic" aria-hidden="true"><use href="#ic-brain"/></svg>';
-                const paint = () => {
-                    const s = llm.status();
-                    const pct = Math.round((llm.progress ? llm.progress() : 0) * 100);
-                    // Keep the line icon; show the download percentage as text only
-                    // while loading. A state class tints it (ready/error) without a
-                    // second emoji. Never write a bare glyph over the <svg>.
-                    brainBtn.classList.remove("control-button--ready", "control-button--error");
-                    if (s === "loading") {
-                        brainBtn.textContent = pct + "%";
-                    } else {
-                        brainBtn.innerHTML = brainIcon;
-                        if (s === "ready") brainBtn.classList.add("control-button--ready");
-                        else if (s === "error") brainBtn.classList.add("control-button--error");
-                    }
-                    brainBtn.title = s === "ready"
-                        ? "Smarter answers are on (on-device brain ready)"
-                        : s === "loading"
-                        ? ("Downloading Ariadne's brain… " + pct + "% (~1.1 GB, one time)")
-                        : s === "error"
-                        ? "Download failed. Tap to retry. Rule parser still answers."
-                        : "Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)";
-                    if (s === "loading") {
-                        progress.style.display = "block";
-                        pFill.style.width = pct + "%";
-                        pLabel.textContent = "Downloading Ariadne's brain… " + pct + "%";
-                    } else if (s === "error") {
-                        progress.style.display = "block";
-                        pLabel.textContent = "Download failed. Tap 🧠 to retry.";
-                        pFill.style.width = "0%";
-                    } else {
-                        progress.style.display = "none";
-                    }
-                };
-                paint();
-                brainBtn.addEventListener("click", () => {
-                    const s = llm.status();
-                    if (s === "idle" || s === "error") {
-                        llm.download();
-                        const poll = setInterval(() => {
-                            paint();
-                            if (llm.status() === "ready" || llm.status() === "error") {
-                                if (llm.status() === "ready") setTimeout(() => { progress.style.display = "none"; }, 800);
-                                clearInterval(poll);
-                            }
-                        }, 400);
-                    }
-                    paint();
-                });
-            }
-        }
+        // Ariadne on the web is ready with the page: every supported transit task
+        // is answered locally by web-ariadne.js from the bundled seed, and the
+        // hosted service is a bounded optional fallback for wording the parser
+        // cannot resolve. There is no on-device model to download, so the control
+        // that offered one is gone rather than hidden behind a disabled branch.
 
         function appendMessage(text, from, sourceConf) {
             const el = document.createElement("div");
