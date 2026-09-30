@@ -46,7 +46,7 @@ By submitting a pull request, you agree that your contribution is licensed under
 
 If you cannot agree to both, please open an issue first so we can discuss.
 
-You retain copyright on your contribution. The dual-licensing arrangement is identical to what is already in [LICENSE](LICENSE).
+You retain copyright on your contribution. The dual-licensing arrangement is identical to what is already in [LICENSE](../LICENSE).
 
 ## Reporting security issues
 

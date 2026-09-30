@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Swift twin of the Kotlin `DuoPostureFixturesTest` (plus the general cases of
 /// `AdaptiveWorkspaceTest`) so both platforms resolve the six iPhone Duo postures
-/// and six transitions from `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`
+/// and six transitions recorded in `docs/design/FOLDABLE-READINESS.md`
 /// to the same arrangement, the same pane rectangles and the same collapse
 /// decisions. Same names, same inputs, same numbers: change both together.
 ///

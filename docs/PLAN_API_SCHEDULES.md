@@ -2,7 +2,7 @@
 
 Status: Draft, awaiting kickoff
 Owner: Petros
-Source of truth for data: `/Users/p.dhespollari/Desktop/athens_transit_icons_and_rules_package.zip`
+Source of truth for data: `athens_transit_icons_and_rules_package.zip`
 Target API host: `api-syrmos.peterdsp.dev` (Cloudflare Tunnel → Raspberry Pi at 192.168.10.10)
 Platforms in scope: iOS, Android, Web (all three together, no platform skipped)
 

@@ -498,7 +498,7 @@ iOS 3.0.0 (build auto-stamped) / Android 3.0.0 versionCode 225. Tagged as `v3.0.
 
 ## 3.0.0-beta.1 - 2026-09-03
 
-The first beta of **3.0 "Journeys"** ([docs/plans/3.0-JOURNEYS.md](docs/plans/3.0-JOURNEYS.md)): the shift
+The first beta of **3.0 "Journeys"**: the shift
 from a next-departure companion to an end-to-end journey companion (plan A to B, then be guided through the
 ride, board / ride / get off next / change here, without opening the app). This beta lands the GO engine
 across every platform and the first visible GO experience on iOS.
@@ -508,7 +508,7 @@ across every platform and the first visible GO experience on iOS.
   now (board / ride / get off next / transfer / arrived) plus a single get-off-alert predicate. Implemented
   identically in web (`web-go.js`), server (`go_guidance.py`), iOS (`JourneyGuidance.swift`) and Android/KMP
   (`GoGuidance.kt`), all validated against one cross-client golden contract
-  (`fixtures/go-guidance/cases.json`, exact-equality). Independently reviewed by Codex: no divergence across
+  (`fixtures/go-guidance/cases.json`, exact-equality). Independently reviewed: no divergence across
   a 1,290-state sweep, and the get-off cue is never dropped.
 - **iOS GO journey screen (internal beta only).** A screen that guides a rider through a planned journey one
   instruction at a time, line-tinted, with the get-off cue emphasised, localized EN/EL/SQ/IT. Reachable from

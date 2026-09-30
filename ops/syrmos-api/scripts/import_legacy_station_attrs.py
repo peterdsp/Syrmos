@@ -1,6 +1,6 @@
 """Backfill station accessibility + zone from the legacy bundled seed.
 
-Design: docs/plans/2026-07-17-server-as-single-source-for-lines.md
+Design: docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md
 
 Why this exists: accessibility and zone live ONLY in the legacy seed
 (core/data/.../files/seed/stations.json), which is generated from hardcoded Swift
@@ -49,7 +49,7 @@ MAX_MATCH_METRES = 80
 # This is the one an id-equality backfill cannot catch: M2_AGI exists on both
 # sides, so it looks like a match, and Agios Ioannis's fare zone would be written
 # onto Agios Antonios with nothing in the counts to notice. Confirmed by Petros
-# 2026-07-17. See docs/plans/2026-07-17-station-id-map.md.
+# 2026-07-17. See docs/data/station-id-map.md.
 ID_OVERRIDES = {
     "M2_AGI": "M2_AG2",   # Agios Ioannis
     "M2_AGA": "M2_AGI",   # Agios Antonios
@@ -146,7 +146,7 @@ def apply(conn: sqlite3.Connection, stations: list[dict]) -> tuple[int, int, lis
             f"unique server station:\n  " + "\n  ".join(unresolved[:8])
             + "\nAn unresolved station keeps the default zone=1, which in a zoned "
             "fare network is a wrong fare, not a blank one.\n"
-            "See docs/plans/2026-07-17-station-id-map.md"
+            "See docs/data/station-id-map.md"
         )
 
     updated = 0

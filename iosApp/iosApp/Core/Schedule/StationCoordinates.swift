@@ -1,7 +1,7 @@
 import CoreLocation
 
 // All coordinates from OpenStreetMap route relations via OASA/NAP GTFS data
-// Source: /Users/p.dhespollari/Downloads/athens_fixed_rail_station_coordinates.md
+// Source: assets/athens-transit-package/athens_fixed_rail_station_coordinates.md
 // OSM route relations: M1=445858, M2=7963539, M3=445945, T6=3648688, T7=6792078
 // Suburban: A1=8467445, A2=8467443, A3=8467442, A4=8467515
 

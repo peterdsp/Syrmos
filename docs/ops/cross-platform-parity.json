@@ -1,5 +1,5 @@
 {
-  "$comment": "Machine-readable Syrmos iOS/Android/Web parity ledger. Derived from docs/plans/2026-09-01-android-ios-parity-audit.md. status: matched | fixed | partial | backlog | intentional | blocked-external. Update when a row's parity changes.",
+  "$comment": "Machine-readable Syrmos iOS/Android/Web parity ledger. This file is the maintained record. status: matched | fixed | partial | backlog | intentional | blocked-external. Update when a row's parity changes.",
   "generatedFor": "2.0.0",
   "reference": "iOS is the product reference; Android/Web are brought to a deliberate-difference 1:1.",
   "deepQaSummary": {

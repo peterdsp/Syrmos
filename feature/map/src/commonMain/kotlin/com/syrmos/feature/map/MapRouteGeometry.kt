@@ -10,7 +10,7 @@ import com.syrmos.core.model.transit.Station
  * The single per-line polyline the map both draws and rides: it feeds the drawn
  * route, the vehicle-marker snapping, AND the train simulator/projector, so a
  * bus can never be drawn along its stops while its vehicle is interpolated
- * along an unrelated OSM shape (the PU1 divergence Codex caught).
+ * along an unrelated OSM shape (the PU1 divergence this prevents).
  *
  * Per line:
  * - bus: its ordered stops, closed into a loop when circular (PU1). Bundled OSM

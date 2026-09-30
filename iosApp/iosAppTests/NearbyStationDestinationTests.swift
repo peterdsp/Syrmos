@@ -140,7 +140,7 @@ final class InterchangeAssociationTests: XCTestCase {
     }
 
     func testEveryTransferResolvesToARealStopOnThatLine() throws {
-        // Codex regression guard: an interchange target must be a VALID
+        // Regression guard: an interchange target must be a VALID
         // (station id, line) pair on the TARGET line, so navigation and
         // schedule queries never use a foreign id. This is exactly the
         // invariant the earlier lineIds-enrichment approach violated.
@@ -182,7 +182,7 @@ final class InterchangeAssociationTests: XCTestCase {
     }
 
     func testEveryStationLineIdPairIsValid() throws {
-        // Codex invariant: every (station.id, line) in a station's lineIds must
+        // Invariant: every (station.id, line) in a station's lineIds must
         // resolve through stations(for: line), so the projector never keys a
         // foreign id and produces phantom departures. Covers curated, per-line
         // bundle, and the public map/browse collection.

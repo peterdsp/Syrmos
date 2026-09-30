@@ -56,6 +56,32 @@ final class AriadneModel: ObservableObject {
         Task { await alertsService.fetchAnnouncements() }
     }
 
+    /// How long each OPTIONAL understanding step may take before the turn falls
+    /// through to the localized recovery. The system model usually answers in
+    /// well under a second; the hosted service's own request ceiling is 33 s,
+    /// which is far longer than a rider will wait for a question the app could
+    /// not recognise in the first place.
+    static let normalizeBudget: Double = 3
+    static let cloudBudget: Double = 8
+
+    /// Run `work` with a deadline. Returns nil when the deadline passes first,
+    /// and cancels the losing task so nothing keeps running behind the answer.
+    static func bounded<T: Sendable>(
+        seconds: Double,
+        _ work: @escaping @Sendable () async -> T
+    ) async -> T? {
+        await withTaskGroup(of: T?.self) { group in
+            group.addTask { await work() }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+    }
+
     /// Monotonic turn identity. A result from an earlier or cancelled turn
     /// cannot mutate a later one, and Stop simply moves the counter on.
     private var currentTurn = 0
@@ -105,10 +131,15 @@ final class AriadneModel: ObservableObject {
             }
             if Task.isCancelled || !self.isCurrent(turn) { return }
 
-            // 2. Optional understanding, bounded and cancellable, for wording the
+            // 2. Optional understanding, BOUNDED and cancellable, for wording the
             //    parser could not resolve. Only an ALREADY AVAILABLE system model
             //    is consulted; nothing is downloaded and nothing is required.
-            if let normalized = await AriadneBrain.normalize(text),
+            //
+            //    Each attempt carries its own deadline. A system model that never
+            //    returns, or a provider chain that stalls behind its own 33 s
+            //    request ceiling, must not hold a turn open: the rider gets the
+            //    localized recovery instead.
+            if let normalized = await Self.bounded(seconds: Self.normalizeBudget, { await AriadneBrain.normalize(text) }) ?? nil,
                normalized.caseInsensitiveCompare(text) != .orderedSame,
                let reply = await self.resolveLocally(normalized, turn: turn) {
                 self.commit(reply, turn: turn)
@@ -116,7 +147,7 @@ final class AriadneModel: ObservableObject {
             }
             if Task.isCancelled || !self.isCurrent(turn) { return }
 
-            if let cloudReply = await self.askLLM(text) {
+            if let cloudReply = await Self.bounded(seconds: Self.cloudBudget, { await self.askLLM(text) }) ?? nil {
                 self.commit(cloudReply, turn: turn)
                 return
             }

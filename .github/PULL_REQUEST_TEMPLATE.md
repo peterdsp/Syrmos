@@ -15,7 +15,7 @@
 - [ ] iOS build passes
 - [ ] `python3 scripts/verify-bundles.py` passes
 - [ ] Tested on iPhone or iPad simulator
-- [ ] No new `Generated with` or AI-author trailers in commits
+- [ ] Commit messages carry no tool-generated authorship trailers
 
 ## Notes for review
 

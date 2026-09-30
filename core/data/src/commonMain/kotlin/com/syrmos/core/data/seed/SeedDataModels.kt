@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * flat `seed/lines.json`, which was generated from hardcoded Swift by a sync
  * script that had been broken since the June 2026 iOS restructure, so the two
  * copies silently drifted apart (86 of 201 station ids diverged). See
- * docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+ * docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md.
  */
 @Serializable
 data class SeedLinesPayload(

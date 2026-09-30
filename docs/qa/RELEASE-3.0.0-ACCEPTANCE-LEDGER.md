@@ -1,6 +1,6 @@
 # Syrmos 3.0.0 — station all-directions release acceptance ledger
 
-Opened 2026-09-30 (Europe/Athens). Branch `codex/station-all-directions-3.0.0`, forked from `master` @ `0f9549a0`.
+Opened 2026-09-30 (Europe/Athens), against `master` @ `0f9549a0`. Delivered in PR #241.
 
 This ledger maps every acceptance case of the station-departures specification and its Ariadne, Ichnos and
 foldable companion requirements to implementation, platform coverage, tests, runtime evidence and status.

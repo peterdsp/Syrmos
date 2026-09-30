@@ -620,7 +620,7 @@ This is intentional. Syrmos is a civic project and we want the architecture in a
 > multi-airport hub, capsule vehicle markers, the three-column web redesign, proximity-based interchanges).
 > The trip planner named below as 1.2's "one true unlock" shipped only as fragments (routing primitives, no
 > first-class cross-platform surface). The **next major release direction is 3.0 "Journeys"**, which finishes
-> that unlock and adds a live trip companion: see [docs/plans/3.0-JOURNEYS.md](plans/3.0-JOURNEYS.md).
+> that unlock and adds a live trip companion: see [CHANGELOG.md](../CHANGELOG.md).
 
 The roadmap is now organised around a single product principle: **Syrmos is a companion, not a schedule** (see [PRODUCT_PRINCIPLES.md](PRODUCT_PRINCIPLES.md)). The job is less "add features" and more "let the offline-prediction intelligence already in the app show through the surface." Most of the companion features below are UI on top of data Syrmos already has. The trip planner (1.2) is the one true unlock: the journey confidence score and the multi-leg "last train home" both become trivial the moment routing exists, which is the argument for keeping 1.2 on track.
 

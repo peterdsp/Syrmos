@@ -870,7 +870,7 @@
         // hardcoded Swift by a script broken since June 2026, so it carries
         // neither region nor status. Falls back to it only if the payload cannot
         // be read, so a bad deploy degrades rather than renders an empty map. See
-        // docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+        // docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md.
         fetch("/files/seed/schedules-v2/lines.json")
             .then((r) => r.json())
             .then((d) => (Array.isArray(d?.lines) && d.lines.length ? d.lines : Promise.reject()))
