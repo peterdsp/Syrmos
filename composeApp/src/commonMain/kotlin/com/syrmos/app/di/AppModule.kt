@@ -23,6 +23,7 @@ val featureModule = module {
         HomeViewModel(
             findNearestStation = get(),
             getNextDepartures = get(),
+            buildStationComplexBoard = get(),
             getLastTrain = get(),
             getLinesUseCase = get(),
             getLineDetail = get(),

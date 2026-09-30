@@ -11,6 +11,7 @@ import com.syrmos.core.domain.usecase.FindNearestStationUseCase
 import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
+import com.syrmos.core.domain.usecase.BuildStationComplexBoardUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.GetInterchangeTargetsUseCase
 import com.syrmos.core.domain.usecase.GetStationDetailUseCase
@@ -27,6 +28,17 @@ val domainModule = module {
     factory { ComputeActiveTrainsFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }
     factory { GetLastTrainUseCase(bandProjector = get()) }
+    // The reviewed station-complex registry and the authoritative per-line stop
+    // order are read once from the bundled seed, so they are singles.
+    single { com.syrmos.core.domain.station.StationComplexRepository(resourceReader = get()) }
+    single { com.syrmos.core.domain.station.LineStopOrder(resourceReader = get()) }
+    factory {
+        BuildStationComplexBoardUseCase(
+            stationComplexRepository = get(),
+            lineStopOrder = get(),
+            getNextDepartures = get(),
+        )
+    }
     factory { SearchStationsUseCase(stationRepository = get()) }
     factory { FindNearestStationUseCase(stationRepository = get()) }
     factory { PlanJourneyUseCase(stationRepository = get(), lineRepository = get()) }
