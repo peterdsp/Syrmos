@@ -110,33 +110,124 @@ enum SyrmosReservedRegionAdapter {
 
 // MARK: - Reading the system (iOS 27.1 SDK, gated)
 
-extension GeometryProxy {
+// The reserved-region API in the 27.1 SDK is `UIView.reservedRegions(kind:
+// options:)`, refined for Swift from `-[UIView reservedRegionsOfKind:options:]`
+// in `UIViewReservedRegion.h`. It is NOT a `GeometryProxy` member: the previous
+// gated branch called `reservedRegions` on a proxy, so enabling SYRMOS_DUO_SDK
+// would not have compiled, which is why it never was. Verified against
+// iPhoneSimulator27.1.sdk before adopting the name.
 
-    /// Every region the system reports for this proxy, both kinds, including
-    /// inactive ones (a flat, non-separating crease is a structural hint the
-    /// policy must see as inactive, never as blank pixels). Empty on a system or
-    /// a toolchain without the Duo API.
-    func syrmosRawReservedRegions() -> [SyrmosRawReservedRegion] {
+#if canImport(UIKit)
+import UIKit
+
+/// Reads the system's reserved regions from the UIKit view that actually backs
+/// the SwiftUI content, and publishes them into the environment.
+///
+/// A `GeometryProxy` gives the box; only the backing view can be asked what the
+/// system has reserved inside it. This bridges the two without making the whole
+/// layout UIKit-hosted.
+struct SyrmosReservedRegionReader: UIViewRepresentable {
+    let onChange: ([SyrmosRawReservedRegion]) -> Void
+
+    func makeUIView(context: Context) -> ProbeView {
+        let view = ProbeView()
+        view.onChange = onChange
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: ProbeView, context: Context) {
+        uiView.onChange = onChange
+        uiView.publish()
+    }
+
+    final class ProbeView: UIView {
+        var onChange: (([SyrmosRawReservedRegion]) -> Void)?
+        private var last: [SyrmosRawReservedRegion] = []
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            publish()
+        }
+
+        func publish() {
+            let regions = SyrmosReservedRegionReader.read(from: self)
+            guard regions != last else { return }
+            last = regions
+            onChange?(regions)
+        }
+    }
+
+    /// Every region the system reports for `view`, both kinds, including
+    /// inactive ones: a flat, non-separating crease is a structural hint the
+    /// policy must see as inactive, never as blank pixels. Empty on a system or
+    /// a toolchain without the Duo API, which is the correct answer for every
+    /// ordinary phone.
+    static func read(from view: UIView) -> [SyrmosRawReservedRegion] {
         #if SYRMOS_DUO_SDK
         if #available(iOS 27.1, *) {
-            let occlusions = reservedRegions(kind: .occlusion, options: .includeInactive).map {
-                SyrmosRawReservedRegion(kind: .occlusion, frame: $0.frame, isActive: $0.isActive)
-            }
-            let divisions = reservedRegions(kind: .division, options: .includeInactive).map {
-                SyrmosRawReservedRegion(kind: .division, frame: $0.frame, isActive: $0.isActive)
-            }
+            let occlusions = view.reservedRegions(kind: .occlusion, options: [.includeInactive])
+                .map { SyrmosRawReservedRegion(kind: .occlusion, frame: $0.frame, isActive: $0.isActive) }
+            let divisions = view.reservedRegions(kind: .division, options: [.includeInactive])
+                .map { SyrmosRawReservedRegion(kind: .division, frame: $0.frame, isActive: $0.isActive) }
             return occlusions + divisions
         }
         #endif
         return []
     }
+}
+#endif
+
+extension GeometryProxy {
+
+    /// The regions the system reports inside this proxy's box.
+    ///
+    /// Empty unless the app was built against the 27.1 SDK with SYRMOS_DUO_SDK
+    /// AND is running on a device that reports regions. Every other device
+    /// correctly reports none, and the policy then chooses a plain layout.
+    @MainActor
+    func syrmosRawReservedRegions() -> [SyrmosRawReservedRegion] {
+        SyrmosReservedRegionStore.shared.regions
+    }
 
     /// The normalised geometry of this proxy's own box.
+    @MainActor
     func syrmosReservedGeometry() -> SyrmosReservedGeometry {
         SyrmosReservedRegionAdapter.normalize(
             syrmosRawReservedRegions(),
             in: CGRect(origin: .zero, size: size)
         )
+    }
+}
+
+/// The most recent regions the reader observed, so any pane can normalise
+/// against them without every pane hosting its own probe view.
+@MainActor
+final class SyrmosReservedRegionStore: ObservableObject {
+    static let shared = SyrmosReservedRegionStore()
+    @Published private(set) var regions: [SyrmosRawReservedRegion] = []
+
+    func update(_ next: [SyrmosRawReservedRegion]) {
+        guard next != regions else { return }
+        regions = next
+    }
+}
+
+extension View {
+    /// Attach once, at the window's root: it reads the system's reserved regions
+    /// and keeps the shared store in step with them.
+    @ViewBuilder
+    func syrmosReadsReservedRegions() -> some View {
+        #if canImport(UIKit)
+        background(
+            SyrmosReservedRegionReader { regions in
+                Task { @MainActor in SyrmosReservedRegionStore.shared.update(regions) }
+            }
+            .allowsHitTesting(false)
+        )
+        #else
+        self
+        #endif
     }
 }
 

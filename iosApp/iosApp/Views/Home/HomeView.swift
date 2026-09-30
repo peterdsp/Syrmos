@@ -270,13 +270,28 @@ struct HomeView: View {
                 : SyrmosTokens.offline
 
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    pulseContextTag(
-                        pulseContext(disrupted: disrupted, lateNight: lateNight, hour: hour),
-                        color: stateColor
-                    )
-                    Spacer(minLength: 0)
-                    freshnessPill
+                // On a narrow cover display the tag and the long offline pill do
+                // not fit side by side. Squeezing them wrapped the pill one
+                // CHARACTER per line into a vertical ribbon that consumed the
+                // whole card and pushed the entire board off screen. They drop
+                // to two lines instead.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        pulseContextTag(
+                            pulseContext(disrupted: disrupted, lateNight: lateNight, hour: hour),
+                            color: stateColor
+                        )
+                        Spacer(minLength: 0)
+                        freshnessPill
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        pulseContextTag(
+                            pulseContext(disrupted: disrupted, lateNight: lateNight, hour: hour),
+                            color: stateColor
+                        )
+                        freshnessPill
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if let board = homeBoard(), board.timedGroupCount > 0 {
@@ -733,6 +748,9 @@ struct HomeView: View {
             OfflinePill(
                 message: "\(loc[.runningOffline]) · \(loc[.predictedFromSchedule])"
             )
+            // Never narrower than its own words: a pill squeezed below its
+            // intrinsic width wraps per character instead of per word.
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
