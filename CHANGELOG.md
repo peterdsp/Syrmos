@@ -2,7 +2,7 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 uses **230**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-230; the next release must use 231+.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 used **230**, beta.8 uses **231**, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-231; the next release must use 232+.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
@@ -11,6 +11,57 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
 ## Unreleased
+
+## 3.0.0-beta.8 - 2026-09-30
+
+The station-complex all-directions departures board, a local-first Ariadne, and
+Ichnos scoped to the departure in front of the rider. Android versionCode 231.
+
+### The board
+
+- Home and the station sheet now answer "what leaves from here?" for the whole
+  station complex on iOS, Android and web. Athens joins its five boarding stop
+  ids into one station, so its metro, suburban, intercity and regional services
+  appear together instead of one source suppressing the others.
+- Destinations come from each trip's own stop times, so short turns keep their
+  real headsign, a terminal arrival is never offered as a departure, and a
+  terminal offers one direction rather than two.
+- Every supported destination is enumerated before any presentation limit, so a
+  less frequent railway destination can no longer be crowded out by a frequent
+  metro line. A service with nothing in the window keeps a named row stating so.
+- Rows carry a stable identity, so a countdown tick never reorders the list and
+  an action cannot be retargeted by data arriving mid-tap.
+
+### Ariadne
+
+- Answers supported transit questions from bundled data first: no model, no
+  download, no network. A core question is answered in under a fifth of a second
+  where the previous order waited on the hosted service.
+- "What leaves from here?" and a directional follow-up read the same board the
+  card shows, in all four supported languages.
+- Turns are serialized, Stop keeps the conversation and the unsent draft, and a
+  cancelled result cannot land in a later turn.
+- The on-device model download and its remnants are gone from every client.
+
+### Ichnos
+
+- A selected departure carries community context at the narrowest supported
+  scope, with report age, an explicit stale label, and a broader-scope notice
+  when only broader evidence exists.
+- Loading, unavailable and "no recent reports" are three distinct states: a
+  failed request never reads as "everything is fine".
+- Contextual reporting is prefilled from the selected row; a retry reuses the
+  same report id so it cannot create a second accepted report, and undo removes
+  the one it sent.
+
+### Foldables
+
+- Fixed a Duo cover-display defect where the offline pill wrapped one character
+  per line and pushed the whole board off screen.
+- The reserved-region adapter now uses the real iOS 27.1 `UIView.reservedRegions`
+  API. See [docs/design/FOLDABLE-READINESS.md](docs/design/FOLDABLE-READINESS.md)
+  for the dated runtime evidence, including the native arrangement path that is
+  reproduced as failing and therefore deliberately not shipped.
 
 ## 3.0.0-beta.7 - 2026-09-30
 
