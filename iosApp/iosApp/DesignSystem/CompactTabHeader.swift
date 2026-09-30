@@ -20,6 +20,28 @@ struct CompactTabHeader: View {
             .background(capsuleBackground)
             .padding(.horizontal, 16)
             .padding(.top, 4)
+            // Scrolling content passes UNDER this header and on into the status
+            // bar, which has no chrome of its own. Without a scrim a long list
+            // (the all-directions station board is the first one long enough to
+            // reach here) renders sharply against the clock and the Wi-Fi glyph,
+            // and reads through the capsule itself. The scrim fades out downward
+            // so the header still floats rather than becoming a solid bar.
+            .background(alignment: .top) { topScrim }
+    }
+
+    private var topScrim: some View {
+        LinearGradient(
+            colors: [
+                Color.syrmosBackground,
+                Color.syrmosBackground,
+                Color.syrmosBackground.opacity(0),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(height: 140)
+        .allowsHitTesting(false)
+        .ignoresSafeArea(edges: .top)
     }
 
     private var capsuleContent: some View {

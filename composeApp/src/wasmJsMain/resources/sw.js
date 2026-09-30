@@ -18,7 +18,11 @@
 // and /privacy no longer overwrite the cached app shell). Bumping the version
 // also discards any v2 shell that an older worker may have replaced with a
 // standalone page, and re-precaches the real shell on install.
-const VERSION = "v3";
+// v4: the station-complex all-directions board. The shell, the new
+// web-station-board.js module and the station-complex registry must all reach an
+// ALREADY-INSTALLED worker, so the version bump is what makes returning users
+// receive the update rather than a cached single-direction card.
+const VERSION = "v4";
 const CACHE = `syrmos-${VERSION}`;
 const TILE_CACHE = `syrmos-tiles-${VERSION}`;
 const TILE_MAX = 300; // opportunistic, capped: only tiles the user actually viewed
@@ -42,12 +46,14 @@ const PRECACHE = [
   "/web-go.js",
   "/web-airport.js",
   "/web-departures.js",
+  "/web-station-board.js",
   "/web-planner.js",
   "/web-active-journey.js",
   "/web-go-panel.js",
   "/shapes.json",
   "/files/seed/stations.json",
   "/files/seed/schedules-v2/lines.json",
+  "/files/seed/station-complexes.json",
   "/files/seed/routes.json",
   "/files/seed/service_patterns.json",
   "/files/seed/station-offsets.json",

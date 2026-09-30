@@ -11,6 +11,8 @@ import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetLineDetailUseCase
 import com.syrmos.core.domain.usecase.GetLinesUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
+import com.syrmos.core.domain.station.StationComplexBoard
+import com.syrmos.core.domain.usecase.BuildStationComplexBoardUseCase
 import com.syrmos.core.domain.usecase.HomeDirectionBoard
 import com.syrmos.core.domain.usecase.NearestStationCluster
 import com.syrmos.core.domain.usecase.UpcomingDeparture
@@ -43,6 +45,17 @@ data class HomeUiState(
     val nextDeparture: UpcomingDeparture? = null,
     /** The next train in every direction from the nearest station (Home direction board). */
     val directionBoard: List<HomeDirectionBoard.Row> = emptyList(),
+    /**
+     * The all-directions board for the rider's whole station COMPLEX: every
+     * supported destination from every member boarding stop, enumerated before
+     * any presentation limit. Null until the first load.
+     */
+    val stationBoard: StationComplexBoard.Board? = null,
+    /**
+     * The board row the rider explicitly selected. Actions target THIS group, so
+     * a refresh that reorders the board cannot retarget a tap.
+     */
+    val selectedBoardGroupId: String? = null,
     /** Resolved line for [nextDeparture], for its colour and destination terminal. */
     val nextDepartureLine: Line? = null,
     /** Tonight's final train on the nearest station's primary line. */
@@ -75,6 +88,7 @@ data class HomeUiState(
 class HomeViewModel(
     private val findNearestStation: FindNearestStationUseCase,
     private val getNextDepartures: GetNextDeparturesUseCase,
+    private val buildStationComplexBoard: BuildStationComplexBoardUseCase,
     private val getLastTrain: GetLastTrainUseCase,
     private val getLinesUseCase: GetLinesUseCase,
     private val getLineDetail: GetLineDetailUseCase,
@@ -316,6 +330,45 @@ class HomeViewModel(
                 lastTrainLine = lastTrainLine,
             )
         }
+
+        // The whole station complex, every supported direction. Built after the
+        // legacy fields so the screen paints its first answer immediately and
+        // then fills in the rest of the board, rather than waiting for every
+        // service of a five-platform interchange.
+        val complexBoard = runCatching {
+            buildStationComplexBoard(
+                stopIds = stops.map { it.first }.distinct(),
+                // NearestStationResult carries the resolved display name only;
+                // the complex registry supplies its own localized names when it
+                // claims the stop, so this is the fallback for a station it
+                // does not.
+                displayName = _uiState.value.nearestStations.firstOrNull()?.stationName.orEmpty(),
+            )
+        }.getOrNull()
+        _uiState.update { state ->
+            state.copy(
+                stationBoard = complexBoard,
+                // Keep the selection only while its group still exists.
+                selectedBoardGroupId = state.selectedBoardGroupId
+                    ?.takeIf { id -> complexBoard?.groups?.any { it.id == id } == true },
+            )
+        }
+    }
+
+    /**
+     * Select a board row. Actions read this, so new data arriving between a tap
+     * and its handler cannot retarget it.
+     */
+    fun onBoardGroupSelected(groupId: String) {
+        _uiState.update { it.copy(selectedBoardGroupId = groupId) }
+    }
+
+    /** The group an action should act on: the explicit choice, else the soonest. */
+    fun selectedBoardGroup(): StationComplexBoard.Group? {
+        val state = _uiState.value
+        val board = state.stationBoard ?: return null
+        return board.groups.firstOrNull { it.id == state.selectedBoardGroupId }
+            ?: board.groups.firstOrNull { it.total > 0 }
     }
 
     /** M3_AIR is the airport branch of Line 3; it shares M3's UI identity. */

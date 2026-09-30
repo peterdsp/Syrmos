@@ -32,6 +32,17 @@
     // language with English as the fallback.
     const I18N = {
         en: {
+            board_all_directions: "All directions",
+            board_all_departures: "All departures",
+            board_partial: "Some services could not be loaded",
+            board_no_departure_window: "No departure in the next 12 hours",
+            board_unavailable: "Timetable unavailable",
+            board_not_operating: "Not in service",
+            board_next_beyond: "Next verified departure {time}",
+            board_from_area: "from {area}",
+            board_open_group: "Open departures towards {destination}",
+            board_cancelled: "Cancelled",
+            board_services: "{n} services",
             brand_subtitle: "Athens rail map",
             athens: "Athens",
             thessaloniki: "Thessaloniki",
@@ -150,6 +161,17 @@
             whatsnew_stay: "Continue on web",
         },
         el: {
+            board_all_directions: "Όλες οι κατευθύνσεις",
+            board_all_departures: "Όλες οι αναχωρήσεις",
+            board_partial: "Ορισμένες υπηρεσίες δεν φορτώθηκαν",
+            board_no_departure_window: "Καμία αναχώρηση τις επόμενες 12 ώρες",
+            board_unavailable: "Το δρομολόγιο δεν είναι διαθέσιμο",
+            board_not_operating: "Εκτός λειτουργίας",
+            board_next_beyond: "Επόμενη επιβεβαιωμένη αναχώρηση {time}",
+            board_from_area: "από {area}",
+            board_open_group: "Άνοιγμα αναχωρήσεων προς {destination}",
+            board_cancelled: "Ακυρώθηκε",
+            board_services: "{n} υπηρεσίες",
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
             athens: "Αθήνα",
             thessaloniki: "Θεσσαλονίκη",
@@ -268,6 +290,17 @@
             whatsnew_stay: "Συνέχεια στο web",
         },
         sq: {
+            board_all_directions: "Të gjitha drejtimet",
+            board_all_departures: "Të gjitha nisjet",
+            board_partial: "Disa shërbime nuk u ngarkuan",
+            board_no_departure_window: "Asnjë nisje në 12 orët e ardhshme",
+            board_unavailable: "Orari nuk është i disponueshëm",
+            board_not_operating: "Jashtë shërbimit",
+            board_next_beyond: "Nisja tjetër e verifikuar {time}",
+            board_from_area: "nga {area}",
+            board_open_group: "Hap nisjet drejt {destination}",
+            board_cancelled: "Anuluar",
+            board_services: "{n} shërbime",
             brand_subtitle: "Harta e hekurudhave të Athinës",
             athens: "Athina",
             thessaloniki: "Selanik",
@@ -386,6 +419,17 @@
             whatsnew_stay: "Vazhdo në web",
         },
         it: {
+            board_all_directions: "Tutte le direzioni",
+            board_all_departures: "Tutte le partenze",
+            board_partial: "Alcuni servizi non sono stati caricati",
+            board_no_departure_window: "Nessuna partenza nelle prossime 12 ore",
+            board_unavailable: "Orario non disponibile",
+            board_not_operating: "Fuori servizio",
+            board_next_beyond: "Prossima partenza verificata {time}",
+            board_from_area: "da {area}",
+            board_open_group: "Apri le partenze verso {destination}",
+            board_cancelled: "Cancellato",
+            board_services: "{n} servizi",
             brand_subtitle: "Mappa ferroviaria di Atene",
             athens: "Atene",
             thessaloniki: "Salonicco",
@@ -819,7 +863,7 @@
     // the seed) degrades to an empty-but-alive map instead of rejecting the whole
     // init and rendering a blank screen. Once the SW is installed these are
     // served from cache offline and the .catch never fires.
-    const [stations, lines, routes, servicePatterns, vehicleManifest] = await Promise.all([
+    const [stations, lines, routes, servicePatterns, vehicleManifest, stationComplexRegistry] = await Promise.all([
         fetch("/files/seed/stations.json").then((r) => r.json()).catch(() => []),
         // schedules-v2 is the generator's payload and the single source of truth
         // for lines. The legacy flat seed/lines.json was transcribed from
@@ -835,6 +879,11 @@
         fetch("/files/seed/routes.json").then((r) => r.json()).catch(() => []),
         fetch("/files/seed/service_patterns.json").then((r) => r.json()).catch(() => ({})),
         fetch("/icons/vehicles/manifest.json").then((r) => r.json()).catch(() => ({ directional_icons: [] })),
+        // The reviewed station-complex registry. It is what joins Athens's five
+        // boarding stop ids (M2_STA, A1_ATH, A3_ATH, A4_ATH, GR_ATH) into one
+        // station, and what keeps genuinely distinct neighbours apart. An empty
+        // registry degrades to per-node boards rather than breaking the map.
+        fetch("/files/seed/station-complexes.json").then((r) => r.json()).catch(() => ({ complexes: [] })),
     ]);
 
     const lineMap = new Map(lines.map((line) => [line.id, line]));
@@ -914,25 +963,6 @@
             try { localStorage.setItem(cachedIconsKey, JSON.stringify(fresh)); } catch (_) {}
         }
     } catch (_) {}
-    // PDF-grounded per-train timestamps for suburban A1-A4. When this is
-    // populated, buildStationDepartures uses it for suburban stations and
-    // falls back to band projection only when the operator hasn't published
-    // a real timetable. Cached for offline cold start.
-    let apiTrainTimestamps = { trains: [] };
-    try {
-        const cachedTT = localStorage.getItem("syrmos.train-timestamps.v1");
-        if (cachedTT) apiTrainTimestamps = JSON.parse(cachedTT);
-    } catch (_) {}
-    try {
-        const freshTT = await fetch("https://api-syrmos.peterdsp.dev/api/train-timestamps")
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null);
-        if (freshTT && Array.isArray(freshTT.trains)) {
-            apiTrainTimestamps = freshTT;
-            try { localStorage.setItem("syrmos.train-timestamps.v1", JSON.stringify(freshTT)); } catch (_) {}
-        }
-    } catch (_) {}
-
     // Source of truth for schedules: /api/schedules/{lineId}. Cached in
     // localStorage so an offline cold start still has correct data.
     const apiSchedules = new Map();
@@ -965,6 +995,25 @@
         });
         if (Object.keys(persist).length) {
             try { localStorage.setItem("syrmos.schedules.v1", JSON.stringify(persist)); } catch (_) {}
+        }
+    } catch (_) {}
+
+    // Offline-first backstop: any line the API and the local cache could not
+    // supply is read from the bundled snapshot that shipped with this build. A
+    // first-ever visit with no network therefore still has a complete station
+    // board instead of a blank card, and the intercity/regional corridors
+    // (IC1, RG1) - which have trips but no bands - are never missing from the
+    // Athens complex just because one fetch failed.
+    try {
+        const missing = lineIdsToFetch.filter((lid) => !apiSchedules.has(lid));
+        if (missing.length) {
+            const bundled = await Promise.all(missing.map((lid) =>
+                fetch(`/files/seed/schedules-v2/${lid}.json`)
+                    .then((r) => (r.ok ? r.json() : null))
+                    .catch(() => null)));
+            bundled.forEach((b, idx) => {
+                if (b && Array.isArray(b.bands) && Array.isArray(b.rules)) apiSchedules.set(missing[idx], b);
+            });
         }
     } catch (_) {}
 
@@ -1657,6 +1706,29 @@
     // setupPanelBehavior and the hero run — a `let` next to the function would be
     // in its temporal dead zone when setupHero is invoked earlier in init.
     let heroActive = false;
+    // Declared here, not next to loadStationOffsets(), because the station board
+    // is built during init before that loader runs and would otherwise hit the
+    // temporal dead zone.
+    let stationOffsetsByLineDirection = null;
+    // The rider's explicit station choice for the all-directions board. Location
+    // establishes the initial default only; it must never replace a deliberate
+    // selection on a refresh.
+    let pinnedBoardNodeId = null;
+    // The board group a row tap targeted, so the station sheet opens that
+    // destination rather than whatever is first when the handler runs.
+    let boardFocusGroup = null;
+    let boardShowAllDepartures = false;
+
+    // Act on ONE explicitly selected departure. The web client has map focus and
+    // schedule detail, not vehicle-level tracking, so this focuses the selected
+    // boarding stop and opens that destination's departures. It never claims a
+    // train has begun tracking and never replaces an active guided journey.
+    function trackBoardGroup(board, group) {
+        if (!board || !group) return;
+        const node = nodeForComplex(board.complex) || board.node;
+        if (!node) return;
+        selectStation(node.id, true, { focusGroup: group });
+    }
 
     // Lightweight canvas dots instead of DOM divIcons. Colour = primary line;
     // interchanges get a slightly larger, heavier white ring; the selected stop
@@ -2074,81 +2146,338 @@
             if (out.length >= limit) return;
         }
     }
-    /// PDF-grounded next-departures path. For any suburban station call
-    /// (A1-A4), pull the next few trains that stop here from the per-train
-    /// timestamp data set, with the real published HH:MM time.
-    function realTimetableDepartures(station) {
-        if (!apiTrainTimestamps || !apiTrainTimestamps.trains?.length) return [];
-        const wantedNames = new Set([station.name, station.nameEl].filter(Boolean));
-        const out = [];
-        const now = athensNow();
-        const nowMinutes = now.getHours() * 60 + now.getMinutes();
-        for (const train of apiTrainTimestamps.trains) {
-            const stop = train.stops.find((s) => wantedNames.has(s.stationNameEn) || wantedNames.has(s.stationNameEl));
-            if (!stop) continue;
-            const [h, m] = stop.time.split(":").map((n) => parseInt(n, 10));
-            if (Number.isNaN(h) || Number.isNaN(m)) continue;
-            let minutesAway = h * 60 + m - nowMinutes;
-            // A published HH:MM smaller than now is tomorrow's early service, not
-            // the past — wrap it forward a day so a 00:15 train at 23:50 reads
-            // 25 min instead of being dropped. The >4h cap below still discards
-            // trains that have genuinely left.
-            if (minutesAway < 0) minutesAway += 24 * 60;
-            if (minutesAway > 240) continue;
-            const last = train.stops[train.stops.length - 1];
-            // If the wanted station IS this train's final stop, this row is an
-            // ARRIVAL, not a departure. Showing it as a departure "to <this very
-            // station>" (the Ano Lechonia / Milies bug) is nonsense, so drop it.
-            if (wantedNames.has(last.stationNameEn) || wantedNames.has(last.stationNameEl)) continue;
-            const line = lineMap.get(train.lineId);
-            // Track that is built but not open carries no service, so it can have
-            // no departures, however the feed or the projector might describe it.
-            if (line && !isOperational(line)) continue;
-            out.push({
-                line: line || { id: train.lineId, name: train.lineId, color: "#7e22ce" },
-                direction: last.stationNameEn,
-                minutesAway,
-                timeMinutes: h * 60 + m,
-                // Consumers (departure card at renderDepartures, Ariadne intents)
-                // read `.time`; the band projector emits `time`, so the PDF path
-                // must too or suburban rows show a blank clock and Ariadne can't
-                // parse them. `timeLabel` kept as an alias for any legacy reader.
-                time: stop.time,
-                timeLabel: stop.time,
-                trainNo: train.trainNo,
-            });
-        }
-        return out.sort((a, b) => a.minutesAway - b.minutesAway).slice(0, 10);
+    // Chronological departures for one station node, flattened from the
+    // station-complex board.
+    //
+    // This used to be a source-exclusive path: it returned the PDF-grounded
+    // suburban timetable whenever that had ANY rows, which suppressed both metro
+    // directions for the whole station, and it filled a missing direction by
+    // alternating the line's two terminal names by result index, which invented
+    // a headsign. Both are gone: reconciliation is per service and per trip in
+    // SyrmosStationBoard, and a destination only ever comes from the trip's own
+    // stop sequence or the stop's real position on the line.
+    function buildStationDepartures(station) {
+        const board = buildComplexBoard(station, { maxTimesPerGroup: 0 });
+        if (!board) return [];
+        return board.groups
+            .flatMap((g) => g.times.map((tt) => ({
+                line: g.line,
+                lineId: g.lineId,
+                direction: g.destination,
+                destination: g.destination,
+                minutesAway: tt.absoluteMinutes,
+                timeMinutes: tt.absoluteMinutes,
+                time: tt.time,
+                timeLabel: tt.time,
+                trainNo: tt.trainNo || null,
+                serviceType: g.serviceType,
+                source: tt.source || g.source,
+                sourceLabel: tt.sourceLabel || g.sourceLabel,
+                sourceConfidence: tt.source || g.source,
+                cancelled: !!tt.cancelled,
+            })))
+            .sort((a, b) => a.minutesAway - b.minutesAway);
     }
 
-    function buildStationDepartures(station) {
-        // Prefer PDF-grounded data when we have it for this station.
-        const real = realTimetableDepartures(station);
-        if (real.length) return real;
-        if (!apiSchedules || apiSchedules.size === 0) return [];
+    // ===== Station-complex all-directions board ==============================
+    //
+    // "What leaves from here?" for a whole station complex, every supported
+    // direction, before any presentation limit. The previous path answered with
+    // `deps[0]` plus an unlabelled "then" tail, and `buildStationDepartures`
+    // returned the published suburban timetable EXCLUSIVELY whenever it had
+    // rows, which suppressed both metro directions at Athens. Grouping and
+    // limiting now happen last, in SyrmosStationBoard.
+
+    // Boarding membership is route membership: a line serves a stop only when
+    // that line's own station list contains it. The seed's
+    // `stations.json:line_ids` carries interchange unions, which is how an A1
+    // lookup used to resolve to the metro stop `M2_STA`.
+    const linesBoardingAtStop = (() => {
+        const map = new Map();
+        for (const line of lines) {
+            for (const st of line.stations || []) {
+                if (!st || !st.id) continue;
+                if (!map.has(st.id)) map.set(st.id, []);
+                if (!map.get(st.id).some((l) => l.id === line.id)) map.get(st.id).push(line);
+            }
+        }
+        for (const list of map.values()) list.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+        return map;
+    })();
+
+    const BOARD_AREA_LABELS = {
+        metro: { name: "Metro", nameEl: "Μετρό", nameSq: "Metro", nameIt: "Metropolitana" },
+        tram: { name: "Tram", nameEl: "Τραμ", nameSq: "Tramvaj", nameIt: "Tram" },
+        rail: { name: "Railway station", nameEl: "Σιδηροδρομικός σταθμός", nameSq: "Stacioni hekurudhor", nameIt: "Stazione ferroviaria" },
+        bus: { name: "Rail-replacement bus", nameEl: "Λεωφορείο αντικατάστασης", nameSq: "Autobus zëvendësues", nameIt: "Bus sostitutivo" },
+    };
+    function boardAreaIdFor(lineType) {
+        switch (String(lineType || "").toLowerCase()) {
+            case "metro": return "metro";
+            case "tram": return "tram";
+            case "bus": return "bus";
+            default: return "rail";
+        }
+    }
+
+    // A station name in the reader's language, English as the only fallback so
+    // an English UI never leaks Greek or Albanian.
+    function localStationName(idOrStation) {
+        const st = typeof idOrStation === "string" ? stationMap.get(idOrStation) : idOrStation;
+        if (!st) return typeof idOrStation === "string" ? idOrStation : "";
+        const en = st.name || st.id || "";
+        if (currentLang === "el") return st.name_el || st.nameEl || en;
+        if (currentLang === "sq") return st.name_sq || st.nameSq || en;
+        // The seed carries English, Greek and Albanian station names only.
+        // Italian readers get the romanized English name, which is what every
+        // other Italian surface already shows, rather than a leaked Greek or
+        // Albanian spelling.
+        if (currentLang === "it") return en;
+        return en;
+    }
+
+    // The complex a map node belongs to. Reviewed membership only; a node the
+    // registry does not know becomes a single-station complex of its own stops,
+    // so every station renders through the same board.
+    function complexForNode(node) {
+        if (!node) return null;
+        const ids = (node.stationIds && node.stationIds.length) ? node.stationIds : [node.id];
+        if (window.SyrmosStationBoard) {
+            for (const stopId of ids) {
+                const found = window.SyrmosStationBoard.complexForStop(stopId, stationComplexRegistry);
+                if (found) return found;
+            }
+        }
+        const areas = [];
+        for (const stopId of ids) {
+            for (const line of (linesBoardingAtStop.get(stopId) || [])) {
+                const areaId = boardAreaIdFor(line.type);
+                let area = areas.find((a) => a.id === areaId);
+                if (!area) { area = Object.assign({ id: areaId, stopIds: [] }, BOARD_AREA_LABELS[areaId]); areas.push(area); }
+                if (!area.stopIds.includes(stopId)) area.stopIds.push(stopId);
+            }
+        }
+        if (!areas.length) return null;
+        return {
+            id: "NODE:" + node.id,
+            name: node.name || node.nameEl || node.id,
+            nameEl: node.nameEl || node.name || node.id,
+            nameSq: node.nameSq || node.name || node.id,
+            nameIt: node.name || node.id,
+            areas,
+            synthetic: true,
+        };
+    }
+
+    // The map node that owns a complex, so selecting a board row still opens a
+    // real station sheet.
+    function nodeForComplex(complex) {
+        if (!complex) return null;
+        if (complex.synthetic) return stationNodeMap.get(String(complex.id).slice(5)) || null;
+        const wanted = new Set(complex.areas.flatMap((a) => a.stopIds));
+        for (const node of stationNodes) {
+            if ((node.stationIds || []).some((id) => wanted.has(id))) return node;
+        }
+        return null;
+    }
+
+    // Offset of a stop from its line's origin, in minutes, for one direction.
+    // Band projection produces the ORIGIN's departure slots; without this every
+    // station on the line would claim the terminal's departure minute.
+    function stopOffsetMinutes(lineId, directionKey, stopId) {
+        if (!stationOffsetsByLineDirection) return null;
+        const stops = stationOffsetsByLineDirection.get(`${lineId}|${directionKey}`);
+        if (!stops) return null;
+        const hit = stops.find((s) => s.stationId === stopId);
+        return hit ? (hit.minutesFromOrigin || 0) : null;
+    }
+
+    // ISO date in Athens for a Date already expressed in Athens local parts.
+    function isoDateOf(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    // Published trips that a rider can actually board at `stopId`.
+    //
+    // Destination comes from the trip's own stop times, never from the
+    // direction flag: A1 3201 runs Airport -> Tavros late at night and would
+    // otherwise be labelled "to Piraeus", a station it never reaches.
+    function tripDeparturesAt(bundle, line, stopId, areaId, nowDate, windowMinutes) {
+        const out = [];
+        if (!bundle || !Array.isArray(bundle.trips) || !bundle.trips.length) return out;
+        if (!window.SyrmosStationBoard) return out;
+        const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+        const days = Math.max(1, Math.ceil((nowMinutes + windowMinutes) / (24 * 60)));
+        for (let dayOffset = 0; dayOffset <= days; dayOffset++) {
+            const day = new Date(nowDate);
+            day.setDate(nowDate.getDate() + dayOffset);
+            const dt = dayTypeFor(day, resolveHolidayDayType(day));
+            const iso = isoDateOf(day);
+            for (const trip of bundle.trips) {
+                const tripDay = (trip.dayType || "").toLowerCase();
+                if (tripDay && tripDay !== dt) continue;
+                // A dated seasonal or special trip only exists on its own dates.
+                if (trip.validDates && !String(trip.validDates).split(",").includes(iso)) continue;
+                const boarding = window.SyrmosStationBoard.tripBoarding(trip, stopId);
+                if (!boarding || !boarding.boardsHere) continue;
+                const absolute = boarding.departureMinutes + dayOffset * 24 * 60 - nowMinutes;
+                if (absolute < 0 || absolute > windowMinutes) continue;
+                const destName = localStationName(boarding.destinationStopId);
+                out.push({
+                    stopId,
+                    areaId,
+                    lineId: line.id,
+                    line,
+                    operator: line.region === "national" ? "hellenic_train" : "",
+                    destination: destName,
+                    destinationId: boarding.destinationStopId,
+                    patternKey: "",
+                    // Provider-qualified so two lines cannot collide on a train
+                    // number, and service-dated so tomorrow's 08:00 is not
+                    // today's 08:00.
+                    tripId: trip.trainNo ? `${line.id}:${trip.trainNo}` : null,
+                    serviceDate: iso,
+                    time: `${String(Math.floor(boarding.departureMinutes / 60)).padStart(2, "0")}:${String(boarding.departureMinutes % 60).padStart(2, "0")}`,
+                    absoluteMinutes: absolute,
+                    minutesAway: absolute,
+                    source: "scheduled",
+                    sourceLabel: t("scheduled"),
+                    trainNo: trip.trainNo || null,
+                    serviceType: trip.serviceLabel || "",
+                    boardsHere: true,
+                });
+            }
+        }
+        return out;
+    }
+
+    // Frequency-band projection for a line with no published trips (the metro
+    // and tram corridors). Every slot is emitted once per direction the stop can
+    // actually leave in, so a terminal offers one direction rather than two, and
+    // each row carries the real terminal name instead of the index-parity guess
+    // the old fallback used. Estimated by construction: a band is a headway, not
+    // a timetabled minute, so these never claim second-level precision.
+    function bandDeparturesAt(bundle, line, stopId, areaId, nowDate, windowMinutes) {
+        const out = [];
+        if (!bundle || !bundle.bands || !bundle.bands.length || !window.SyrmosStationBoard) return out;
+        const directions = window.SyrmosStationBoard.lineDirectionsAt(line, stopId);
+        if (!directions.length) return out;
+        const slots = [];
+        projectFromBundle(bundle, nowDate, line.id, slots, 64);
+        const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+        for (const dir of directions) {
+            const directionKey = dir.towardIndex === 0 ? "inbound" : "outbound";
+            const offset = stopOffsetMinutes(line.id, directionKey, stopId) || 0;
+            for (const slot of slots) {
+                const absolute = slot.timeMinutes + offset - nowMinutes;
+                if (absolute < 0 || absolute > windowMinutes) continue;
+                const display = ((slot.timeMinutes + offset) % (24 * 60) + 24 * 60) % (24 * 60);
+                out.push({
+                    stopId,
+                    areaId,
+                    lineId: line.id,
+                    line,
+                    operator: "",
+                    destination: dir.destination,
+                    destinationId: null,
+                    patternKey: line.id === "M3_AIR" ? "airport" : "",
+                    tripId: null,
+                    serviceDate: null,
+                    time: `${String(Math.floor(display / 60)).padStart(2, "0")}:${String(display % 60).padStart(2, "0")}`,
+                    absoluteMinutes: absolute,
+                    minutesAway: absolute,
+                    source: "estimated",
+                    sourceLabel: t("estimated"),
+                    boardsHere: true,
+                });
+            }
+        }
+        return out;
+    }
+
+    // The all-directions board for a map node. Pure aggregation on top of the
+    // bundled schedules, so it works offline and never depends on one source
+    // winning for the whole station.
+    function buildComplexBoard(node, opts) {
+        const options = opts || {};
+        const windowMinutes = Number.isFinite(options.windowMinutes) ? options.windowMinutes : 12 * 60;
+        const maxTimesPerGroup = Number.isFinite(options.maxTimesPerGroup) ? options.maxTimesPerGroup : 3;
+        const complex = complexForNode(node);
+        if (!complex || !window.SyrmosStationBoard) return null;
         const nowDate = athensNow();
-        const result = [];
-        const expanded = expandLineIds(station.stationIds[0] || station.id, station.lineIds);
-        for (const lineId of expanded) {
-            const bundle = apiSchedules.get(lineId);
-            if (!bundle) continue;
-            const before = result.length;
-            projectFromBundle(bundle, nowDate, lineId, result, 12);
-            // Map line label for display: M3_AIR also shows as "Line 3" with Airport pill
-            const displayLineId = lineId === "M3_AIR" ? "M3" : lineId;
-            const line = lineMap.get(displayLineId);
-            for (let i = before; i < result.length; i++) {
-                result[i].line = line || { id: displayLineId, name: displayLineId, color: "#6B7280" };
-                if (!result[i].direction) {
-                    // Both-direction lines: alternate between terminalA / terminalB for the next two
-                    const slot = result[i].timeMinutes - (result[before]?.timeMinutes ?? 0);
-                    result[i].direction = (i - before) % 2 === 0 ? line?.terminalB || "" : line?.terminalA || "";
+        const departures = [];
+        const coverage = [];
+        for (const area of complex.areas) {
+            for (const stopId of area.stopIds) {
+                for (const line of (linesBoardingAtStop.get(stopId) || [])) {
+                    // Track that carries no service cannot produce a departure,
+                    // but it is still a real service with an honest status.
+                    if (!isOperational(line)) {
+                        coverage.push({
+                            areaId: area.id, stopId, lineId: line.id, line,
+                            destination: "", state: window.SyrmosStationBoard.COVERAGE.NOT_OPERATING,
+                            reason: line.status || "not_operating",
+                        });
+                        continue;
+                    }
+                    // M3's airport branch is a separate synthetic bundle, so the
+                    // Airport destination is not hidden behind the city service.
+                    const bundleIds = (line.id === "M3" && !M3_AIRPORT_ONLY.has(stopId)) ? ["M3", "M3_AIR"] : [line.id];
+                    let produced = 0;
+                    let anyBundle = false;
+                    for (const bundleId of bundleIds) {
+                        const bundle = apiSchedules.get(bundleId);
+                        if (!bundle) continue;
+                        anyBundle = true;
+                        const effectiveLine = bundleId === "M3_AIR"
+                            ? Object.assign({}, line, { id: "M3_AIR", terminalB: "Airport" })
+                            : line;
+                        const trips = tripDeparturesAt(bundle, effectiveLine, stopId, area.id, nowDate, windowMinutes);
+                        // Published trips and projected bands are reconciled per
+                        // trip downstream, not by one source winning the station.
+                        // A line with real trips does not also need a headway
+                        // estimate for the same minutes.
+                        const bands = trips.length
+                            ? []
+                            : bandDeparturesAt(bundle, effectiveLine, stopId, area.id, nowDate, windowMinutes);
+                        for (const d of trips) departures.push(d);
+                        for (const d of bands) departures.push(d);
+                        produced += trips.length + bands.length;
+                    }
+                    const state = !anyBundle
+                        ? window.SyrmosStationBoard.COVERAGE.UNAVAILABLE
+                        : produced > 0
+                            ? window.SyrmosStationBoard.COVERAGE.LOADED
+                            : window.SyrmosStationBoard.COVERAGE.NO_DEPARTURE;
+                    // A service with nothing in the window still names the
+                    // destinations it serves, so the row reads "Leianokladi - no
+                    // departure in the next 12 hours" rather than an unlabelled
+                    // line id. The directions come from the line's own ordered
+                    // stop list, so a terminal contributes one, not two.
+                    const reachable = state === window.SyrmosStationBoard.COVERAGE.LOADED
+                        ? [{ destination: "" }]
+                        : (window.SyrmosStationBoard.lineDirectionsAt(line, stopId) || []);
+                    for (const dir of (reachable.length ? reachable : [{ destination: "" }])) {
+                        coverage.push({
+                            areaId: area.id, stopId, lineId: line.id, line,
+                            destination: dir.destination || "",
+                            state,
+                            reason: anyBundle ? null : "schedule_unavailable",
+                        });
+                    }
                 }
             }
         }
-        return result
-            .sort((a, b) => a.minutesAway - b.minutesAway)
-            .slice(0, 10);
+        const board = window.SyrmosStationBoard.buildBoard({
+            complex,
+            departures,
+            coverage,
+            windowMinutes,
+            maxTimesPerGroup,
+            generatedAt: Date.now(),
+        });
+        board.node = node;
+        return board;
     }
 
     function vehicleIconFor(lineId, direction) {
@@ -2352,6 +2681,25 @@
             </div>`;
     }
 
+    // Map one board group onto the departure-card shape the sheet renders.
+    function boardGroupToCard(group) {
+        return {
+            line: group.line,
+            lineId: group.lineId,
+            destination: group.destination,
+            direction: group.destination,
+            serviceType: group.serviceType,
+            source: group.source,
+            sourceLabel: group.sourceLabel,
+            ariaNote: "",
+            groupId: group.id,
+            coverage: group.coverage,
+            times: group.times.map((x) => ({ minutesAway: x.absoluteMinutes, time: x.time })),
+            moreCount: group.moreCount,
+            total: group.total,
+        };
+    }
+
     async function renderDepartures(station) {
         // Rail departures and (for airport stations) live express-bus ETAs load
         // in parallel so the sheet paints once with both.
@@ -2360,9 +2708,41 @@
             fetchApiDepartures(station),
             isAirport ? fetchAirportBuses() : Promise.resolve(null),
         ]);
-        const railDepartures = (apiDepartures && apiDepartures.length)
-            ? apiDepartures
-            : buildStationDepartures(station);
+        // The sheet shows the SAME station complex the Home board shows, so a
+        // row tapped on the card opens the destination it named. The board
+        // reconciles per service, so one published railway response can no
+        // longer suppress both metro directions here either.
+        const focusGroupId = boardFocusGroup ? boardFocusGroup.id : null;
+        const complexBoard = buildComplexBoard(station, {
+            maxTimesPerGroup: focusGroupId ? 8 : 3,
+        });
+        let boardCards = [];
+        if (complexBoard) {
+            const groups = focusGroupId
+                ? complexBoard.groups.filter((g) => g.id === focusGroupId)
+                : complexBoard.groups;
+            boardCards = (groups.length ? groups : complexBoard.groups).map(boardGroupToCard);
+        }
+        // The station-wide "All departures" action flattens the same board into
+        // one chronological list, so it is the same data in a different order
+        // rather than a second calculation.
+        if (boardShowAllDepartures && complexBoard) {
+            boardCards = complexBoard.groups
+                .flatMap((g) => g.times.map((tt) => Object.assign(boardGroupToCard(g), {
+                    times: [{ minutesAway: tt.absoluteMinutes, time: tt.time }],
+                    moreCount: 0,
+                    total: 1,
+                    source: tt.source || g.source,
+                    sourceLabel: tt.sourceLabel || g.sourceLabel,
+                })))
+                .sort((a, b) => a.times[0].minutesAway - b.times[0].minutesAway);
+        }
+        // Fall back to the legacy per-node path only if the complex could not be
+        // resolved at all, so an unknown station still shows something true.
+        const railDepartures = boardCards.length
+            ? boardCards
+            : ((apiDepartures && apiDepartures.length) ? apiDepartures : buildStationDepartures(station));
+        const usingBoard = boardCards.length > 0;
         const busRows = busReduced
             ? SyrmosAirport.airportBusDepartures(busReduced).map(toBusDeparture)
             : [];
@@ -2390,7 +2770,11 @@
         // with the badge and confidence shown once, instead of a stack of
         // near-identical "Line 3 · Scheduled" rows. Falls back to one group per
         // departure if the pure module failed to load.
-        const groups = window.SyrmosDepartures
+        const groups = usingBoard
+            ? [...railDepartures, ...(window.SyrmosDepartures
+                ? window.SyrmosDepartures.groupDepartures(busRows, { maxTimes: 3 })
+                : [])]
+            : window.SyrmosDepartures
             ? window.SyrmosDepartures.groupDepartures(departures, { maxTimes: 3 })
             : departures.map((d) => ({
                 line: d.line, lineId: d.line?.id || "", destination: d.destination || d.direction || "",
@@ -2428,6 +2812,17 @@
             const moreHtml = group.moreCount > 0
                 ? `<span class="dep-time dep-time--more" title="${group.moreCount} more">+${group.moreCount}</span>`
                 : "";
+            // A service with nothing to show keeps its row in a clearly
+            // differentiated state rather than disappearing, so partial
+            // coverage can never look complete.
+            const coverageLabel = group.times.length ? "" : (
+                group.coverage === "unavailable" ? t("board_unavailable")
+                : group.coverage === "not_operating" ? t("board_not_operating")
+                : group.coverage === "no_departure_in_window" ? t("board_no_departure_window")
+                : "");
+            const coverageHtml = coverageLabel
+                ? `<span class="dep-time dep-time--status">${escapeHtml(coverageLabel)}</span>`
+                : "";
             // Screen readers get every time WITH its clock (sighted users see
             // both) plus the "+N more" overflow, so nothing the eye sees is lost
             // to assistive tech.
@@ -2436,7 +2831,7 @@
                 .join(", ")
                 + (group.moreCount > 0 ? `, +${group.moreCount} more` : "");
             return `
-                <div class="departure-card departure-card--grouped${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
+                <div class="departure-card departure-card--grouped${group.times.length ? "" : " departure-card--status"}${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
@@ -2446,7 +2841,7 @@
                                 <span class="departure-card__arrow" aria-hidden="true">→</span>
                                 <span class="departure-card__dest-inline">${destination}</span>
                             </div>
-                            <div class="departure-card__times">${timesHtml}${moreHtml}</div>
+                            <div class="departure-card__times">${timesHtml}${moreHtml}${coverageHtml}</div>
                             <div class="departure-card__foot">
                                 ${sourceChip}
                                 ${Number.isFinite(Number(soonest.minutesAway)) ? `<button type="button" class="dep-remind" data-line="${escapeHtml(lineId)}" data-dest="${escapeHtml(destination)}" data-min="${escapeHtml(String(soonest.minutesAway))}" data-time="${escapeHtml(soonest.time || "")}" data-sid="${escapeHtml(station.id)}" data-sname="${escapeHtml(stationDisplayName(station))}" aria-label="${escapeHtml(t("remind"))} ${escapeHtml(lineId)} ${escapeHtml(destination)}">${escapeHtml(t("remind"))}</button>` : ""}
@@ -2459,9 +2854,17 @@
         if (contextDepartures) contextDepartures.innerHTML = stationDepartures.innerHTML;
     }
 
-    function selectStation(stationId, panToMarker) {
+    // `options` carries the board's intent so a row tap opens the destination it
+    // was tapped on, and the explicit choice pins the board scope. Without the
+    // pin, the next location refresh would silently replace a deliberate
+    // selection with the nearest station.
+    function selectStation(stationId, panToMarker, options) {
         const station = stationNodeMap.get(stationId);
         if (!station) return;
+        const intent = options || {};
+        pinnedBoardNodeId = stationId;
+        boardFocusGroup = intent.focusGroup || null;
+        boardShowAllDepartures = !!intent.allDepartures;
 
         hideTrainSheet();
         updateMarkerSelection(stationId);
@@ -3447,33 +3850,67 @@
         else mq.addListener(sync);
     }
 
-    // The one-glance answer-first hero (design doc section 3 / task T7): the
-    // next departure for the nearest (or busiest fallback) station, with a live
-    // countdown that ticks every second. Rendered both as a card at the top of
-    // the sheet and, compactly, in the always-visible peek bar so the answer is
-    // there before the user asks. Departures re-project every 15s; only the
-    // countdown recomputes each second (cheap). heroActive is declared earlier
-    // (with the other init state) to avoid a temporal-dead-zone ReferenceError,
-    // since setupHero is invoked before this point in the init sequence.
+    // The Home answer: the whole station complex, every supported direction.
+    //
+    // It replaces the single-destination hero, which chose `deps[0]` and printed
+    // `deps.slice(1, 3)` as an unlabelled "then" tail. That could not answer
+    // whether another train leaves toward Anthoupoli in one minute, or toward
+    // Chalkida or Thessaloniki shortly afterwards. Every group now owns its own
+    // row, its own times and its own source; the soonest is emphasised gently
+    // rather than pushing the other directions below the fold.
+    //
+    // Rows are keyed by the board's stable group id and reused across refreshes,
+    // so a countdown tick never rebuilds the list, never reorders on a rounded
+    // minute and never moves screen-reader focus.
     function setupHero() {
         const wrap = document.querySelector("#insightPanel .panel-cards-wrap");
         const peekText = document.getElementById("panelPeekText");
-        if (!wrap) return;
+        const hero = document.getElementById("answerHero");
+        if (!wrap && !hero) return;
 
-        const card = document.createElement("div");
-        card.className = "panel-card hero-card";
-        card.innerHTML =
-            `<div class="hero-card__label"></div>` +
-            `<div class="hero-card__station"></div>` +
-            `<div class="hero-card__row">` +
-            `<span class="hero-card__badge"></span>` +
-            `<div class="hero-card__dest"><div class="hero-card__dir"></div><div class="hero-card__then"></div></div>` +
-            `<div class="hero-card__count"></div></div>` +
-            `<div class="hero-card__chip"></div>`;
-        wrap.prepend(card);
-        const el = (c) => card.querySelector(c);
+        // The sheet copy of the board, for the mobile bottom sheet.
+        let card = null;
+        if (wrap) {
+            card = document.createElement("div");
+            card.className = "panel-card hero-card";
+            card.innerHTML = boardShellHtml("sheet");
+            wrap.prepend(card);
+        }
+        if (hero) hero.innerHTML = boardShellHtml("rail");
 
-        function heroStation() {
+        function boardShellHtml(variant) {
+            return `
+                <div class="board__head">
+                    <div class="board__titles">
+                        <div class="board__station"></div>
+                        <div class="board__scope">
+                            <span class="board__scope-label"></span>
+                            <span class="board__coverage" hidden></span>
+                        </div>
+                    </div>
+                    <span class="board__chip src-chip" hidden></span>
+                </div>
+                <div class="board__rows" role="list" data-variant="${variant}"></div>
+                <div class="board__actions">
+                    <button class="pill-button pill-button--primary board__track" type="button"></button>
+                    <button class="pill-button pill-button--secondary board__station-btn" type="button"></button>
+                    <button class="pill-button pill-button--ghost board__all" type="button"></button>
+                </div>`;
+        }
+
+        // { node, board, selectedGroupId } - the selection is the action target,
+        // so new data arriving between a tap and its handler cannot retarget it.
+        let state = { node: null, board: null, selectedGroupId: null };
+        // Per-container row elements, keyed by stable group id.
+        const rendered = new Map();
+
+        function boardStation() {
+            // An explicit choice outranks location on every refresh; location
+            // only establishes the initial default.
+            if (pinnedBoardNodeId) {
+                const pinned = stationNodeMap.get(pinnedBoardNodeId);
+                if (pinned) return pinned;
+            }
             if (userLocation) {
                 let best = null, bestD = Infinity;
                 for (const s of stationNodes) {
@@ -3486,84 +3923,233 @@
                 ((b.isInterchange ? 10 : 0) + b.lineIds.length) - ((a.isInterchange ? 10 : 0) + a.lineIds.length))[0] || null;
         }
 
-        let data = null; // { station, deps }
         function refreshData() {
-            const station = heroStation();
-            data = station ? { station, deps: buildStationDepartures(station) } : null;
-        }
-
-        card.addEventListener("click", () => { if (data?.station) selectStation(data.station.id, true); });
-
-        function tick() {
-            if (!data || !data.deps.length) { card.style.display = "none"; heroActive = false; return; }
-            card.style.display = "";
-            heroActive = true;
-            const next = data.deps[0];
-            const color = next.line?.color || "#6B7280";
-            el(".hero-card__label").textContent = t("hero_next");
-            el(".hero-card__station").textContent = data.station.name || data.station.nameEl;
-            const badge = el(".hero-card__badge");
-            badge.textContent = next.line?.name || next.line?.id || "";
-            badge.style.background = color;
-            el(".hero-card__dir").textContent = next.direction ? `→ ${next.direction}` : "";
-            const then = data.deps.slice(1, 3).map((d) => formatMinutesAway(d.minutesAway)).filter(Boolean).join(", ");
-            el(".hero-card__then").textContent = then ? `${t("then")} ${then}` : "";
-
-            // Countdown from the absolute departure minute-of-day.
-            const now = athensNow();
-            const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-            let secAway = next.timeMinutes * 60 - nowSec;
-            if (secAway < -60) secAway = next.minutesAway * 60; // crossed midnight / stale
-            const countEl = el(".hero-card__count");
-            if (secAway <= 0) { countEl.textContent = t("now"); card.classList.add("hero-card--now"); card.classList.remove("hero-card--imminent"); }
-            else if (secAway <= 60) { countEl.textContent = `0:${String(secAway).padStart(2, "0")}`; card.classList.remove("hero-card--now"); card.classList.add("hero-card--imminent"); }
-            else if (secAway < 120) { countEl.textContent = `${Math.floor(secAway / 60)}:${String(secAway % 60).padStart(2, "0")}`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
-            else { countEl.textContent = `${Math.ceil(secAway / 60)}′`; card.classList.remove("hero-card--now", "hero-card--imminent"); }
-            const chipEl = el(".hero-card__chip");
-            const srcConf = next.sourceConfidence || "scheduled";
-            const srcLabels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot"), operator: t("check_operator") };
-            if (chipEl) {
-                chipEl.className = `src-chip src-chip--${srcConf}`;
-                chipEl.innerHTML = `<span class="src-chip__dot"></span>${srcLabels[srcConf] || srcLabels.scheduled}`;
+            const node = boardStation();
+            const board = node ? buildComplexBoard(node) : null;
+            state.node = node;
+            state.board = board;
+            // Keep the selection only while its group still exists.
+            if (state.selectedGroupId && board &&
+                !board.groups.some((g) => g.id === state.selectedGroupId)) {
+                state.selectedGroupId = null;
             }
-
-            // Answer-first peek line.
-            if (peekText) peekText.textContent = `${next.line?.name || ""} → ${next.direction || ""} · ${countEl.textContent}`;
-
-            // Sync to the context-rail answer-hero (visible in new layout).
-            const heroOverline = document.getElementById("heroOverline");
-            const heroBadge = document.getElementById("heroBadge");
-            const heroDest = document.getElementById("heroDestination");
-            const heroCount = document.getElementById("heroCountdown");
-            const heroMeta = document.getElementById("heroMeta");
-            const heroLive = document.getElementById("heroLiveChip");
-            if (heroOverline) heroOverline.textContent = data.station.name || data.station.nameEl || "";
-            if (heroBadge) { heroBadge.textContent = next.line?.name || ""; heroBadge.style.background = color; heroBadge.style.color = "#fff"; heroBadge.style.display = ""; }
-            if (heroDest) heroDest.textContent = next.direction || next.destination || "";
-            if (heroCount) heroCount.textContent = countEl.textContent;
-            if (heroMeta) heroMeta.textContent = then ? `${t("then")} ${then}` : "";
-            if (heroLive) heroLive.style.display = srcConf === "live" ? "" : "none";
+            renderAll();
         }
 
-        // Wire the answer-hero action buttons (were dead + showed raw i18n keys).
-        // Both resolve to the current answer-hero station; "Station" opens its
-        // detail sheet, "Track" opens it focused on the map (live view). Guarded
-        // so a tap before data loads is a harmless no-op, not a crash.
-        const heroStationBtn = document.getElementById("heroStation");
-        const heroTrackBtn = document.getElementById("heroTrack");
-        if (heroStationBtn) heroStationBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (data && data.station) selectStation(data.station.id, true);
-        });
-        if (heroTrackBtn) heroTrackBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (data && data.station) selectStation(data.station.id, true);
-        });
+        function countdownText(group) {
+            if (!group.next) return "";
+            const secAway = Math.max(0, Math.round(group.next.absoluteMinutes * 60 -
+                (athensNow().getSeconds())));
+            if (group.next.absoluteMinutes <= 0) return t("now");
+            return formatMinutesAway(group.next.absoluteMinutes);
+        }
 
+        function coverageText(group) {
+            switch (group.coverage) {
+                case "unavailable": return t("board_unavailable");
+                case "not_operating": return t("board_not_operating");
+                case "no_departure_in_window":
+                    return group.times.length
+                        ? t("board_next_beyond", { time: group.times[0].time })
+                        : t("board_no_departure_window");
+                default: return "";
+            }
+        }
+
+        function rowHtml(group) {
+            const color = (group.line && group.line.color) || "#6B7280";
+            // Metro and tram names are short badges ("Line 2"); the intercity and
+            // regional corridors are named after their endpoints ("IC Athens -
+            // Thessaloniki"), which cannot be a badge. Those carry their service
+            // code instead, which is what the operator prints on the train.
+            const fullName = (group.line && group.line.name) || group.lineId || "";
+            const badge = fullName.length > 8 ? (group.lineId || fullName) : fullName;
+            const later = group.times.slice(1).map((x) =>
+                x.cancelled ? `<s>${escapeHtml(formatMinutesAway(x.absoluteMinutes))}</s>`
+                            : escapeHtml(formatMinutesAway(x.absoluteMinutes))).join(", ");
+            const multiArea = !!(state.board && state.board.complex &&
+                (state.board.complex.areas || []).length > 1);
+            const areaLabel = multiArea && window.SyrmosStationBoard
+                ? window.SyrmosStationBoard.areaName(state.board.complex, group.areaId, currentLang)
+                : "";
+            const status = coverageText(group);
+            const cancelled = group.times[0] && group.times[0].cancelled;
+            return `
+                <span class="board-row__badge" style="background:${escapeHtml(color)}">${escapeHtml(badge)}</span>
+                <span class="board-row__body">
+                    <span class="board-row__dest"></span>
+                    <span class="board-row__meta">${escapeHtml(areaLabel)}${
+                        group.trainNo ? " · " + escapeHtml(group.trainNo) : ""}</span>
+                </span>
+                <span class="board-row__times">
+                    <span class="board-row__next${cancelled ? " board-row__next--cancelled" : ""}"></span>
+                    <span class="board-row__later">${later}</span>
+                    <span class="board-row__status">${escapeHtml(status)}</span>
+                </span>`;
+        }
+
+        function renderRows(container) {
+            if (!container) return;
+            const board = state.board;
+            if (!board) { container.innerHTML = ""; return; }
+            const wantedIds = board.groups.map((g) => g.id);
+            const map = rendered.get(container) || new Map();
+            rendered.set(container, map);
+            // Drop rows whose group no longer exists.
+            for (const [id, el] of map) {
+                if (!wantedIds.includes(id)) { el.remove(); map.delete(id); }
+            }
+            board.groups.forEach((group, index) => {
+                let el = map.get(group.id);
+                if (!el) {
+                    el = document.createElement("button");
+                    el.type = "button";
+                    el.className = "board-row";
+                    el.setAttribute("role", "listitem");
+                    el.dataset.groupId = group.id;
+                    el.addEventListener("click", () => openGroup(group.id));
+                    map.set(group.id, el);
+                }
+                el.innerHTML = rowHtml(group);
+                el.querySelector(".board-row__dest").textContent = group.destination ||
+                    ((group.line && group.line.name) || group.lineId);
+                const next = el.querySelector(".board-row__next");
+                next.textContent = countdownText(group);
+                el.classList.toggle("board-row--featured", index === 0 && group.total > 0);
+                el.classList.toggle("board-row--muted", group.total === 0);
+                el.classList.toggle("board-row--selected", state.selectedGroupId === group.id);
+                el.setAttribute("aria-label", `${group.destination} ${countdownText(group) || coverageText(group)}`);
+                el.setAttribute("aria-current", state.selectedGroupId === group.id ? "true" : "false");
+                // Reordering moves the element, never its identity.
+                if (container.children[index] !== el) {
+                    container.insertBefore(el, container.children[index] || null);
+                }
+            });
+        }
+
+        function renderChrome(root) {
+            if (!root) return;
+            const board = state.board;
+            const stationEl = root.querySelector(".board__station");
+            const scopeEl = root.querySelector(".board__scope-label");
+            const covEl = root.querySelector(".board__coverage");
+            const chip = root.querySelector(".board__chip");
+            const trackBtn = root.querySelector(".board__track");
+            const stationBtn = root.querySelector(".board__station-btn");
+            const allBtn = root.querySelector(".board__all");
+            if (!board) { root.style.display = "none"; return; }
+            root.style.display = "";
+            stationEl.textContent = window.SyrmosStationBoard
+                ? window.SyrmosStationBoard.complexName(board.complex, currentLang)
+                : (board.complex.name || "");
+            scopeEl.textContent = `${t("board_all_directions")} · ${t("board_services", { n: board.timedGroupCount })}`;
+            const partialText = board.partial ? t("board_partial") : "";
+            covEl.textContent = partialText;
+            covEl.hidden = !partialText;
+            const soonest = board.groups.find((g) => g.total > 0);
+            if (soonest && soonest.source) {
+                const labels = { live: t("live"), scheduled: t("scheduled"), estimated: t("estimated"), offline: t("offline_snapshot") };
+                chip.hidden = false;
+                chip.className = `board__chip src-chip src-chip--${soonest.source}`;
+                chip.innerHTML = `<span class="src-chip__dot"></span>${escapeHtml(labels[soonest.source] || labels.scheduled)}`;
+            } else {
+                chip.hidden = true;
+            }
+            const selected = board.groups.find((g) => g.id === state.selectedGroupId) || soonest;
+            // The Track button names the departure it will act on, so it can
+            // never quietly retarget when a row moves.
+            trackBtn.textContent = selected && selected.destination
+                ? `${t("track")} · ${selected.destination}`
+                : t("track");
+            trackBtn.disabled = !selected || !selected.next;
+            stationBtn.textContent = t("the_station");
+            allBtn.textContent = t("board_all_departures");
+        }
+
+        function renderAll() {
+            for (const root of [hero, card]) {
+                if (!root) continue;
+                renderChrome(root);
+                renderRows(root.querySelector(".board__rows"));
+            }
+            const board = state.board;
+            if (peekText) {
+                const first = board && board.groups.find((g) => g.total > 0);
+                peekText.textContent = first
+                    ? `${(first.line && first.line.name) || first.lineId} → ${first.destination} · ${countdownText(first)}` +
+                      (board.timedGroupCount > 1 ? ` · ${t("board_services", { n: board.timedGroupCount })}` : "")
+                    : "";
+            }
+            heroActive = !!(board && board.timedGroupCount > 0);
+        }
+
+        // Only the countdown text is recomputed each second; rows are not
+        // rebuilt and the order is not recomputed, so the list does not jump on
+        // a rounded-minute tick.
+        function tickCountdowns() {
+            const board = state.board;
+            if (!board) return;
+            for (const map of rendered.values()) {
+                for (const group of board.groups) {
+                    const el = map.get(group.id);
+                    if (!el) continue;
+                    const next = el.querySelector(".board-row__next");
+                    if (next) next.textContent = countdownText(group);
+                }
+            }
+        }
+
+        function openGroup(groupId) {
+            const board = state.board;
+            if (!board) return;
+            const group = board.groups.find((g) => g.id === groupId);
+            if (!group) return;
+            // The selection is captured from the row that was tapped, not from
+            // whatever is first when the handler runs.
+            state.selectedGroupId = groupId;
+            renderAll();
+            const node = nodeForComplex(board.complex) || board.node;
+            if (node) selectStation(node.id, true, { focusGroup: group });
+        }
+
+        for (const root of [hero, card]) {
+            if (!root) continue;
+            root.querySelector(".board__station-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                const node = state.board ? (nodeForComplex(state.board.complex) || state.board.node) : null;
+                if (node) selectStation(node.id, true);
+            });
+            root.querySelector(".board__all").addEventListener("click", (e) => {
+                e.stopPropagation();
+                const node = state.board ? (nodeForComplex(state.board.complex) || state.board.node) : null;
+                if (node) selectStation(node.id, true, { allDepartures: true });
+            });
+            root.querySelector(".board__track").addEventListener("click", (e) => {
+                e.stopPropagation();
+                const board = state.board;
+                if (!board) return;
+                const group = board.groups.find((g) => g.id === state.selectedGroupId) ||
+                    board.groups.find((g) => g.total > 0);
+                if (!group) return;
+                state.selectedGroupId = group.id;
+                renderAll();
+                trackBoardGroup(board, group);
+            });
+        }
+
+        onLanguageChange(() => renderAll());
         refreshData();
-        tick();
         setInterval(refreshData, 15000);
-        setInterval(tick, 1000);
+        setInterval(tickCountdowns, 1000);
+        // Exposed so Ariadne answers "what leaves from here?" from the SAME
+        // board the card shows, instead of a second departures calculation.
+        window.syrmosStationBoard = {
+            current: () => state.board,
+            select: (id) => { state.selectedGroupId = id; renderAll(); },
+            selected: () => state.selectedGroupId,
+            refresh: refreshData,
+            setStation: (nodeId) => { pinnedBoardNodeId = nodeId; refreshData(); },
+        };
     }
 
     function setupPanelBehavior() {
@@ -3682,7 +4268,6 @@
     // not from a haversine guess, so the moving icon stays locked to the
     // projector's "X min away" output.
     let livePositionsSnapshot = null;
-    let stationOffsetsByLineDirection = null;
 
     function parseStationOffsets(data) {
         const map = new Map();
@@ -3839,6 +4424,10 @@
             }
         }
         await loadStationOffsets();
+        // Band-projected metro times are origin-relative until the offsets
+        // arrive, so rebuild the board once they do rather than leaving the
+        // first paint claiming the terminal's departure minute.
+        if (window.syrmosStationBoard) window.syrmosStationBoard.refresh();
         startPollLoop(tick, 15000);
     }
 
@@ -5911,95 +6500,15 @@
         const launcher = document.getElementById("ariadneLauncher");
         const panel = document.getElementById("ariadnePanel");
         const closeBtn = document.getElementById("ariadneClose");
-        const brainBtn = document.getElementById("ariadneBrain");
         const messages = document.getElementById("ariadneMessages");
         const form = document.getElementById("ariadneForm");
         const input = document.getElementById("ariadneInput");
 
-        // The web's brain is the server cloud (askCloudAriadne) — no download from
-        // the user. The old on-device 1.1 GB wllama download UI is removed: hide
-        // the button and never wire the download/progress. (The legacy block is
-        // kept out with `if (false)` rather than a large deletion.)
-        if (brainBtn) brainBtn.style.display = "none";
-        if (false && brainBtn) {
-            const llm = window.AriadneLLM;
-            if (!llm) {
-                brainBtn.style.display = "none";
-            } else {
-                // A thin download-progress bar under the panel header, shown only
-                // while the ~1.1 GB model is downloading.
-                const progress = document.createElement("div");
-                progress.className = "ariadne-progress";
-                progress.innerHTML =
-                    '<div class="ariadne-progress__label"></div>' +
-                    '<div class="ariadne-progress__track"><div class="ariadne-progress__fill"></div></div>';
-                progress.style.display = "none";
-                (document.getElementById("ariadnePanel") || document.body).insertBefore(
-                    progress, document.getElementById("ariadneMessages"));
-                const pFill = progress.querySelector(".ariadne-progress__fill");
-                const pLabel = progress.querySelector(".ariadne-progress__label");
-
-                const pbStyle = document.createElement("style");
-                pbStyle.textContent = `
-                    .ariadne-progress { padding: 8px 14px 4px; }
-                    .ariadne-progress__label { font-size: 12px; opacity: 0.75; margin-bottom: 5px; }
-                    .ariadne-progress__track { height: 6px; border-radius: 999px; background: rgba(0,0,0,0.12); overflow: hidden; }
-                    body.dark-mode .ariadne-progress__track { background: rgba(255,255,255,0.16); }
-                    .ariadne-progress__fill { height: 100%; width: 0%; border-radius: 999px; background: var(--sy-brand); transition: width 300ms ease; }
-                `;
-                document.head.appendChild(pbStyle);
-
-                const brainIcon = '<svg class="ic" aria-hidden="true"><use href="#ic-brain"/></svg>';
-                const paint = () => {
-                    const s = llm.status();
-                    const pct = Math.round((llm.progress ? llm.progress() : 0) * 100);
-                    // Keep the line icon; show the download percentage as text only
-                    // while loading. A state class tints it (ready/error) without a
-                    // second emoji. Never write a bare glyph over the <svg>.
-                    brainBtn.classList.remove("control-button--ready", "control-button--error");
-                    if (s === "loading") {
-                        brainBtn.textContent = pct + "%";
-                    } else {
-                        brainBtn.innerHTML = brainIcon;
-                        if (s === "ready") brainBtn.classList.add("control-button--ready");
-                        else if (s === "error") brainBtn.classList.add("control-button--error");
-                    }
-                    brainBtn.title = s === "ready"
-                        ? "Smarter answers are on (on-device brain ready)"
-                        : s === "loading"
-                        ? ("Downloading Ariadne's brain… " + pct + "% (~1.1 GB, one time)")
-                        : s === "error"
-                        ? "Download failed. Tap to retry. Rule parser still answers."
-                        : "Smarter answers: download Ariadne's on-device brain (~1.1 GB, one time)";
-                    if (s === "loading") {
-                        progress.style.display = "block";
-                        pFill.style.width = pct + "%";
-                        pLabel.textContent = "Downloading Ariadne's brain… " + pct + "%";
-                    } else if (s === "error") {
-                        progress.style.display = "block";
-                        pLabel.textContent = "Download failed. Tap 🧠 to retry.";
-                        pFill.style.width = "0%";
-                    } else {
-                        progress.style.display = "none";
-                    }
-                };
-                paint();
-                brainBtn.addEventListener("click", () => {
-                    const s = llm.status();
-                    if (s === "idle" || s === "error") {
-                        llm.download();
-                        const poll = setInterval(() => {
-                            paint();
-                            if (llm.status() === "ready" || llm.status() === "error") {
-                                if (llm.status() === "ready") setTimeout(() => { progress.style.display = "none"; }, 800);
-                                clearInterval(poll);
-                            }
-                        }, 400);
-                    }
-                    paint();
-                });
-            }
-        }
+        // Ariadne on the web is ready with the page: every supported transit task
+        // is answered locally by web-ariadne.js from the bundled seed, and the
+        // hosted service is a bounded optional fallback for wording the parser
+        // cannot resolve. There is no on-device model to download, so the control
+        // that offered one is gone rather than hidden behind a disabled branch.
 
         function appendMessage(text, from, sourceConf) {
             const el = document.createElement("div");
@@ -6040,11 +6549,20 @@
         // when the server cannot answer (unreachable, or provider=offline because
         // the LLM API keys are not configured on the Pi), so the caller falls back
         // to the deterministic reply.
-        async function askCloudAriadne(userText) {
+        /// Optional understanding for wording the deterministic parser could not
+        /// place. Bounded and cancellable: without a deadline a hung network left
+        /// the conversation showing a thinking placeholder forever, which reads as
+        /// a broken app rather than an unavailable optional layer.
+        const ARIADNE_CLOUD_TIMEOUT_MS = 6000;
+        async function askCloudAriadne(userText, signal) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), ARIADNE_CLOUD_TIMEOUT_MS);
+            if (signal) signal.addEventListener("abort", () => controller.abort(), { once: true });
             try {
                 const resp = await fetch("https://api-syrmos.peterdsp.dev/api/ariadne/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         messages: [{ role: "user", text: userText }],
                         lang: currentLang,
@@ -6057,6 +6575,8 @@
                 return reply.length >= 8 ? reply : null;
             } catch (_) {
                 return null;
+            } finally {
+                clearTimeout(timer);
             }
         }
 
@@ -6102,26 +6622,50 @@
             return lines.find((l) => l.id === id) || null;
         }
 
-        // Builds the one-line "Next from X: Line 3 now, Line 3 in 2 min, ..."
-        // reply. Uses the same projector the station sheet uses, so the chat
-        // and the panel never disagree. Returns null on no station.
-        async function departuresSummary(station) {
+        // "What leaves from here?" answered from the SAME station-complex board
+        // the card renders, so the chat and the panel can never disagree and
+        // Ariadne never runs a second departures calculation. One line per
+        // destination, every supported mode, with the services that have nothing
+        // in the window stated rather than omitted.
+        //
+        // `destinationFilter` narrows the answer to a follow-up ("And toward
+        // Anthoupoli?") without re-querying anything.
+        async function departuresSummary(station, destinationFilter) {
             if (!station) return null;
-            const apiDepartures = await fetchApiDepartures(station);
-            const list = (apiDepartures && apiDepartures.length)
-                ? apiDepartures
-                : buildStationDepartures(station);
-            const name = stationName(station.id);
-            if (!list || !list.length) {
+            const board = buildComplexBoard(station, { maxTimesPerGroup: 3 });
+            const name = board && window.SyrmosStationBoard
+                ? window.SyrmosStationBoard.complexName(board.complex, currentLang)
+                : stationName(station.id);
+            if (!board || !board.groups.length) {
                 return t("ariadne_none_now", { station: name });
             }
-            const top = list.slice(0, 3).map((dep) => {
-                const lineLabel = (dep.line && dep.line.name) || (dep.line && dep.line.id) || "";
-                const when = formatMinutesAway(dep.minutesAway);
-                const clock = dep.time ? ` (${dep.time})` : "";
-                return `${lineLabel} ${when}${clock}`;
+            const wanted = destinationFilter
+                ? window.SyrmosStationBoard.fold(destinationFilter)
+                : null;
+            let groups = board.groups;
+            if (wanted) {
+                groups = board.groups.filter((g) => g.destinationKey.includes(wanted) ||
+                    wanted.includes(g.destinationKey));
+                if (!groups.length) return null; // let the caller ask for a clarification
+            }
+            const timed = groups.filter((g) => g.total > 0);
+            if (!timed.length) {
+                // Truthful: the service exists but has nothing in the window.
+                const names = groups.map((g) => g.destination).filter(Boolean).join(", ");
+                return `${t("ariadne_next_from", { station: name })} ${t("board_no_departure_window")}${names ? " (" + names + ")" : ""}.`;
+            }
+            const lineOf = (g) => {
+                const full = (g.line && g.line.name) || g.lineId || "";
+                return full.length > 12 ? (g.lineId || full) : full;
+            };
+            const rows = timed.map((g) => {
+                const when = formatMinutesAway(g.next ? g.next.absoluteMinutes : g.times[0].absoluteMinutes);
+                const clock = g.times[0] && g.times[0].time ? ` (${g.times[0].time})` : "";
+                return `${lineOf(g)} → ${g.destination} ${when}${clock}`;
             });
-            return `${t("ariadne_next_from", { station: name })} ${top.join(", ")}.`;
+            const quiet = groups.filter((g) => g.total === 0).map((g) => g.destination).filter(Boolean);
+            const tail = quiet.length ? ` ${t("board_no_departure_window")}: ${quiet.join(", ")}.` : "";
+            return `${t("ariadne_next_from", { station: name })} ${rows.join("; ")}.${tail}`;
         }
 
         // WMO weather code -> localized short label. Used by the weather
@@ -6757,7 +7301,7 @@
             }
         };
 
-        form.addEventListener("submit", (ev) => {
+        form.addEventListener("submit", async (ev) => {
             ev.preventDefault();
             const value = (input.value || "").trim();
             if (!value) return;
@@ -6786,6 +7330,35 @@
 
             // Bare "what about tomorrow?" re-runs the last departures query.
             intent = applyDayFollowUp(value, intent);
+
+            // "What leaves from here?" and a bare directional follow-up ("and
+            // toward Anthoupoli?") are answered from the SAME all-directions
+            // board the card shows, so the chat and the panel can never disagree
+            // and Ariadne never runs a second departures calculation. The
+            // follow-up narrows the board rather than starting an unrelated
+            // station lookup, which is what "Anthoupoli" alone would mean.
+            const fromHere = isFromHereQuestion(value);
+            const directionFilter = isDirectionFollowUp(value)
+                ? boardDestinationFilter(value)
+                : null;
+            if (fromHere || directionFilter) {
+                const node = window.syrmosStationBoard &&
+                    (window.syrmosStationBoard.current() || {}).node;
+                if (node) {
+                    const summary = await departuresSummary(node, directionFilter);
+                    if (summary) {
+                        updateSession(intent);
+                        appendMessage(summary, "assistant", "scheduled");
+                        return;
+                    }
+                    if (directionFilter) {
+                        // A named destination the board does not serve right now
+                        // is a useful clarification, not a dead end.
+                        appendMessage(t("ariadne_try_asking"), "assistant");
+                        return;
+                    }
+                }
+            }
 
             if (intent.kind === "needsClarification") {
                 pendingIntent = intent.base;
@@ -6839,6 +7412,55 @@
                 deliver(intent);
             }
         });
+    }
+
+    /// Whether the message asks what leaves from the rider's current station, in
+    /// any of the four supported languages. Deliberately phrase-based rather than
+    /// model-based: this is the single most common question and it must never
+    /// depend on a network round trip.
+    function isFromHereQuestion(text) {
+        const folded = window.SyrmosStationBoard
+            ? window.SyrmosStationBoard.fold(text)
+            : String(text || "").toLowerCase();
+        const patterns = [
+            "from here", "leaves from here", "leave from here", "what leaves",
+            "departures from here", "next trains from here",
+            "apo edo", "απο εδω", "τι φευγει", "αναχωρησεις απο εδω",
+            "nga ketu", "cfare niset", "nisjet nga ketu",
+            "da qui", "cosa parte", "partenze da qui",
+        ];
+        return patterns.some((p) => folded.includes(p));
+    }
+
+    /// Whether the message is a follow-up ABOUT a direction rather than a fresh
+    /// question about a station. "Anthoupoli" alone means "tell me about
+    /// Anthoupoli station"; "and toward Anthoupoli?" means "narrow the board I
+    /// just gave you". The marker is what separates them.
+    function isDirectionFollowUp(text) {
+        const folded = window.SyrmosStationBoard
+            ? window.SyrmosStationBoard.fold(text)
+            : String(text || "").toLowerCase();
+        const markers = [
+            "and toward", "and towards", "what about", "and to ", "the other direction",
+            "και προς", "τι γινεται με", "η αλλη κατευθυνση", "και για",
+            "dhe drejt", "po per", "drejtimi tjeter",
+            "e verso", "che ne dici di", "l'altra direzione", "altra direzione",
+        ];
+        return markers.some((m) => folded.includes(m));
+    }
+
+    /// A bare destination follow-up narrows the board rather than starting a new
+    /// query. Returns the destination text, or null.
+    function boardDestinationFilter(text) {
+        const board = window.syrmosStationBoard && window.syrmosStationBoard.current();
+        if (!board || !window.SyrmosStationBoard) return null;
+        const folded = window.SyrmosStationBoard.fold(text);
+        for (const group of board.groups) {
+            if (group.destinationKey && folded.includes(group.destinationKey)) {
+                return group.destination;
+            }
+        }
+        return null;
     }
 
     // First-visit "what's new" card. Shows once per release (keyed in

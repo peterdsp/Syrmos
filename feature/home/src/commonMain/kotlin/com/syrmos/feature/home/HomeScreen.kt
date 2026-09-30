@@ -67,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -99,6 +100,7 @@ import com.syrmos.core.domain.usecase.GetLastTrainUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import androidx.compose.material3.HorizontalDivider
+import com.syrmos.core.domain.station.StationComplexBoard
 import com.syrmos.core.domain.usecase.HomeDirectionBoard
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.model.alerts.AlertSeverity
@@ -301,6 +303,11 @@ fun HomeScreen(
                     line = uiState.nextDepartureLine,
                     upcoming = uiState.upcomingDepartures,
                     board = uiState.directionBoard,
+                    stationBoard = uiState.stationBoard,
+                    selectedBoardGroupId = uiState.selectedBoardGroupId,
+                    lines = uiState.lines,
+                    lineDisruptions = lineDisruptions,
+                    onBoardGroupSelected = viewModel::onBoardGroupSelected,
                     lastTrain = uiState.lastTrain,
                     lastTrainLine = uiState.lastTrainLine,
                     weather = uiState.weather,
@@ -731,6 +738,11 @@ private fun AnswerHero(
     line: Line?,
     upcoming: List<UpcomingDeparture> = emptyList(),
     board: List<HomeDirectionBoard.Row> = emptyList(),
+    stationBoard: StationComplexBoard.Board? = null,
+    selectedBoardGroupId: String? = null,
+    lines: List<Line> = emptyList(),
+    lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
+    onBoardGroupSelected: (String) -> Unit = {},
     lastTrain: GetLastTrainUseCase.LastTrain?,
     lastTrainLine: Line?,
     weather: WeatherSnapshot?,
@@ -810,43 +822,65 @@ private fun AnswerHero(
                     fontWeight = FontWeight.SemiBold,
                     color = stateColor,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LineBadge(
-                        line = line,
-                        fallbackId = next.lineId,
-                        accent = accent,
-                        disruptionSeverity = disruptionSeverity,
+                // The whole station complex, every supported direction. The
+                // soonest departure is emphasised inside its own row rather than
+                // repeated in an oversized hero that pushes the other directions
+                // below the fold. The legacy single-destination hero stays as the
+                // fallback for a station the board could not resolve, so a data
+                // gap degrades instead of blanking the screen.
+                if (stationBoard != null && stationBoard.timedGroupCount > 0) {
+                    StationComplexBoardCard(
+                        board = stationBoard,
+                        lines = lines,
+                        selectedGroupId = selectedBoardGroupId,
+                        lineDisruptions = lineDisruptions,
+                        lang = lang,
+                        onGroupSelected = onBoardGroupSelected,
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Text(
-                    text = countdown.text,
-                    style = SyrmosTypographyTokens.displayPulse,
-                    color = countdownColor,
-                    modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
-                )
-                // Every direction, not just the soonest: one row per line and
-                // destination with the next two times. A single-direction station
-                // keeps the compact "then 13, 23 min" line instead.
-                if (board.size >= 2) {
-                    DirectionBoard(rows = board, featured = next, lang = lang)
                 } else {
-                    val thenTimes = upcoming.drop(1).take(2)
-                        .filter { it.minutesAway > next.minutesAway }
-                        .map { formatCountdown(it.minutesAway, lang) }
-                    if (thenTimes.isNotEmpty()) {
-                        Text(
-                            text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LineBadge(
+                            line = line,
+                            fallbackId = next.lineId,
+                            accent = accent,
+                            disruptionSeverity = disruptionSeverity,
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${L.TO.text(lang)} ${destinationName(line, next.direction, lang)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = countdown.text,
+                        style = SyrmosTypographyTokens.displayPulse,
+                        color = countdownColor,
+                        modifier = if (countdown.isImminent) Modifier.livePulse() else Modifier,
+                    )
+                    if (board.size >= 2) {
+                        DirectionBoard(rows = board, featured = next, lang = lang)
+                    } else {
+                        // "Then" applies only WITHIN a destination, so the tail is
+                        // filtered to the featured line and direction rather than
+                        // printing another direction's time under this heading.
+                        val thenTimes = upcoming
+                            .filter {
+                                it.lineId == next.lineId &&
+                                    it.direction == next.direction &&
+                                    it.minutesAway > next.minutesAway
+                            }
+                            .take(2)
+                            .map { formatCountdown(it.minutesAway, lang) }
+                        if (thenTimes.isNotEmpty()) {
+                            Text(
+                                text = "${L.THEN.text(lang)} ${thenTimes.joinToString(", ")}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
                 sourceConfidenceLabel(next.sourceConfidence, lang)?.let { chipLabel ->
@@ -871,9 +905,19 @@ private fun AnswerHero(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // The button names the departure it will act on, so new data
+                    // arriving between the tap and its handler cannot retarget it.
+                    val target = stationBoard?.let { b ->
+                        b.groups.firstOrNull { it.id == selectedBoardGroupId }
+                            ?: b.groups.firstOrNull { it.total > 0 }
+                    }
                     PulseActionChip(
                         icon = if (isTracked) "📍" else "🔔",
-                        label = if (isTracked) trackingOnLabel(lang) else trackLabel(lang),
+                        label = when {
+                            isTracked -> trackingOnLabel(lang)
+                            target != null -> "${trackLabel(lang)} · ${target.destination}"
+                            else -> trackLabel(lang)
+                        },
                         color = accent,
                         enabled = !isTracked,
                         onClick = onTrack,
@@ -903,6 +947,212 @@ private fun AnswerHero(
                 )
             }
         }
+    }
+}
+
+/**
+ * The station-complex all-directions board.
+ *
+ * One row per supported destination across every member boarding stop, keyed by
+ * the board's STABLE group id rather than a list index, because rows reorder
+ * every time a train leaves. A service with nothing in the window keeps a
+ * clearly differentiated row so partial coverage cannot look complete.
+ */
+@Composable
+private fun StationComplexBoardCard(
+    board: StationComplexBoard.Board,
+    lines: List<Line>,
+    selectedGroupId: String?,
+    lineDisruptions: Map<String, AlertSeverity>,
+    lang: AppLanguage,
+    onGroupSelected: (String) -> Unit,
+) {
+    val languageKey = when (lang) {
+        AppLanguage.GREEK -> "el"
+        AppLanguage.ALBANIAN -> "sq"
+        AppLanguage.ITALIAN -> "it"
+        else -> "en"
+    }
+    val multiArea = board.complex.areas.size > 1
+    val featuredId = board.groups.firstOrNull { it.total > 0 }?.id
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column {
+            Text(
+                text = board.complex.localizedName(languageKey),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "${allDirectionsLabel(lang).uppercase()} · " +
+                    "${board.timedGroupCount} ${servicesLabel(lang)}",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (board.partial) {
+                // Partial means a service could not be READ. A quiet night is
+                // complete information and never raises this.
+                Text(
+                    text = partialCoverageLabel(lang),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SyrmosColorTokens.warning,
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                .padding(horizontal = 12.dp),
+        ) {
+            board.groups.forEachIndexed { index, group ->
+                val line = lines.firstOrNull { it.id == group.lineId }
+                val accent = line?.color?.toComposeColor() ?: SyrmosColorTokens.metroBlue
+                val isSelected = group.id == selectedGroupId
+                Row(
+                    // One TalkBack element per direction.
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (group.total > 0) {
+                                Modifier.clickable { onGroupSelected(group.id) }
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .background(
+                            if (isSelected) accent.copy(alpha = 0.10f) else Color.Transparent,
+                        )
+                        .padding(vertical = 9.dp)
+                        .semantics(mergeDescendants = true) {},
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    LineBadge(
+                        line = line,
+                        fallbackId = group.lineId,
+                        accent = accent,
+                        disruptionSeverity = lineDisruptions[group.lineId],
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        // Destinations wrap rather than truncate: cutting a
+                        // headsign is how a board hides a direction it claims
+                        // to show.
+                        Text(
+                            text = group.destination,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (group.id == featuredId) {
+                                FontWeight.SemiBold
+                            } else {
+                                FontWeight.Normal
+                            },
+                        )
+                        if (multiArea) {
+                            Text(
+                                text = board.complex.localizedAreaName(group.areaId, languageKey),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    if (group.total > 0) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            group.times.forEachIndexed { timeIndex, time ->
+                                Text(
+                                    text = formatCountdown(time.absoluteMinutes, lang),
+                                    style = if (timeIndex == 0) {
+                                        MaterialTheme.typography.bodyMedium
+                                    } else {
+                                        MaterialTheme.typography.labelSmall
+                                    },
+                                    fontWeight = if (timeIndex == 0) {
+                                        FontWeight.Bold
+                                    } else {
+                                        FontWeight.Normal
+                                    },
+                                    textDecoration = if (time.cancelled) {
+                                        TextDecoration.LineThrough
+                                    } else {
+                                        null
+                                    },
+                                    color = when {
+                                        timeIndex > 0 -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        time.absoluteMinutes <= 1 -> SyrmosColorTokens.arrivalImminent
+                                        else -> accent
+                                    },
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = boardCoverageLabel(group.coverage, lang),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SyrmosColorTokens.warning,
+                        )
+                    }
+                }
+                if (index < board.groups.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                }
+            }
+        }
+    }
+}
+
+private fun allDirectionsLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Όλες οι κατευθύνσεις"
+    AppLanguage.ALBANIAN -> "Të gjitha drejtimet"
+    AppLanguage.ITALIAN -> "Tutte le direzioni"
+    else -> "All directions"
+}
+
+private fun servicesLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "υπηρεσίες"
+    AppLanguage.ALBANIAN -> "shërbime"
+    AppLanguage.ITALIAN -> "servizi"
+    else -> "services"
+}
+
+private fun partialCoverageLabel(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Ορισμένες υπηρεσίες δεν φορτώθηκαν"
+    AppLanguage.ALBANIAN -> "Disa shërbime nuk u ngarkuan"
+    AppLanguage.ITALIAN -> "Alcuni servizi non sono stati caricati"
+    else -> "Some services could not be loaded"
+}
+
+/**
+ * A service with nothing to show keeps its row in a clearly differentiated
+ * state rather than disappearing, so partial coverage cannot look complete.
+ */
+private fun boardCoverageLabel(
+    coverage: StationComplexBoard.Coverage,
+    lang: AppLanguage,
+): String = when (coverage) {
+    StationComplexBoard.Coverage.UNAVAILABLE -> when (lang) {
+        AppLanguage.GREEK -> "Το δρομολόγιο δεν είναι διαθέσιμο"
+        AppLanguage.ALBANIAN -> "Orari nuk është i disponueshëm"
+        AppLanguage.ITALIAN -> "Orario non disponibile"
+        else -> "Timetable unavailable"
+    }
+    StationComplexBoard.Coverage.NOT_OPERATING -> when (lang) {
+        AppLanguage.GREEK -> "Εκτός λειτουργίας"
+        AppLanguage.ALBANIAN -> "Jashtë shërbimit"
+        AppLanguage.ITALIAN -> "Fuori servizio"
+        else -> "Not in service"
+    }
+    else -> when (lang) {
+        AppLanguage.GREEK -> "Καμία αναχώρηση τις επόμενες 12 ώρες"
+        AppLanguage.ALBANIAN -> "Asnjë nisje në 12 orët e ardhshme"
+        AppLanguage.ITALIAN -> "Nessuna partenza nelle prossime 12 ore"
+        else -> "No departure in the next 12 hours"
     }
 }
 

@@ -151,7 +151,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func makeHostingController() -> UIHostingController<AnyView> {
-        let root = AnyView(RootView())
+        // The reserved-region reader is attached ONCE at the window root. Only a
+        // UIKit view can be asked what the system has reserved inside it, and
+        // one probe keeps the shared store in step for every pane.
+        let root = AnyView(RootView().syrmosReadsReservedRegions())
         let host = UIHostingController(rootView: root)
         host.view.backgroundColor = .systemBackground
         return host

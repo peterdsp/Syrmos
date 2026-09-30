@@ -1,0 +1,258 @@
+{
+  "name": "athens-all-directions",
+  "description": "Language-neutral golden fixture for the station-complex all-directions board. Kotlin, Swift and JavaScript implementations must all reproduce `expect` exactly from `input`. Times are minutes from an explicit `now` on a monotonic timeline, so no implementation re-derives a service date or adds 24h to a past departure.",
+  "complex": {
+    "id": "CPX_ATHENS_LARISSA",
+    "name": "Athens · Larissa Station",
+    "nameEl": "Αθήνα · Σταθμός Λαρίσης",
+    "nameSq": "Athinë · Stacioni Larisa",
+    "nameIt": "Atene · Stazione Larissa",
+    "areas": [
+      { "id": "metro", "name": "Metro", "nameEl": "Μετρό", "nameSq": "Metro", "nameIt": "Metropolitana", "stopIds": ["M2_STA"] },
+      { "id": "rail", "name": "Railway station", "nameEl": "Σιδηροδρομικός σταθμός", "nameSq": "Stacioni hekurudhor", "nameIt": "Stazione ferroviaria", "stopIds": ["A1_ATH", "A3_ATH", "A4_ATH", "GR_ATH"] }
+    ]
+  },
+  "cases": [
+    {
+      "id": "every_direction_is_represented",
+      "note": "Acceptance 1 and 2. Both M2 directions plus suburban, regional and intercity services, each from its own boarding stop. One direction leaves Now and the opposite in one minute; both are immediately represented with their own label.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-1", "serviceDate": "2026-09-30", "time": "12:00", "absoluteMinutes": 0, "minutesAway": 0, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-2", "serviceDate": "2026-09-30", "time": "12:10", "absoluteMinutes": 10, "minutesAway": 10, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-3", "serviceDate": "2026-09-30", "time": "12:20", "absoluteMinutes": 20, "minutesAway": 20, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Anthoupoli", "tripId": "M2-A-1", "serviceDate": "2026-09-30", "time": "12:01", "absoluteMinutes": 1, "minutesAway": 1, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Anthoupoli", "tripId": "M2-A-2", "serviceDate": "2026-09-30", "time": "12:11", "absoluteMinutes": 11, "minutesAway": 11, "source": "estimated", "boardsHere": true },
+          { "stopId": "A3_ATH", "areaId": "rail", "lineId": "A3", "destination": "Chalkida", "tripId": "A3-1360", "serviceDate": "2026-09-30", "time": "12:08", "absoluteMinutes": 8, "minutesAway": 8, "source": "scheduled", "trainNo": "1360", "boardsHere": true },
+          { "stopId": "A1_ATH", "areaId": "rail", "lineId": "A1", "destination": "Airport", "tripId": "A1-2050", "serviceDate": "2026-09-30", "time": "12:12", "absoluteMinutes": 12, "minutesAway": 12, "source": "scheduled", "boardsHere": true },
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "IC1", "destination": "Thessaloniki", "tripId": "IC-54", "serviceDate": "2026-09-30", "time": "12:25", "absoluteMinutes": 25, "minutesAway": 25, "source": "scheduled", "trainNo": "54", "boardsHere": true },
+          { "stopId": "A4_ATH", "areaId": "rail", "lineId": "A4", "destination": "Kiato", "tripId": "A4-1512", "serviceDate": "2026-09-30", "time": "12:40", "absoluteMinutes": 40, "minutesAway": 40, "source": "scheduled", "boardsHere": true },
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "RG1", "destination": "Leianokladi", "tripId": "RG-884", "serviceDate": "2026-09-30", "time": "12:50", "absoluteMinutes": 50, "minutesAway": 50, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 7,
+        "groups": [
+          { "id": "metro||M2||elliniko", "destination": "Elliniko", "lineId": "M2", "stopId": "M2_STA", "nextMinutes": 0, "times": [0, 10, 20], "total": 3, "coverage": "loaded" },
+          { "id": "metro||M2||anthoupoli", "destination": "Anthoupoli", "lineId": "M2", "stopId": "M2_STA", "nextMinutes": 1, "times": [1, 11], "total": 2, "coverage": "loaded" },
+          { "id": "rail||A3||chalkida", "destination": "Chalkida", "lineId": "A3", "stopId": "A3_ATH", "nextMinutes": 8, "times": [8], "total": 1, "coverage": "loaded" },
+          { "id": "rail||A1||airport", "destination": "Airport", "lineId": "A1", "stopId": "A1_ATH", "nextMinutes": 12, "times": [12], "total": 1, "coverage": "loaded" },
+          { "id": "rail||IC1||thessaloniki", "destination": "Thessaloniki", "lineId": "IC1", "stopId": "GR_ATH", "nextMinutes": 25, "times": [25], "total": 1, "coverage": "loaded" },
+          { "id": "rail||A4||kiato", "destination": "Kiato", "lineId": "A4", "stopId": "A4_ATH", "nextMinutes": 40, "times": [40], "total": 1, "coverage": "loaded" },
+          { "id": "rail||RG1||leianokladi", "destination": "Leianokladi", "lineId": "RG1", "stopId": "GR_ATH", "nextMinutes": 50, "times": [50], "total": 1, "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "frequent_line_cannot_crowd_out_a_rare_one",
+      "note": "Acceptance 3. Twelve early metro departures and one hourly railway destination: the railway row survives, and the metro group still shows only its own capped times.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F1", "time": "12:00", "absoluteMinutes": 0, "minutesAway": 0, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F2", "time": "12:03", "absoluteMinutes": 3, "minutesAway": 3, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F3", "time": "12:06", "absoluteMinutes": 6, "minutesAway": 6, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F4", "time": "12:09", "absoluteMinutes": 9, "minutesAway": 9, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F5", "time": "12:12", "absoluteMinutes": 12, "minutesAway": 12, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F6", "time": "12:15", "absoluteMinutes": 15, "minutesAway": 15, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F7", "time": "12:18", "absoluteMinutes": 18, "minutesAway": 18, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F8", "time": "12:21", "absoluteMinutes": 21, "minutesAway": 21, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F9", "time": "12:24", "absoluteMinutes": 24, "minutesAway": 24, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F10", "time": "12:27", "absoluteMinutes": 27, "minutesAway": 27, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F11", "time": "12:30", "absoluteMinutes": 30, "minutesAway": 30, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "F12", "time": "12:33", "absoluteMinutes": 33, "minutesAway": 33, "source": "estimated", "boardsHere": true },
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "RG1", "destination": "Leianokladi", "tripId": "RG-884", "time": "12:55", "absoluteMinutes": 55, "minutesAway": 55, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 2,
+        "groups": [
+          { "id": "metro||M2||elliniko", "destination": "Elliniko", "lineId": "M2", "stopId": "M2_STA", "nextMinutes": 0, "times": [0, 3, 6], "total": 12, "moreCount": 9, "coverage": "loaded" },
+          { "id": "rail||RG1||leianokladi", "destination": "Leianokladi", "lineId": "RG1", "stopId": "GR_ATH", "nextMinutes": 55, "times": [55], "total": 1, "moreCount": 0, "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "one_source_cannot_suppress_another_mode",
+      "note": "Acceptance 4. A published railway response and projected metro data reach the board together. Reconciliation is per service, so neither mode is dropped and each row keeps its own source.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "A3_ATH", "areaId": "rail", "lineId": "A3", "destination": "Chalkida", "tripId": "A3-1360", "time": "12:08", "absoluteMinutes": 8, "minutesAway": 8, "source": "scheduled", "sourceLabel": "Scheduled", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-1", "time": "12:02", "absoluteMinutes": 2, "minutesAway": 2, "source": "estimated", "sourceLabel": "Estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Anthoupoli", "tripId": "M2-A-1", "time": "12:04", "absoluteMinutes": 4, "minutesAway": 4, "source": "estimated", "sourceLabel": "Estimated", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 3,
+        "groups": [
+          { "id": "metro||M2||elliniko", "destination": "Elliniko", "lineId": "M2", "stopId": "M2_STA", "nextMinutes": 2, "times": [2], "total": 1, "source": "estimated", "coverage": "loaded" },
+          { "id": "metro||M2||anthoupoli", "destination": "Anthoupoli", "lineId": "M2", "stopId": "M2_STA", "nextMinutes": 4, "times": [4], "total": 1, "source": "estimated", "coverage": "loaded" },
+          { "id": "rail||A3||chalkida", "destination": "Chalkida", "lineId": "A3", "stopId": "A3_ATH", "nextMinutes": 8, "times": [8], "total": 1, "source": "scheduled", "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "branch_destinations_stay_distinct",
+      "note": "Acceptance 5. A branching route with three real headsigns produces three rows, not one two-valued direction.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "M3_SYN", "areaId": "metro", "lineId": "M3", "destination": "Doukissis Plakentias", "patternKey": "city", "tripId": "M3-1", "time": "12:03", "absoluteMinutes": 3, "minutesAway": 3, "source": "estimated", "boardsHere": true },
+          { "stopId": "M3_SYN", "areaId": "metro", "lineId": "M3", "destination": "Airport", "patternKey": "airport", "tripId": "M3-2", "time": "12:09", "absoluteMinutes": 9, "minutesAway": 9, "source": "estimated", "boardsHere": true },
+          { "stopId": "M3_SYN", "areaId": "metro", "lineId": "M3", "destination": "Dimotiko Theatro", "patternKey": "city", "tripId": "M3-3", "time": "12:05", "absoluteMinutes": 5, "minutesAway": 5, "source": "estimated", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 3,
+        "groups": [
+          { "id": "metro||M3|city|doukissis plakentias", "destination": "Doukissis Plakentias", "nextMinutes": 3, "times": [3], "total": 1, "coverage": "loaded" },
+          { "id": "metro||M3|city|dimotiko theatro", "destination": "Dimotiko Theatro", "nextMinutes": 5, "times": [5], "total": 1, "coverage": "loaded" },
+          { "id": "metro||M3|airport|airport", "destination": "Airport", "nextMinutes": 9, "times": [9], "total": 1, "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "duplicates_collapse_same_minute_trains_survive",
+      "note": "Acceptance 6. Two records for one trip collapse and the higher-confidence source wins the time. Two different trips leaving in the same minute toward different destinations both survive.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "A1_ATH", "areaId": "rail", "lineId": "A1", "destination": "Airport", "tripId": "A1-2050", "serviceDate": "2026-09-30", "time": "12:12", "absoluteMinutes": 12, "minutesAway": 12, "source": "scheduled", "sourceLabel": "Scheduled", "boardsHere": true },
+          { "stopId": "A1_ATH", "areaId": "rail", "lineId": "A1", "destination": "Airport", "tripId": "A1-2050", "serviceDate": "2026-09-30", "time": "12:15", "absoluteMinutes": 15, "minutesAway": 15, "source": "live", "sourceLabel": "Live", "scheduledMinutes": 12, "observedAt": 1000, "boardsHere": true },
+          { "stopId": "A3_ATH", "areaId": "rail", "lineId": "A3", "destination": "Chalkida", "tripId": "A3-1360", "serviceDate": "2026-09-30", "time": "12:20", "absoluteMinutes": 20, "minutesAway": 20, "source": "scheduled", "boardsHere": true },
+          { "stopId": "A4_ATH", "areaId": "rail", "lineId": "A4", "destination": "Kiato", "tripId": "A4-1512", "serviceDate": "2026-09-30", "time": "12:20", "absoluteMinutes": 20, "minutesAway": 20, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 3,
+        "groups": [
+          { "id": "rail||A1||airport", "destination": "Airport", "nextMinutes": 15, "times": [15], "total": 1, "source": "live", "coverage": "loaded" },
+          { "id": "rail||A3||chalkida", "destination": "Chalkida", "nextMinutes": 20, "times": [20], "total": 1, "source": "scheduled", "coverage": "loaded" },
+          { "id": "rail||A4||kiato", "destination": "Kiato", "nextMinutes": 20, "times": [20], "total": 1, "source": "scheduled", "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "arrivals_and_non_pickup_stops_are_not_departures",
+      "note": "Acceptance 8. A terminal arrival with no onward boarding never becomes an actionable departure, so the board cannot offer a train 'to this very station'.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "IC1", "destination": "Athens", "tripId": "IC-55", "time": "12:05", "absoluteMinutes": 5, "minutesAway": 5, "source": "scheduled", "boardsHere": false },
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "IC1", "destination": "Thessaloniki", "tripId": "IC-54", "time": "12:25", "absoluteMinutes": 25, "minutesAway": 25, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 1,
+        "groups": [
+          { "id": "rail||IC1||thessaloniki", "destination": "Thessaloniki", "nextMinutes": 25, "times": [25], "total": 1, "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "a_cancellation_is_status_never_the_recommendation",
+      "note": "Acceptance 8. The cancelled train stays visible with its own cancelled flag, but the group's next departure is the following running train.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "A3_ATH", "areaId": "rail", "lineId": "A3", "destination": "Chalkida", "tripId": "A3-1360", "time": "12:08", "absoluteMinutes": 8, "minutesAway": 8, "source": "scheduled", "cancelled": true, "status": "cancelled", "boardsHere": true },
+          { "stopId": "A3_ATH", "areaId": "rail", "lineId": "A3", "destination": "Chalkida", "tripId": "A3-1362", "time": "13:08", "absoluteMinutes": 68, "minutesAway": 68, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 1,
+        "groups": [
+          { "id": "rail||A3||chalkida", "destination": "Chalkida", "nextMinutes": 68, "times": [8, 68], "cancelledTimes": [true, false], "total": 2, "coverage": "loaded" }
+        ]
+      }
+    },
+    {
+      "id": "partial_coverage_cannot_look_complete",
+      "note": "Acceptance 9. One service failed to load. The board is flagged partial and the failed service renders as a differentiated status row after the timed results.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-1", "time": "12:02", "absoluteMinutes": 2, "minutesAway": 2, "source": "estimated", "boardsHere": true }
+        ],
+        "coverage": [
+          { "areaId": "metro", "stopId": "M2_STA", "lineId": "M2", "destination": "Elliniko", "state": "loaded" },
+          { "areaId": "rail", "stopId": "GR_ATH", "lineId": "IC1", "destination": "Thessaloniki", "state": "unavailable", "reason": "source_unreachable" }
+        ]
+      },
+      "expect": {
+        "partial": true,
+        "timedGroupCount": 1,
+        "groups": [
+          { "id": "metro||M2||elliniko", "destination": "Elliniko", "nextMinutes": 2, "times": [2], "total": 1, "coverage": "loaded" },
+          { "id": "rail||IC1||thessaloniki", "destination": "Thessaloniki", "times": [], "total": 0, "coverage": "unavailable" }
+        ]
+      }
+    },
+    {
+      "id": "no_departure_in_window_shows_the_next_verified_one",
+      "note": "Acceptance 9. A known service with nothing inside the window keeps its row, labelled truthfully, carrying the next verified departure beyond the window rather than a fabricated time.",
+      "input": {
+        "windowMinutes": 120,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "GR_ATH", "areaId": "rail", "lineId": "RG1", "destination": "Leianokladi", "tripId": "RG-884", "time": "18:40", "absoluteMinutes": 400, "minutesAway": 400, "source": "scheduled", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 0,
+        "groups": [
+          { "id": "rail||RG1||leianokladi", "destination": "Leianokladi", "times": [400], "beyondWindow": [true], "total": 0, "coverage": "no_departure_in_window" }
+        ]
+      }
+    },
+    {
+      "id": "a_live_update_moves_its_own_trip_only",
+      "note": "Acceptance 10. A live delay updates the matching trip and reorders the board without duplicating it, and never transfers its Live label to the other times in the group.",
+      "input": {
+        "windowMinutes": 720,
+        "maxTimesPerGroup": 3,
+        "departures": [
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-1", "serviceDate": "2026-09-30", "time": "12:02", "absoluteMinutes": 2, "minutesAway": 2, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-1", "serviceDate": "2026-09-30", "time": "12:09", "absoluteMinutes": 9, "minutesAway": 9, "source": "live", "sourceLabel": "Live", "scheduledMinutes": 2, "observedAt": 500, "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Elliniko", "tripId": "M2-E-2", "serviceDate": "2026-09-30", "time": "12:12", "absoluteMinutes": 12, "minutesAway": 12, "source": "estimated", "boardsHere": true },
+          { "stopId": "M2_STA", "areaId": "metro", "lineId": "M2", "destination": "Anthoupoli", "tripId": "M2-A-1", "serviceDate": "2026-09-30", "time": "12:04", "absoluteMinutes": 4, "minutesAway": 4, "source": "estimated", "boardsHere": true }
+        ],
+        "coverage": []
+      },
+      "expect": {
+        "partial": false,
+        "timedGroupCount": 2,
+        "groups": [
+          { "id": "metro||M2||anthoupoli", "destination": "Anthoupoli", "nextMinutes": 4, "times": [4], "timeSources": ["estimated"], "total": 1, "coverage": "loaded" },
+          { "id": "metro||M2||elliniko", "destination": "Elliniko", "nextMinutes": 9, "times": [9, 12], "timeSources": ["live", "estimated"], "total": 2, "coverage": "loaded" }
+        ]
+      }
+    }
+  ]
+}

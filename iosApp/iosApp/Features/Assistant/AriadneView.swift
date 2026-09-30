@@ -23,13 +23,12 @@ struct AriadneView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 8)
 
-                    // On-device model control: offers the ~1.1 GB GGUF download,
-                    // shows progress, and hides itself once ready. Without this the
-                    // download was unreachable, so AriadneGuided's on-device clever
-                    // tier (LlamaSession) never had a model to load.
-                    AriadneModelBanner()
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
+                    // No model banner. Ariadne is ready with the app: every
+                    // supported transit task is answered from bundled, versioned
+                    // data by the deterministic parser and the app's own tools.
+                    // Offering a ~1.1 GB download above the conversation made a
+                    // setup step look required, consumed the first-use area and
+                    // implied the assistant was not ready until it finished.
 
                     ScrollViewReader { proxy in
                         ScrollView {
@@ -212,27 +211,58 @@ struct AriadneView: View {
             .padding(.vertical, 10)
             .background(.ultraThinMaterial, in: Capsule())
 
-            Button(action: send) {
-                Image(systemName: "arrow.up")
+            // While a turn is in flight the same control stops it. Stopping keeps
+            // the conversation and whatever is still typed in the composer, so a
+            // slow optional provider never costs the rider their draft.
+            Button {
+                if model.thinking { model.stop() } else { send() }
+            } label: {
+                Image(systemName: model.thinking ? "stop.fill" : "arrow.up")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(
                         Circle().fill(
-                            input.trimmingCharacters(in: .whitespaces).isEmpty
-                                ? Color.gray.opacity(0.4)
-                                : Color.syrmosPrimary
+                            model.thinking || !isDraftEmpty
+                                ? Color.syrmosPrimary
+                                : Color.gray.opacity(0.4)
                         )
                     )
             }
-            .disabled(input.trimmingCharacters(in: .whitespaces).isEmpty)
-            .animation(.easeInOut(duration: 0.15), value: input.isEmpty)
+            .disabled(!model.thinking && isDraftEmpty)
+            .accessibilityLabel(model.thinking ? stopLabel : sendLabel)
+            .animation(.easeInOut(duration: 0.15), value: isDraftEmpty)
+            .animation(.easeInOut(duration: 0.15), value: model.thinking)
         }
     }
 
     private func send() {
         model.ask(input)
         input = ""
+    }
+
+    /// Hoisted out of the view body: the inline expression made the
+    /// type-checker ambiguous once the Stop state was added.
+    private var isDraftEmpty: Bool {
+        input.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private var sendLabel: String {
+        switch LocalizationManager.shared.language {
+        case .greek: return "Αποστολή"
+        case .albanian: return "Dërgo"
+        case .italian: return "Invia"
+        case .english: return "Send"
+        }
+    }
+
+    private var stopLabel: String {
+        switch LocalizationManager.shared.language {
+        case .greek: return "Διακοπή"
+        case .albanian: return "Ndalo"
+        case .italian: return "Interrompi"
+        case .english: return "Stop"
+        }
     }
 
     @ViewBuilder
@@ -367,162 +397,5 @@ struct TypingIndicator: View {
             .fill(Color.syrmosPrimary.opacity(0.7))
             .frame(width: 6, height: 6)
             .scaleEffect(1 + 0.35 * abs(sin(.pi * (phase - offset))))
-    }
-}
-
-/// On-demand "Download Ariadne's brain" banner. Shown only until the on-device
-/// model is ready; the rule parser answers throughout, so this is purely
-/// additive. Bound to the shared AriadneModelStore.
-private struct AriadneModelBanner: View {
-    @ObservedObject private var store = AriadneModelStore.shared
-    @ObservedObject private var loc = LocalizationManager.shared
-
-    var body: some View {
-        switch store.status {
-        case .ready:
-            EmptyView()
-        case .downloading(let p):
-            card {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.accentColor.opacity(0.15), lineWidth: 4)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(p))
-                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 0.4), value: p)
-                        Text("\(Int(p * 100))%")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .frame(width: 44, height: 44)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(downloadingText(Int(p * 100)))
-                            .font(.caption.weight(.medium))
-                        Text(downloadSubtext(p))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
-        case .error:
-            card {
-                Text(errorText).font(.caption).foregroundStyle(.secondary)
-                Button(retryText) { Task { await store.download() } }
-                    .font(.caption.weight(.semibold))
-            }
-        case .verifying:
-            card {
-                HStack(spacing: 12) {
-                    ProgressView()
-                    Text(verifyingText).font(.caption.weight(.medium))
-                }
-            }
-        case .insufficientStorage:
-            card {
-                Text(storageTitle).font(.subheadline.weight(.bold))
-                Text(storageText).font(.caption).foregroundStyle(.secondary)
-                Button(retryText) { Task { await store.download() } }
-                    .font(.caption.weight(.semibold))
-            }
-        case .notDownloaded:
-            card {
-                Text(title).font(.subheadline.weight(.bold))
-                Text(offerText).font(.caption).foregroundStyle(.secondary)
-                Button(downloadText) { Task { await store.download() } }
-                    .font(.caption.weight(.semibold))
-            }
-        }
-    }
-
-    @ViewBuilder private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) { content() }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .onAppear { store.refreshReadyState() }
-    }
-
-    private var title: String {
-        switch loc.language {
-        case .greek: return "Πιο έξυπνη Αριάδνη"
-        case .albanian: return "Ariadne më e zgjuar"
-        case .italian: return "Ariadne più intelligente"
-        case .english: return "Smarter Ariadne"
-        }
-    }
-    private var offerText: String {
-        switch loc.language {
-        case .greek: return "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
-        case .albanian: return "Shkarko një AI në pajisje (~1.1 GB, një herë) për fjalë më të lira. Punon offline më pas."
-        case .italian: return "Scarica un AI sul dispositivo (~1.1 GB, una volta) per un linguaggio più libero. Funziona offline dopo."
-        case .english: return "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
-        }
-    }
-    private var verifyingText: String {
-        switch loc.language {
-        case .greek: return "Επαλήθευση μοντέλου..."
-        case .albanian: return "Po verifikohet modeli..."
-        case .italian: return "Verifica del modello..."
-        case .english: return "Verifying model..."
-        }
-    }
-    private var storageTitle: String {
-        switch loc.language {
-        case .greek: return "Δεν υπάρχει αρκετός χώρος"
-        case .albanian: return "Nuk ka hapësirë të mjaftueshme"
-        case .italian: return "Spazio insufficiente"
-        case .english: return "Not enough space"
-        }
-    }
-    private var storageText: String {
-        switch loc.language {
-        case .greek: return "Το μοντέλο χρειάζεται ~1.1 GB. Ελευθέρωσε χώρο και δοκίμασε ξανά."
-        case .albanian: return "Modeli kërkon ~1.1 GB. Liro pak hapësirë dhe provo sërish."
-        case .italian: return "Il modello richiede ~1.1 GB. Libera spazio e riprova."
-        case .english: return "The model needs ~1.1 GB. Free up some space and try again."
-        }
-    }
-    private func downloadingText(_ pct: Int) -> String {
-        switch loc.language {
-        case .greek: return "Λήψη μοντέλου AI..."
-        case .albanian: return "Po shkarkohet modeli AI..."
-        case .italian: return "Download del modello AI..."
-        case .english: return "Downloading AI model..."
-        }
-    }
-    private func downloadSubtext(_ p: Double) -> String {
-        let downloaded = String(format: "%.0f", p * 1100)
-        switch loc.language {
-        case .greek: return "\(downloaded) / 1100 MB"
-        case .albanian: return "\(downloaded) / 1100 MB"
-        case .italian: return "\(downloaded) / 1100 MB"
-        case .english: return "\(downloaded) / 1100 MB"
-        }
-    }
-    private var errorText: String {
-        switch loc.language {
-        case .greek: return "Η λήψη απέτυχε. Ο κανόνας-parser συνεχίζει να απαντά."
-        case .albanian: return "Shkarkimi dështoi. Rregull-parser vazhdon të përgjigjet."
-        case .italian: return "Download fallito. Il parser delle regole continua a rispondere."
-        case .english: return "Download failed. The rule parser still answers."
-        }
-    }
-    private var downloadText: String {
-        switch loc.language {
-        case .greek: return "Λήψη (~1.1 GB)"
-        case .albanian: return "Shkarko (~1.1 GB)"
-        case .italian: return "Scarica (~1.1 GB)"
-        case .english: return "Download (~1.1 GB)"
-        }
-    }
-    private var retryText: String {
-        switch loc.language {
-        case .greek: return "Δοκίμασε ξανά"
-        case .albanian: return "Provo sërish"
-        case .italian: return "Riprova"
-        case .english: return "Try again"
-        }
     }
 }

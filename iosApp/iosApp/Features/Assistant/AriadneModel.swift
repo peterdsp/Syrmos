@@ -48,59 +48,111 @@ final class AriadneModel: ObservableObject {
     init() {
         messages = [greeting()]
         location.requestIfNeeded()
-        Task { await loadAlertNote() }
+        // Warm the alert feed so an "any delays?" question answers from fresh
+        // data, but do NOT push it into the conversation. An unsolicited
+        // news-style bubble on open consumed the whole first-use area and
+        // pushed the suggestion chips off screen; Home already surfaces service
+        // notices, and Ariadne answers about them when asked.
+        Task { await alertsService.fetchAnnouncements() }
     }
 
-    private func loadAlertNote() async {
-        await alertsService.fetchAnnouncements()
-        // One Heads up per distinct notice: the feed repeats a notice under two
-        // ids (shared InsightDedupe rule, as on Home).
-        let alerts = InsightDedupe.distinctByText(alertsService.announcements.filter { $0.category == .serviceAlert }) { $0.title }
-        guard !alerts.isEmpty else { return }
-        let titles = alerts.prefix(3).map { $0.displayTitle(language: loc.language) }.joined(separator: ". ")
-        messages.append(bot(t(
-            "Heads up: \(titles)",
-            "Προσοχή: \(titles)",
-            "Kujdes: \(titles)",
-            "Attenzione: \(titles)")))
+    /// Monotonic turn identity. A result from an earlier or cancelled turn
+    /// cannot mutate a later one, and Stop simply moves the counter on.
+    private var currentTurn = 0
+    private var inFlight: Task<Void, Never>?
+
+    /// Whether the turn that produced a result is still the turn on screen.
+    private func isCurrent(_ turn: Int) -> Bool { turn == currentTurn }
+
+    private func commit(_ reply: AriadneMessage, turn: Int) {
+        guard isCurrent(turn) else { return }
+        messages.append(reply)
+        thinking = false
+        inFlight = nil
+    }
+
+    /// Cancel the turn in flight, keeping the conversation and the composer's
+    /// unsent draft. The rider gets the thread back, not an error.
+    func stop() {
+        inFlight?.cancel()
+        inFlight = nil
+        currentTurn += 1
+        thinking = false
     }
 
     func ask(_ input: String) {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        // One turn at a time, in order. Two rapid submissions used to share a
+        // single `thinking` flag and one pending-clarification slot, so the
+        // second answer could land against the first question's context.
+        inFlight?.cancel()
+        currentTurn += 1
+        let turn = currentTurn
         messages.append(AriadneMessage(fromUser: true, text: text))
         thinking = true
-        Task {
-            // Online mode: try cloud Ariadne first. The Pi backend has live
-            // transit data (lines, fares, alerts, frequencies) and chains
-            // three LLMs, so it gives richer answers than local parsing.
-            if let cloudReply = await askLLM(text) {
-                messages.append(cloudReply)
-                thinking = false
+        inFlight = Task { [weak self] in
+            guard let self else { return }
+
+            // 1. Deterministic local resolution FIRST: bundled data, no network,
+            //    no model, no download. A cloud outage or a slow optional model
+            //    can no longer delay an answer the app already knows. This is the
+            //    whole point of the repair: the previous order awaited the hosted
+            //    service (~33 s before timing out) before parsing at all.
+            if let reply = await self.resolveLocally(text, turn: turn) {
+                self.commit(reply, turn: turn)
                 return
             }
-            // Offline fallback: local Ariadne (rule-based parser + resolver).
-            var raw: AssistantIntent
-            if let guided = await AriadneGuided.classify(text, vocabulary: parser.vocabulary) {
-                raw = guided
-            } else {
-                let cleaned = await AriadneBrain.normalize(text) ?? text
-                raw = parser.parse(cleaned)
+            if Task.isCancelled || !self.isCurrent(turn) { return }
+
+            // 2. Optional understanding, bounded and cancellable, for wording the
+            //    parser could not resolve. Only an ALREADY AVAILABLE system model
+            //    is consulted; nothing is downloaded and nothing is required.
+            if let normalized = await AriadneBrain.normalize(text),
+               normalized.caseInsensitiveCompare(text) != .orderedSame,
+               let reply = await self.resolveLocally(normalized, turn: turn) {
+                self.commit(reply, turn: turn)
+                return
             }
-            raw = applyDayFollowUp(text, raw)
-            let intent = fillFromContext(mergePendingIfApplicable(raw))
-            if case let .needsClarification(base, missing) = intent {
-                pendingIntent = base
-                pendingMissing = missing
-            } else {
-                pendingIntent = nil
-                pendingMissing = nil
+            if Task.isCancelled || !self.isCurrent(turn) { return }
+
+            if let cloudReply = await self.askLLM(text) {
+                self.commit(cloudReply, turn: turn)
+                return
             }
-            updateSession(intent)
-            let reply = await resolve(intent)
-            messages.append(reply)
-            thinking = false
+            if Task.isCancelled || !self.isCurrent(turn) { return }
+
+            // 3. A localized recovery from the app's own vocabulary. An optional
+            //    layer being unavailable is not an app failure and must never be
+            //    reported as one.
+            self.commit(self.bot(self.outOfScopeText()), turn: turn)
         }
+    }
+
+    /// Resolve `text` with the deterministic parser and the app's own tools.
+    ///
+    /// Returns nil ONLY when the parser could not recognise the task at all, so
+    /// the caller knows an optional understanding layer is worth trying. Every
+    /// recognised task, including one that needs a clarification, is answered
+    /// here without a model or a network round trip.
+    private func resolveLocally(_ text: String, turn: Int) async -> AriadneMessage? {
+        var raw = parser.parse(text)
+        raw = applyDayFollowUp(text, raw)
+        if case .outOfScope = raw { return nil }
+        let intent = fillFromContext(mergePendingIfApplicable(raw))
+        if case let .needsClarification(base, missing) = intent {
+            pendingIntent = base
+            pendingMissing = missing
+        } else {
+            pendingIntent = nil
+            pendingMissing = nil
+        }
+        // Context is committed on the same path for every understanding
+        // provider, so a cloud answer can no longer bypass it.
+        updateSession(intent)
+        let reply = await resolve(intent)
+        guard isCurrent(turn) else { return nil }
+        return reply
     }
 
     /// Bare day-change follow-up: "what about tomorrow?", "and the weekend?".
@@ -1387,7 +1439,8 @@ final class AriadneModel: ObservableObject {
                 text: msg.text
             ))
         }
-        chatHistory.append(AriadneChatMessage(role: "user", text: text))
+        // The current user message is ALREADY the last entry of `messages`, so
+        // appending it here sent it twice and the provider saw a doubled turn.
         // Pass the usability filter into the service so the circuit breaker's
         // outcome reflects a reply we actually surface (a junk reply from a
         // degraded provider trips the breaker instead of being discarded here

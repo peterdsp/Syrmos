@@ -2337,3 +2337,133 @@ body.has-store-banner .app-shell {
     color: var(--sy-accent); font-size: 14px; text-decoration: underline;
 }
 .plan-timeline__stoplist { margin-top: 4px; font-size: 13px; line-height: 18px; color: var(--sy-text-secondary); }
+
+/* ===== Station-complex all-directions board =================================
+   One row per supported destination, vertically readable, with the soonest
+   emphasised gently rather than an oversized hero that pushes every other
+   direction below the fold. Rows are keyed by a stable group id in JS, so a
+   countdown tick never rebuilds or reorders the list. */
+.station-board { padding: 14px; }
+
+.board__head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.board__station {
+    font-size: 15px; font-weight: 700;
+    color: var(--sy-text-primary);
+    line-height: 1.25;
+}
+.board__scope {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    margin-top: 2px;
+}
+.board__scope-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--sy-text-secondary);
+}
+.board__coverage {
+    font-size: 11px; font-weight: 600;
+    color: var(--sy-status-warning, #B45309);
+}
+.board__chip { flex: none; }
+
+.board__rows {
+    display: flex; flex-direction: column;
+    border-radius: var(--sy-radius-md);
+    overflow: hidden;
+    background: var(--sy-background-sunken, rgba(0,0,0,.03));
+}
+
+.board-row {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none; border-bottom: 1px solid var(--sy-border-subtle);
+    background: transparent;
+    font: inherit; text-align: left;
+    color: var(--sy-text-primary);
+    cursor: pointer;
+}
+.board-row:last-child { border-bottom: none; }
+.board-row:hover { background: var(--sy-border-subtle); }
+.board-row:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: -2px; }
+.board-row--featured .board-row__next { font-weight: 800; }
+.board-row--selected { background: color-mix(in srgb, var(--sy-accent) 10%, transparent); }
+.board-row--muted { opacity: .72; cursor: default; }
+
+.board-row__badge {
+    flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; max-width: 76px; height: 26px;
+    padding: 0 7px; border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    white-space: nowrap;
+    color: #fff;
+}
+.board-row__body {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+}
+/* Destinations are allowed to wrap: truncating a headsign is how a board hides
+   a direction it claims to show. They wrap at word boundaries, so "Leianokladi"
+   stays one word instead of breaking into "Leia / nokl / adi"; only a single
+   word longer than the column falls back to breaking inside itself. */
+.board-row__dest {
+    font-size: 14px; font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
+}
+.board-row__meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.board-row__meta {
+    font-size: 11px;
+    color: var(--sy-text-secondary);
+}
+.board-row__times {
+    flex: 0 1 auto;
+    max-width: 42%;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+    text-align: right;
+}
+.board-row__next {
+    font-size: 15px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+.board-row__next--cancelled { text-decoration: line-through; opacity: .7; }
+.board-row__later,
+.board-row__status {
+    font-size: 11px;
+    color: var(--sy-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+.board-row__status { color: var(--sy-status-warning, #B45309); }
+
+.board__actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 10px;
+}
+.pill-button--ghost {
+    background: transparent;
+    color: var(--sy-accent);
+    border: 1px solid var(--sy-border-subtle);
+}
+.pill-button:disabled { opacity: .5; cursor: default; }
+
+.departure-card--status { opacity: .78; }
+.dep-time--status { color: var(--sy-status-warning, #B45309); font-weight: 600; }
+
+/* Stacked metadata at large text sizes: the times column moves under the
+   destination instead of squeezing it to a few characters. */
+@media (max-width: 420px) {
+    .board-row { flex-wrap: wrap; }
+    .board-row__times { width: 100%; align-items: flex-start; text-align: left; }
+}

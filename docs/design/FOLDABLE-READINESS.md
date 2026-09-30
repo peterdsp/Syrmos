@@ -35,6 +35,80 @@ All `@available(iOS 27.1, *)`; guard adoptions and keep the iOS 17 fallback. The
 iPhone Duo simulator device type exists but needs an iOS 27.1 runtime that is not
 installed and not downloadable here, so Duo **runtime** validation stays gated.
 
+## Current status: iPhone Duo runtime, 2026-09-30
+
+Rechecked on the implementation machine with a **booted iPhone Duo simulator**, so
+this section supersedes the earlier "runtime validation stays gated" statement.
+The entries below it are history and are not restated as new passes.
+
+| Fact | Value | How verified |
+| --- | --- | --- |
+| Xcode (default) | 27.0 (27A266a) | `xcodebuild -version` |
+| Xcode (Duo SDK) | 27.1 (27A9269) at `/Applications/Xcode_27.1.app` | `DEVELOPER_DIR=... xcodebuild -version` |
+| iOS runtimes | 26.5, 27.0, **27.1** | `xcrun simctl list runtimes` |
+| iPhone Duo simulators | `92B2C61A-…`, `09551189-…`, plus `Lidhra Duo`, all iOS 27.1 | `xcrun simctl list devices` |
+| Duo displays | the simulator reports several framebuffers; `xcrun simctl io <udid> enumerate` lists them and `screenshot` defaults to ONE | `xcrun simctl io … enumerate` |
+| JDK | **absent** on this machine | `java -version` fails |
+
+### The reserved-region API name in the shipped code was wrong
+
+`ReservedRegionAdapter.swift` called `reservedRegions(kind:options:)` on a
+SwiftUI `GeometryProxy`. That member does not exist in the 27.1 SDK. The real API
+is `UIView.reservedRegions(kind:options:)`, refined for Swift from
+`-[UIView reservedRegionsOfKind:options:]` in `UIViewReservedRegion.h`, verified
+directly in `iPhoneSimulator27.1.sdk`.
+
+Consequence: defining `SYRMOS_DUO_SDK` would not have compiled, which is why it
+never was, and every previous Duo result was the FALLBACK layout. The adapter now
+reads regions from the UIKit view that backs the SwiftUI content, through one
+probe attached at the window root, and the branch compiles:
+
+```
+DEVELOPER_DIR=/Applications/Xcode_27.1.app/Contents/Developer \
+  xcodebuild -project iosApp/Syrmos.xcodeproj -scheme "Syrmos - Athens Rail Times" \
+  -destination 'platform=iOS Simulator,id=<duo-udid>' \
+  SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG SYRMOS_DUO_SDK' build
+```
+
+### The native ArrangementView path renders nothing: NOT shipped
+
+Two builds of the same commit, same SDK, same simulator, same pinned clock,
+location and data mode:
+
+| Build | Result on the Duo cover display |
+| --- | --- |
+| without `SYRMOS_DUO_SDK` (the shipping fallback) | the answer card renders |
+| with `SYRMOS_DUO_SDK` (native `ArrangementView`) | **the content area is blank** |
+
+`SYRMOS_DUO_SDK` is therefore deliberately **not** defined in any checked-in build
+configuration. Releasing with it would ship a blank Home on Duo. Status:
+**native Duo arrangement integration is reproduced as failing, not ready.**
+
+The existing `__DuoSnapshots__` images are rendered fixture views, not this scene,
+which is exactly why they never caught it.
+
+### A real cover-display defect, found and fixed
+
+On the Duo cover display the Home context tag and the offline freshness pill were
+laid out in one `HStack`. The pill was squeezed below its intrinsic width and
+wrapped **one character per line** into a vertical ribbon that consumed the whole
+card and pushed the entire all-directions board off screen. Evidence:
+`docs/screenshots/release-3.0.0/ios/home-duo-fallback__C402__light__en__default.png`.
+
+Fixed by giving the pair a `ViewThatFits` that drops to two lines rather than
+squeezing, and by pinning the pill to its intrinsic width.
+
+### Remaining, stated honestly
+
+- Native `ArrangementView` composition on Duo: **failed**, reproduced above.
+- Duo inner-display and posture-transition captures: **unverified** here. The
+  simulator exposes several displays and `simctl io screenshot` captures one by
+  default; a per-display capture path is the next step.
+- Android foldable: **unverified**. No JDK on this machine, so no Android build or
+  emulator run was possible; no foldable AVD is defined either.
+- Physical crease perception, outdoor legibility, radio/GPS and battery: hardware
+  only, unchanged.
+
 ## Verified baseline (prompt section 2)
 
 Rechecked against current code, all confirmed:

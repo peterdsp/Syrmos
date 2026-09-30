@@ -190,11 +190,31 @@ jobs:
 
           # altool can exit 0 even when validation/upload fails (it prints the
           # error but returns success), which would let a broken build masquerade
-          # as delivered. So capture the output and fail hard on any error marker.
+          # as delivered. So capture the output and decide from the log.
+          #
+          # Two rules, because either one alone is wrong:
+          #
+          #  1. Fail on a DEFINITIVE failure marker. A bare "ERROR:" is not one:
+          #     altool's content-delivery layer prints transient service errors
+          #     (for example "GET UPLOAD STATE ... received status code 500")
+          #     and then retries and succeeds. v3.0.0-beta.7 was reported as
+          #     "build NOT delivered" on exactly that line, immediately above
+          #     "VERIFY SUCCEEDED with no errors".
+          #  2. Require a POSITIVE success marker. Absence of an error is not
+          #     proof of delivery, which is the stronger half of this check.
           check_altool () {
-            local log="$1"
-            if grep -qiE "UPLOAD FAILED|Validation failed|Failed to (validate|upload) package|VALIDATION_ERROR|ERROR:" "$log"; then
+            local log="$1" kind="$2"
+            if grep -qiE "UPLOAD FAILED|Validation failed|Failed to (validate|upload) package|VALIDATION_ERROR|\*\*\* Error:" "$log"; then
               echo "::error::altool reported a failure - build NOT delivered."
+              exit 1
+            fi
+            local ok
+            case "$kind" in
+              validate) ok="No errors validating archive|VERIFY SUCCEEDED" ;;
+              upload)   ok="No errors uploading|UPLOAD SUCCEEDED|Delivery [Uu]uid" ;;
+            esac
+            if ! grep -qiE "$ok" "$log"; then
+              echo "::error::altool printed no $kind success marker - treating as NOT delivered."
               exit 1
             fi
           }
@@ -204,7 +224,7 @@ jobs:
           # build or publishing anything).
           xcrun altool --validate-app -f "$IPA" -t ios \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-validate.log"
-          check_altool "$RUNNER_TEMP/altool-validate.log"
+          check_altool "$RUNNER_TEMP/altool-validate.log" validate
 
           if [ "$DRY_RUN" = "true" ]; then
             echo "DRY RUN: signed IPA built + App Store validation passed; skipping the TestFlight upload."
@@ -213,7 +233,7 @@ jobs:
 
           xcrun altool --upload-app -f "$IPA" -t ios \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/altool-upload.log"
-          check_altool "$RUNNER_TEMP/altool-upload.log"
+          check_altool "$RUNNER_TEMP/altool-upload.log" upload
           echo "Verified delivery to App Store Connect / TestFlight."
 
       - name: Upload signed IPA + validation log (artifact)

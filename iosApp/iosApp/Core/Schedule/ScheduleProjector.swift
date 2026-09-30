@@ -57,6 +57,7 @@ enum ScheduleProjector {
         var results: [Departure] = []
         for lineId in resolvedLineIds {
             guard let bundle = bundles[lineId] else { continue }
+            let beforeTrips = results.count
             if !bundle.trips.isEmpty {
                 projectScheduledTrips(
                     bundle: bundle,
@@ -70,6 +71,14 @@ enum ScheduleProjector {
                     into: &results
                 )
             }
+            // A published timetable is not a headway. Projecting the line's
+            // frequency bands on top of its own trips produced a second set of
+            // rows labelled with the LINE's terminal name, so A3 offered both
+            // "Chalkida" (the real last stop) and "Chalcis" (the terminal in
+            // lines.json) as two destinations for one place, at different times.
+            // Bands are the fallback for a line with no trips today, not a
+            // parallel source for one that has them.
+            guard results.count == beforeTrips else { continue }
             project(
                 bundle: bundle,
                 weekday: nowComp.weekday ?? 1,  // 1 = Sunday
@@ -648,7 +657,10 @@ enum ScheduleProjector {
             // instead of just the line's outbound terminal. Each (band ×
             // direction) projects into its own accumulator; we sort + trim
             // once at the end so the first direction can't starve the second.
+            // A terminal offers one direction, not two. Projecting both is how
+            // a board invents a train to the station the rider is standing in.
             let directions = directionStreams(for: lineId)
+                .filter { canDepart(lineId: lineId, stationId: stationId, directionKey: $0.key) }
             for band in bands {
                 for stream in directions {
                     projectBand(
@@ -672,6 +684,21 @@ enum ScheduleProjector {
             .sorted { $0.minutesAway < $1.minutesAway }
             .prefix(limit)
         out.append(contentsOf: trimmed)
+    }
+
+    /// Whether a rider at `stationId` can actually leave in `directionKey` on
+    /// this line. Unknown stop orders return true, so a data gap degrades to
+    /// today's behaviour rather than hiding a real direction.
+    private static func canDepart(lineId: String, stationId: String, directionKey: String) -> Bool {
+        let display = displayLineId(for: lineId)
+        guard let ordered = SyrmosLineStops.orderedStopIds[display],
+              let index = ordered.firstIndex(of: stationId)
+        else { return true }
+        switch directionKey {
+        case "outbound": return index < ordered.count - 1
+        case "inbound": return index > 0
+        default: return true
+        }
     }
 
     private struct DirectionStream {
@@ -767,7 +794,10 @@ enum ScheduleProjector {
                 direction: resolvedDirection,
                 minutesAway: mins,
                 serviceType: serviceTypeLabel(for: lineId, label: band.label),
-                trainNo: nil
+                trainNo: nil,
+                // Projected from a frequency band: a headway, not a timetabled
+                // minute. It must never claim second-level precision.
+                sourceConfidence: .estimated
             ))
             slot += band.headwayMinutes
             added += 1
@@ -977,42 +1007,51 @@ enum ScheduleProjector {
             return true
         }
         for trip in matching {
-            guard let stop = trip.stops.first(where: { $0.stationId == stationId }) else { continue }
-            guard let depMin = minutesOfDay(stop.departureTime) else { continue }
-            let delta = depMin - nowMinutes
+            // Travel order comes from the trip's own times, not from the array
+            // order. The suburban A-lines list an inbound trip's stops in
+            // outbound geographic order, while the intercity and regional
+            // corridors list them in travel order, so reading `stops.first` for
+            // inbound reported IC51's ORIGIN (Thessaloniki) as its destination
+            // when it actually runs to Athens. It also recovers real short
+            // turns: A1 3201 ends at Tavros and never reaches Piraeus.
+            guard let boarding = TripInterpretation.boarding(trip, at: stationId) else { continue }
+            // A terminal arrival is not a departure. Offering a train "to this
+            // very station" is the Ano Lechonia / Milies defect.
+            guard boarding.boardsHere else { continue }
+            let delta = boarding.departureMinutes - nowMinutes
             if delta < -1 { continue }
-            let terminus: String
-            if trip.direction == "outbound" {
-                terminus = trip.stops.last?.stationId ?? ""
-            } else {
-                terminus = trip.stops.first?.stationId ?? ""
-            }
-            let dirLabel = scheduledTripDestination(lineId: lineId, direction: trip.direction, lastStationId: terminus)
+            let dirLabel = scheduledTripDestination(
+                lineId: lineId, direction: trip.direction,
+                lastStationId: boarding.destinationStopId)
             out.append(Departure(
-                time: stop.departureTime,
+                time: String(format: "%02d:%02d",
+                             boarding.departureMinutes / 60, boarding.departureMinutes % 60),
                 lineId: displayLineId(for: lineId),
                 direction: dirLabel,
                 minutesAway: max(0, delta),
                 serviceType: "regular",
-                trainNo: trip.trainNo
+                trainNo: trip.trainNo,
+                // A published trip is a timetabled minute, not a headway guess.
+                sourceConfidence: .scheduled
             ))
         }
     }
 
+    /// The headsign for a trip that ends at `lastStationId`.
+    ///
+    /// The station's own name wins. A curated alias list used to answer first,
+    /// and anything it did not cover fell through to the LINE's terminal, so A3
+    /// showed both "Chalkida" (from the alias) and "Chalcis" (the terminal name
+    /// in lines.json) as two separate destinations for one place. Resolving the
+    /// real stop name makes every trip that ends there agree, and a genuine
+    /// short turn keeps its own stop's name instead of borrowing the terminal's.
     private static func scheduledTripDestination(lineId: String, direction: String, lastStationId: String) -> String {
-        let aliases: [String: String] = [
-            "A1_AIR": "Airport", "A1_PIR": "Piraeus", "A1_TAY": "Tavros",
-            "A2_AIR": "Airport", "A2_ANO": "Ano Liosia",
-            "A3_CHA": "Chalkida", "A3_ATH": "Athens", "A3_AYL": "Avlonas",
-            "A4_KIA": "Kiato", "A4_PIR": "Piraeus", "A4_NEA": "Nea Peramos",
-            "PL_ALE": "Ano Lechonia", "PL_MIL": "Milies",
-            "PA_AND": "Agios Andreas", "PA_KAM": "Kaminia", "PA_RIO": "Rio",
-            "PA_KST": "Kastelokampos", "PU_AGV": "Agios Vasileios",
-            "KO_KAT": "Katakolo", "KO_OLY": "Olympia",
-            "GR_ATH": "Athens", "GR_THE": "Thessaloniki",
-            "GR_LAR": "Larisa", "GR_FLO": "Florina",
-        ]
-        if let label = aliases[lastStationId] { return label }
+        let coords = StationCoordinateLookup.shared
+        if let name = coords.englishName(for: lastStationId), !name.isEmpty { return name }
+        if let station = SyrmosData.bundleStations.first(where: { $0.id == lastStationId }),
+           !station.name.isEmpty {
+            return station.name
+        }
         if let line = SyrmosData.line(for: lineId) {
             return direction == "outbound" ? line.terminalB : line.terminalA
         }

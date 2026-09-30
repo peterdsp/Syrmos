@@ -89,3 +89,12 @@ ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	default	clock=2026-09-16T05:42:00Z off
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	AX5	clock=2026-09-16T05:42:00Z offline=1	34dfef94	S09-explore	el-finding4-dynamictype	ios/S09-explore__C402__light__el__AX5.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	AX5	clock=2026-09-16T05:42:00Z offline=1	34dfef94	S09-airport-hub	el-finding4b-dynamictype	ios/S09-airport-hub__C402__light__el__AX5.png
 ios	iOS 27 0 (iPhone 17)	C402	3x	el	light	AX5	clock=2026-09-16T05:42:00Z offline=1	34dfef94	S09-more-scrolled	el-finding6-dynamictype	ios/S09-more-scrolled__C402__light__el__AX5.png
+ios	iOS 27 0 (Syrmos 27)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	6a1b0bc4	home	all-directions board at Athens	ios/home__C402__light__en__default.png
+ios	iOS 27 0 (Syrmos 27)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	6a1b0bc4	home	all-directions board at Athens	ios/home__C402__light__en__default.png
+ios	iOS 27 0 (Syrmos 27)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	6a1b0bc4	home	all-directions board at Athens	ios/home__C402__light__en__default.png
+ios	iOS 27 0 (Syrmos 27)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	6a1b0bc4	home-alert-check	checking for permission dialog	ios/home-alert-check__C402__light__en__default.png
+ios	iOS 27 0 (Syrmos 27)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	b750a8b0	home	all-directions board at Athens	ios/home__C402__light__en__default.png
+ios	iOS 27 1 (iPhone Duo)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	34d08d49	home-duo	all-directions board on iPhone Duo	ios/home-duo__C402__light__en__default.png
+ios	iOS 27 1 (iPhone Duo)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	34d08d49	home-duo-fallback	fallback split on iPhone Duo	ios/home-duo-fallback__C402__light__en__default.png
+ios	iOS 27 1 (iPhone Duo)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	34d08d49	home-duo-fallback	fallback split on iPhone Duo	ios/home-duo-fallback__C402__light__en__default.png
+ios	iOS 27 1 (iPhone Duo)	C402	3x	en	light	default	clock=2026-09-16T05:42:00Z offline=1	34d08d49	home-duo	all-directions board on iPhone Duo cover	ios/home-duo__C402__light__en__default.png
