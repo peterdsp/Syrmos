@@ -44,12 +44,38 @@ Station resolution -> member stops -> service enumeration -> source reconciliati
 
 ## Outcome status
 
+Updated 2026-09-30 after merge and release.
+
 | Outcome | Status | Evidence |
 | --- | --- | --- |
-| Station departures board | in progress | see acceptance table |
-| Ariadne | in progress | see acceptance table |
-| Ichnos | in progress | see acceptance table |
-| Foldables / iPhone Duo | in progress | see acceptance table |
+| Station departures board | **verified complete** on web and iOS at runtime; **Android verified on CI only** | web: production capture below; iOS: pinned-clock simulator capture; Android: KMP tests + `Android build + lint` green, no emulator on this machine |
+| Ariadne | **partial** | local-first orchestration, turn serialization, Stop, no-setup path and board-grounded answers verified at runtime on iOS and web. Android/Kotlin assistant not reworked in this pass |
+| Ichnos | **partial** | scoped read, honest states, contextual reporting with idempotent retry and undo implemented and unit-verified on iOS. Web and Android entry points unchanged; submission against a test backend not exercised |
+| Foldables / iPhone Duo | **failed (native), fixed (shipping fallback)** | the native `ArrangementView` path renders a blank content area on a real Duo simulator and is deliberately not shipped; a real cover-display defect in the shipping path was found and fixed. Android foldable unverified (no JDK) |
+
+## Release
+
+| Item | Value |
+| --- | --- |
+| PR | [#241](https://github.com/peterdsp/Syrmos/pull/241) |
+| Merge commit | `2f1ebb89470080ceeedfd0dad4e29f5972a7bc62` |
+| Required checks on the exact PR head `bfe94c8` | CI, iOS, iOS UI inspection: all success |
+| Checks on the merge commit | CI, iOS, iOS UI inspection, Pages: all success |
+| Release tag | `v3.0.0-beta.8` -> `2f1ebb89` |
+| Marketing version | 3.0.0 (unchanged) |
+| Android versionName / versionCode | 3.0.0 / **231** (230 consumed by the accepted beta.7 upload) |
+| iOS build number | epoch-stamped by the release workflow, unique by construction |
+
+### Release-engineering defect fixed on the way
+
+`v3.0.0-beta.7`'s iOS release failed at "Validate + upload to TestFlight". The
+log shows altool's content delivery returning a transient `status code 500` on
+`GET UPLOAD STATE`, immediately followed by `VERIFY SUCCEEDED with no errors` and
+`No errors validating archive`. The step's guard matched a bare `ERROR:` and
+declared the build not delivered. The guard now fails only on definitive failure
+markers and additionally **requires a positive success marker**, so a transient
+service error no longer fails a successful validation and silence is no longer
+mistaken for delivery.
 
 ## Acceptance cases
 
