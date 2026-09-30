@@ -104,14 +104,17 @@ enum StationComplexRegistry {
         guard let url = SyrmosSeedBundle.url(named: "station-complexes"),
               let data = try? Data(contentsOf: url)
         else {
-            assertionFailure("station-complexes.json is missing from every bundle")
+            // Not fatal: an empty registry degrades to per-station boards. It is
+            // logged loudly because silently empty turns Athens back into five
+            // unrelated stops with no visible failure.
+            print("SYRMOS: station-complexes.json not found. \(SyrmosSeedBundle.seedDirectoryListing())")
             return []
         }
         let payload: Payload
         do {
             payload = try JSONDecoder().decode(Payload.self, from: data)
         } catch {
-            assertionFailure("station-complexes.json failed to decode: \(error)")
+            print("SYRMOS: station-complexes.json failed to decode: \(error)")
             return []
         }
         return payload.complexes.map { c in

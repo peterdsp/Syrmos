@@ -111,6 +111,21 @@ enum SyrmosSeedBundle {
         }
         return nil
     }
+
+    /// What the seed directory actually contains, for diagnosing a resource that
+    /// is present in the repository but absent from a built bundle.
+    static func seedDirectoryListing() -> String {
+        var lines: [String] = []
+        for bundle in [Bundle.main, Bundle(for: Token.self)] {
+            let root = bundle.bundleURL.appendingPathComponent("seed-schedules-v2")
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+            lines.append("\(bundle.bundleURL.lastPathComponent)/seed-schedules-v2: \(names.count) files")
+            if !names.isEmpty {
+                lines.append("  " + names.sorted().joined(separator: ", "))
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
 }
 
 // MARK: - Line stop order
