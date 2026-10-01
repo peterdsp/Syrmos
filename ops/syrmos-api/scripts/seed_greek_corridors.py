@@ -1,10 +1,10 @@
 """Seed the national + Thessaloniki-suburban rail corridors.
 
-Every time here is transcribed from docs/plans/greece_passenger_rail_timetables_
+Every time here is transcribed from docs/data/greece_passenger_rail_timetables_
 2026-07-16.pdf (compiled from the Hellenic Train live booking system + the
 railway.gov.gr live board, which states no times were estimated). Station
 coordinates come from the OSM route relations in the Greece extract
-(docs/plans/greek-rail-osm-relations.md), never invented.
+(docs/data/greek-rail-osm-relations.md), never invented.
 
 Corridors, all on the scheduled-trips path like Athens A1-A4:
   IC1  national  Athens <-> Thessaloniki (IC50/51/56/57), daily

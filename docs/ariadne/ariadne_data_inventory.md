@@ -1,7 +1,6 @@
 # Ariadne Ultra Clever Data Inventory
 
 Generated: 2026-07-04T15:27:19.166184+00:00  
-Repository: `/Users/p.dhespollari/git/personal/Syrmos`  
 Git branch: `master`  
 Git HEAD: `2d53e7a656ae746e9019f56ff7b02f91549869ff`  
 Bundled manifest version: `179`  

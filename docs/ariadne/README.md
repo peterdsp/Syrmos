@@ -20,4 +20,3 @@ Snapshot:
 - Station records: 201
 - Fare products: 14
 - Active bundled alerts: 1
-- Generated from: `/Users/p.dhespollari/git/personal/Syrmos`

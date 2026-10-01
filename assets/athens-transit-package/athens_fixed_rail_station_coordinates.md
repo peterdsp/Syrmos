@@ -15,8 +15,8 @@ Coordinate convention: WGS84 decimal degrees. Columns are latitude then longitud
 - OpenStreetMap Hellenic Train and Athens Suburban Railway route relations: https://wiki.openstreetmap.org/wiki/Greece/Hellenic_Train
 - Hellenic Train Athens Suburban and Regional Railway service overview: https://www.hellenictrain.gr/en/athens-suburban-and-regional-railway
 - Coordinate extraction: OpenStreetMap API relation/full endpoint for the route relation IDs listed in each table.
-- Operational schedule reference: `/Users/p.dhespollari/Downloads/Official Athens Transit Master Schedule (Lines 1, 2, 3 & Tram).md`
-- Icon asset source: `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated`
+- Operational schedule reference: `Official Athens Transit Master Schedule (Lines 1, 2, 3 & Tram).md`
+- Icon asset source: `athens_transit_t7_station_icons_updated`
 
 ## Operating Schedule Reference
 
@@ -90,12 +90,12 @@ This section copies the full operating reference from the official master schedu
 
 ## Icon Asset Rules
 
-- Use the icon pack at `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated` for all station and vehicle icon rendering across metro, tram and suburban railway.
-- Use station icons from `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated/station_smart_codes/athens_station_smart_code_icons/`.
-- Use directional vehicle icons from `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated/directional_vehicle_icons/`.
+- Use the icon pack at `athens_transit_t7_station_icons_updated` for all station and vehicle icon rendering across metro, tram and suburban railway.
+- Use station icons from `athens_transit_t7_station_icons_updated/station_smart_codes/athens_station_smart_code_icons/`.
+- Use directional vehicle icons from `athens_transit_t7_station_icons_updated/directional_vehicle_icons/`.
 - For shared stations with multiple lines or modes, use the icon of the larger, more important line rather than stacking multiple badges. In practice, use metro over tram or suburban at major interchanges such as Syntagma, Monastiraki, Piraeus, Airport and Doukissis Plakentias.
-- For suburban train services where the exact destination or direction is unknown, use `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated/directional_vehicle_icons/generic_vehicle/vehicle_train.svg`.
-- Generic fallback vehicles are also available in `/Users/p.dhespollari/Desktop/athens_transit_t7_station_icons_updated/directional_vehicle_icons/generic_vehicle/` for metro and tram if a directional icon cannot be resolved.
+- For suburban train services where the exact destination or direction is unknown, use `athens_transit_t7_station_icons_updated/directional_vehicle_icons/generic_vehicle/vehicle_train.svg`.
+- Generic fallback vehicles are also available in `athens_transit_t7_station_icons_updated/directional_vehicle_icons/generic_vehicle/` for metro and tram if a directional icon cannot be resolved.
 
 ## Network Analysis
 

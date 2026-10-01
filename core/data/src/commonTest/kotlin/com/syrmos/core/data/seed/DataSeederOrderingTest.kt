@@ -153,7 +153,7 @@ class DataSeederOrderingTest {
 
     @Test
     fun version9InstallStillReseedsToVersion10() {
-        // The regression Codex caught: a lexicographic String compare reads
+        // The regression this guards: a lexicographic String compare reads
         // "9" >= "10" as true, so a version-9 install would skip the reseed and
         // keep the broken bus geometry. shouldReseed must compare numerically.
         assertTrue(

@@ -1,8 +1,8 @@
 # Syrmos foldable + iPhone Duo readiness record
 
-Implementation evidence for [`docs/plans/ANDROID-FOLDABLES-IPHONE-DUO-IMPLEMENTATION-PROMPT.md`](../plans/ANDROID-FOLDABLES-IPHONE-DUO-IMPLEMENTATION-PROMPT.md).
-This is a living record: each slice appends verified evidence, distinguishing what
-runs from what is gated on tools or hardware. It never marks a gated item as done.
+The maintained record of Syrmos's foldable and iPhone Duo behaviour. Each slice
+appends verified evidence, distinguishing what runs from what is gated on tools or
+hardware. It never marks a gated item as done.
 
 ## Source, tools, and revision
 
@@ -135,7 +135,6 @@ Rechecked against current code, all confirmed:
 
 ## Landed: six-posture policy fixtures and the Swift policy mirror (six-posture prompt, delivery step 1)
 
-Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 3, 5, 11 and 12.
 
 - **Tall-canvas axis rule (shared policy)**: `AdaptiveWorkspacePolicy` now pairs on
   a medium-width plain window (600 to 839 wide, not short, not large text) on the
@@ -184,7 +183,6 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 3,
 
 ## Landed: iOS reserved-region adapter and hinge-aware map padding (six-posture prompt, delivery step 2)
 
-Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 2; parent prompt section 9.4.
 
 - **Adapter** `iosApp/iosApp/DesignSystem/ReservedRegionAdapter.swift`:
   `SyrmosReservedRegionAdapter.normalize(raw, in: box)` is a PURE function from
@@ -245,7 +243,6 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 i
 
 ## Landed: policy-driven arrangement, stacked axis for GO (six-posture prompt, delivery step 3)
 
-Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 item 1; section 5 (P5, P6).
 
 - **`SyrmosArrangement` is now driven by `SyrmosAdaptiveWorkspacePolicy`**
   (`PlanFlow.swift`): the container measures its box, reads the regions the
@@ -298,7 +295,6 @@ Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, section 9 i
 
 ## Landed: foldable UI polish on iPhone Duo and Android fold devices (six-posture prompt, delivery step 4, first slice)
 
-Source: `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md`, sections 5 (P3 to P6) and 7.
 Owner direction (2026-09-26): a visual polish of the paired and stacked layouts on
 the iPhone Duo and Android fold devices only; GO stays.
 
@@ -434,7 +430,6 @@ the iPhone Duo and Android fold devices only; GO stays.
 
 ## Landed: polish round 4 (GO refinements from the master plan's screenshot review)
 
-Source: `docs/plans/FOLDABLES-IPHONE-DUO-MASTER-PLAN.md`, section 2 (screenshot findings) and the GO contract in section 4.
 
 - **Per-leg map colours**: `GoRouteProjection.legRuns` yields one coordinate run
   per leg with its line id (legs with fewer than two placeable stops draw

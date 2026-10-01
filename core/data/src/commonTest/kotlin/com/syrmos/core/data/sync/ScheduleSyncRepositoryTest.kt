@@ -73,7 +73,7 @@ class ScheduleSyncRepositoryTest {
         assertEquals(setOf("M2", "M3"), toFetch, "changed M2 + new M3, but not unchanged M1")
     }
 
-    // --- partial-failure retry (the stranding Codex flagged) ---
+    // --- partial-failure retry (the stranding this guards against) ---
 
     @Test
     fun aFailedLineKeepsItsStaleHashAndIsRetriedNextRound() {

@@ -249,7 +249,7 @@ struct ServicePattern {
 /// into the KMP seed. That script broke in June 2026 when this file moved, so the
 /// two copies silently drifted (86 of 201 station ids diverged) and neither could
 /// carry region or status. See
-/// docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+/// docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md.
 private struct SeedLinesPayload: Decodable {
     struct SeedLine: Decodable {
         let id: String
