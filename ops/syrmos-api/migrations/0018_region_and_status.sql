@@ -1,6 +1,6 @@
 -- Region + line status, for the first second region (Thessaloniki).
 --
--- Design: docs/plans/2026-07-15-thessaloniki-metro-design.md
+-- Design: docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md
 --
 -- `region` groups a line/station into a network. It is deliberately NOT called
 -- `city`: the Thessaloniki suburban corridors run to Larisa (~150 km) and

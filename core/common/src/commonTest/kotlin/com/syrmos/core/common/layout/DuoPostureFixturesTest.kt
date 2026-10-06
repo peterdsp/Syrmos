@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 /**
  * The six iPhone Duo postures and six transitions from
- * `docs/plans/IPHONE-DUO-SIX-POSTURES-AWARD-DESIGN-PROMPT.md` (sections 3 and 11),
+ * `docs/design/FOLDABLE-READINESS.md`,
  * pinned on the shared policy. Every case here has a Swift twin with the same
  * name, the same inputs and the same expected numbers in
  * `iosApp/iosAppTests/DuoPostureFixturesTests.swift`; change both together.

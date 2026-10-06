@@ -1,12 +1,12 @@
 {
   "name": "Ariadne Ultra Clever LLM Context Pack",
   "generatedAt": "2026-07-04T15:27:19.141282+00:00",
-  "repo": "/Users/p.dhespollari/git/personal/Syrmos",
+  "repo": ".",
   "git": {
     "branch": "master",
     "head": "2d53e7a656ae746e9019f56ff7b02f91549869ff"
   },
-  "seedRoot": "/Users/p.dhespollari/git/personal/Syrmos/core/data/src/commonMain/composeResources/files/seed",
+  "seedRoot": "core/data/src/commonMain/composeResources/files/seed",
   "manifest": {
     "version": 179,
     "updatedAt": "2026-07-03T08:07:14Z",

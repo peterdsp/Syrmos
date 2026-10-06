@@ -22,7 +22,6 @@ This set combines nationwide journey discovery with the existing everyday networ
 
 ## Build handoff
 
-- [Implementation prompt](explore-implementation-prompt.md)
 - [Explore and RailPulse implementation plan](explore-railpulse-implementation-plan.md)
 - [Image requirements](IMAGE_REQUIREMENTS.md)
 

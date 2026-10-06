@@ -1,7 +1,7 @@
 -- Move accessibility + zone into the server, so the DB can become the single
 -- source of truth for stations.
 --
--- Design: docs/plans/2026-07-17-server-as-single-source-for-lines.md
+-- Design: docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md
 --
 -- Today the apps read their line and station list from a LEGACY bundled seed
 -- (files/seed/lines.json, stations.json) generated from hardcoded Swift by

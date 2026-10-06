@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -9,7 +10,11 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 from datetime import datetime
 
 # Output file
-output_file = "/Users/p.dhespollari/Downloads/Syrmos_Project_Report_2026.pdf"
+output_file = os.environ.get(
+    "SYRMOS_REPORT_OUTPUT",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 "Syrmos_Project_Report_2026.pdf"),
+)
 
 # Create PDF
 doc = SimpleDocTemplate(output_file, pagesize=letter,

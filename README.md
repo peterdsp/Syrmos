@@ -137,7 +137,7 @@ Syrmos is not affiliated with STASY, Hellenic Train, or OASA. Suburban ticket pu
 
 ## Releases and roadmap
 
-Shipping: **iOS 2.0.0** (build 138), **Android 2.0.0** (versionCode 223), **Web** (rolling). See [CHANGELOG.md](CHANGELOG.md) for what landed in each release. The next major release direction, **3.0 "Journeys"**, is defined in [docs/plans/3.0-JOURNEYS.md](docs/plans/3.0-JOURNEYS.md). The changelog is the source of truth, kept in sync at every release.
+Shipping: **iOS 2.0.0** (build 138), **Android 2.0.0** (versionCode 223), **Web** (rolling). See [CHANGELOG.md](CHANGELOG.md) for what landed in each release. The changelog is the source of truth for release direction and contents, kept in sync at every release.
 
 ## Contributing, privacy, license
 

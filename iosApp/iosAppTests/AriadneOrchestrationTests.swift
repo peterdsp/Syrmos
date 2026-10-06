@@ -80,11 +80,23 @@ final class AriadneOrchestrationTests: XCTestCase {
         XCTAssertGreaterThan(afterStop, before)
     }
 
+    func testTheOptionalUnderstandingStepsAreBounded() {
+        // A turn that reaches the optional layer can take at most these two
+        // budgets before the localized recovery, whatever the system model or
+        // the hosted provider does. Asserted as a contract so a future change
+        // cannot quietly remove the deadline.
+        XCTAssertLessThanOrEqual(AriadneModel.normalizeBudget, 5)
+        XCTAssertLessThanOrEqual(AriadneModel.cloudBudget, 10)
+    }
+
     func testAnUnresolvableQuestionStillGetsALocalizedRecovery() async throws {
         let model = newModel()
         let before = model.messages.count
         model.ask("qqzzxx wibble")
-        await waitForReply(model, after: before + 1, timeout: 20)
+        // Comfortably above the two optional budgets combined, so the assertion
+        // is about the answer rather than about a provider's latency.
+        let budget = AriadneModel.normalizeBudget + AriadneModel.cloudBudget + 10
+        await waitForReply(model, after: before + 1, timeout: budget)
         let reply = model.messages.suffix(from: before).first { !$0.fromUser }
         XCTAssertNotNil(reply, "an unresolvable question still gets an answer")
         // Never an internal failure report: the app is not broken because an

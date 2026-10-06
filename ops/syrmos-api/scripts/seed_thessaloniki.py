@@ -1,6 +1,6 @@
 """Seed the Thessaloniki metro (TM1, TM2) into the schedules DB.
 
-Design: docs/plans/2026-07-15-thessaloniki-metro-design.md
+Design: docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md
 
 Why this lives on the server and not in the bundled seeds: scripts/snapshot-api-to-seed.py
 rmtree's and rewrites every bundled schedules-v2 directory from the live API, so
@@ -26,7 +26,7 @@ solid in its official Line 2 blue (#0070FF) and carries bands + offsets like TM1
 
 Suburban (TP1 Larisa, TP2 Edessa/Florina, TP3 Sindos, TP4 Serres-Drama) is NOT
 here yet. It uses the scheduled-trips path and its per-stop times come from
-docs/plans/greece_passenger_rail_timetables_2026-07-16.pdf.
+docs/data/greece_passenger_rail_timetables_2026-07-16.pdf.
 
 Idempotent: re-running replaces the TM rows and leaves Athens untouched.
 

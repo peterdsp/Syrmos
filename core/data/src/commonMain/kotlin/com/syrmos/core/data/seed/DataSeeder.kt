@@ -21,7 +21,7 @@ class DataSeeder(
         // schedules-v2 is the generator's payload and the single source of truth
         // for lines. The legacy flat seed/lines.json came from hardcoded Swift via
         // a sync script broken since June 2026, so it carries neither region nor
-        // status. See docs/plans/2026-07-17-server-as-single-source-for-lines.md.
+        // status. See docs/adr/0002-server-is-the-single-source-for-lines-and-stations.md.
         val lines = json.decodeFromString<SeedLinesPayload>(
             resourceReader.readText("files/seed/schedules-v2/lines.json")
         ).lines

@@ -1,6 +1,6 @@
 require 'xcodeproj'
 
-PROJECT = '/Users/p.dhespollari/git/personal/Syrmos/iosApp/Syrmos.xcodeproj'
+PROJECT = File.expand_path('../iosApp/Syrmos.xcodeproj', __dir__)
 project = Xcodeproj::Project.open(PROJECT)
 
 if project.targets.any? { |t| t.name == 'SyrmosWatch' }

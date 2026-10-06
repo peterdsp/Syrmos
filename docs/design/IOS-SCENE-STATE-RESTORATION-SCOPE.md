@@ -1,10 +1,11 @@
 # iOS scene state restoration: scope and design
 
-Prepared 2026-09-28 against `/Users/peterdsp/git/Syrmos`. This is a scoping and
-risk document for readiness item 12.1 #20 ("iPhone/iPad scene recovery and map
-state"), currently Pending: "The iOS scene host replacement is not implemented;
-GO restores from its persisted session on relaunch, other tabs do not." It is a
-design proposal for approval, not a claim that any of this is built.
+The scene-restoration contract for the iOS tabs. `SceneRestorationContracts`
+and its tests are written against this document; keep the two in step.
+
+GO restores from its persisted session on relaunch. The other tabs restore
+through the contracts described below, which shipped across the Phase A to D
+changes.
 
 ## 1. How the app hosts its scene today
 

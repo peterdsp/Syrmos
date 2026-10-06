@@ -1,6 +1,6 @@
 """Parse the Athens transit data package and seed the SQLite DB.
 
-Source: /Users/p.dhespollari/Desktop/athens_transit_icons_and_rules_package.zip
+Source: athens_transit_icons_and_rules_package.zip
         (RULES.md + athens_fixed_rail_station_coordinates.md)
 
 Usage:
