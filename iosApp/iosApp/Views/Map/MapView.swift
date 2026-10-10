@@ -2429,7 +2429,7 @@ struct TrainDetailSheet: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let dep = train.scheduledDeparture {
-                            Text(dep)
+                            Text(AthensClockLabel.label(dep) ?? dep)
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                         }
@@ -2446,7 +2446,7 @@ struct TrainDetailSheet: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                         if let arr = train.scheduledArrival {
-                            Text(arr)
+                            Text(AthensClockLabel.label(arr) ?? arr)
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                         }
@@ -2948,4 +2948,3 @@ enum SyrmosServiceArea {
         (minLatitude...maxLatitude).contains(c.latitude) && (minLongitude...maxLongitude).contains(c.longitude)
     }
 }
-

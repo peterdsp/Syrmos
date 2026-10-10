@@ -140,6 +140,9 @@ struct LinesView: View {
             }
         }
         .onAppear { locationService.requestIfNeeded() }
+        .onChange(of: exploreOrigin?.id, initial: true) { _, stationId in
+            AriadneContext.selectedOriginStationId = stationId
+        }
         .onChange(of: selectedRegion) { _, _ in persistRestoration() }
         .onChange(of: selectedType) { _, _ in persistRestoration() }
         .onChange(of: selectedLine?.id) { _, _ in persistRestoration() }
@@ -157,8 +160,8 @@ struct LinesView: View {
                         loc.language,
                         "Greece, live and community powered",
                         "Ελλάδα, ζωντανά και με τη δύναμη της κοινότητας",
-                        "Greqia, live dhe me fuqinë e komunitetit",
-                        "Grecia, live e alimentata dalla comunità"
+                        "Greqia, drejtpërdrejt dhe me fuqinë e komunitetit",
+                        "Grecia, in tempo reale e alimentata dalla comunità"
                     )
                 )
                 .font(.caption)
@@ -259,51 +262,32 @@ struct LinesView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.syrmosBackground)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                // Entry into the 3.0 Plan flow (interim, until Journeys is a
-                // primary destination). Finding 4: hosted as a bottom safe-area
-                // inset, not a fixed-offset overlay, so it RESERVES its real height
-                // and the "Explore by time" chip row scrolls clear above it instead
-                // of being covered. The reserved band grows with Dynamic Type and
-                // the label, and the system keeps it above the tab bar / Ariadne
-                // pill, so no device-specific bottom offset is needed.
-                // Read the axis INSIDE the band: the owning view cannot read the pane
-                // environment it sets (always nil there, so every layout got 104).
+            .contentMargins(.bottom, 76, for: .scrollContent)
+            .overlay(alignment: .bottom) {
+                // A true floating action: the list continues underneath and only
+                // the capsule receives material. The scroll content margin still
+                // lets the final row travel fully above the control.
                 SyrmosAxisReader { axis in
                     HStack {
-                        Spacer(minLength: 0)
+                        Spacer()
                         Button { showPlan = true } label: {
-                            Text(planLabel)
+                            Label(planLabel, systemImage: "arrow.triangle.turn.up.right.diamond.fill")
                                 .font(.subheadline.weight(.semibold))
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(Capsule().fill(Color.syrmosPrimary))
-                                .foregroundStyle(.white)
-                                .shadow(radius: 6, y: 2)
+                                .padding(.horizontal, 17)
+                                .padding(.vertical, 11)
+                                .foregroundStyle(Color.syrmosPrimary)
+                                .background(.regularMaterial, in: Capsule())
+                                .overlay { Capsule().stroke(Color.syrmosPrimary.opacity(0.24), lineWidth: 1) }
+                                .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
                         }
+                        .buttonStyle(.plain)
+                        Spacer()
                     }
-                    // Stacked pairing (an upright fold): the list pane spans the window's
-                    // bottom edge where the Ariadne launcher floats, so the pill clears
-                    // the launcher instead of sitting under it. Side by side, the
-                    // launcher is over the companion pane and the corner is free.
-                    // The Ariadne launcher owns the bottom-right corner in the single
-                    // column (phone, folded cover) and in a stacked pair; only side by
-                    // side is the corner free (the launcher floats over the companion).
-                    .padding(.trailing, axis == .horizontal ? 16 : 104)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
+                    // Centre placement avoids the trailing Ariadne launcher on phones
+                    // and remains balanced inside the task pane on a paired layout.
+                    .padding(.horizontal, axis == .horizontal ? 16 : 72)
+                    .padding(.bottom, 10)
                     .frame(maxWidth: .infinity)
-                }
-                // Opaque full-width backing (finding 4): the reserved band occludes
-                // any content that scrolls up into it, so the "Explore by time"
-                // chips are never left half-legible under the floating pill. A chip
-                // row is either fully clear above the band or scrolled behind it,
-                // never sliced. A thin top hairline keeps the band visually distinct
-                // from the content above. Reduce Transparency safe (opaque colour).
-                .background(alignment: .top) {
-                    Color.syrmosBackground
-                        .ignoresSafeArea(edges: .bottom)
-                        .overlay(alignment: .top) { Divider().opacity(0.15) }
                 }
             }
             // Compact: a bottom sheet (unchanged iPhone flow). Regular: a full-window

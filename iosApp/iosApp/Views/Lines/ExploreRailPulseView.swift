@@ -271,7 +271,7 @@ struct ExploreRailPulseContent: View {
         return RailPulseReportContext(
             scopeId: originId ?? stableIchnosScopeId(selectedOriginName),
             title: pulseText(language, "Ichnos at \(selectedOriginName)", "Ichnos στο \(selectedOriginName)", "Ichnos në \(selectedOriginName)", "Ichnos a \(selectedOriginName)"),
-            subtitle: pulseText(language, "Community rail status near your origin", "Κατάσταση rail κοντά στην αφετηρία σου", "Gjendja rail pranë nisjes tënde", "Stato ferroviario vicino alla partenza")
+            subtitle: pulseText(language, "Community rail status near your origin", "Σιδηροδρομική κατάσταση κοντά στην αφετηρία σου", "Gjendja hekurudhore pranë nisjes tënde", "Stato ferroviario vicino alla partenza")
         )
     }
 
@@ -835,7 +835,7 @@ private func ichnosFeed(language: AppLanguage, summary: IchnosCommunitySummary?,
     var items = [PulseFeedItem(
         id: "network-clear",
         title: pulseText(language, "No active issues reported", "Δεν αναφέρθηκαν ενεργά προβλήματα", "Nuk ka probleme aktive të raportuara", "Nessun problema attivo segnalato"),
-        detail: pulseText(language, "Estimated \(estimate) rail journeys so far today. This is an estimate, not a report count.", "Εκτιμώμενες \(estimate) σιδηροδρομικές διαδρομές σήμερα. Είναι εκτίμηση, όχι αριθμός αναφορών.", "Rreth \(estimate) udhëtime hekurudhore sot. Është vlerësim, jo numër raportesh.", "Circa \(estimate) viaggi ferroviari oggi. E una stima, non un conteggio di segnalazioni."),
+        detail: pulseText(language, "Estimated \(estimate) rail journeys so far today. This is an estimate, not a report count.", "Εκτιμώμενες \(estimate) σιδηροδρομικές διαδρομές σήμερα. Είναι εκτίμηση, όχι αριθμός αναφορών.", "Rreth \(estimate) udhëtime hekurudhore sot. Është vlerësim, jo numër raportesh.", "Circa \(estimate) viaggi ferroviari oggi. È una stima, non un conteggio di segnalazioni."),
         status: pulseText(language, "Clear", "Καθαρά", "Në rregull", "Regolare"),
         color: SyrmosTokens.live
     )]

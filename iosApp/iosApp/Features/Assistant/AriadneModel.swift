@@ -16,6 +16,11 @@ struct AriadneMessage: Identifiable {
     var actionLabel: String?
 }
 
+@MainActor
+enum AriadneContext {
+    static var selectedOriginStationId: String?
+}
+
 /// Ariadne's iOS resolver. Parses offline with `AthensTransitParser`, then
 /// dispatches the intent to the deterministic projector and bundled data, the
 /// same contract as the KMP `AssistantViewModel`. No model, no network for
@@ -104,6 +109,14 @@ final class AriadneModel: ObservableObject {
         inFlight = nil
         currentTurn += 1
         thinking = false
+    }
+
+    func resetForLanguageChange() {
+        stop()
+        pendingIntent = nil
+        pendingMissing = nil
+        session = .empty
+        messages = [greeting()]
     }
 
     func ask(_ input: String) {
@@ -328,7 +341,7 @@ final class AriadneModel: ObservableObject {
     /// without re-asking. Only touches the origin slot; everything else is left
     /// to the normal clarification flow.
     private func fillFromContext(_ intent: AssistantIntent) -> AssistantIntent {
-        guard let current = session.currentStation else { return intent }
+        guard let current = session.currentStation ?? AriadneContext.selectedOriginStationId else { return intent }
         guard case let .needsClarification(base, missing) = intent, missing == .originStation else { return intent }
         switch base {
         case let .planTrip(_, to, lowExposure, preference):

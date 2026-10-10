@@ -127,13 +127,15 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
             val planFab: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {
                 androidx.compose.material3.ExtendedFloatingActionButton(
                     onClick = { navigator.push(PlanScreenRoute()) },
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         // Single column: sits ABOVE the Ariadne launcher pill (which
                         // owns bottom=96dp, end=16dp over the bottom bar) so the two
                         // never overlap. Paired: the pill floats over the companion
                         // pane, so the button rests at the list pane's own bottom
                         // corner instead of hovering over the middle of the list.
-                        .align(androidx.compose.ui.Alignment.BottomEnd)
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
                         // Above the system navigation bar in every layout.
                         .navigationBarsPadding()
                         .padding(
@@ -142,7 +144,8 @@ private class ExploreListScreen : cafe.adriel.voyager.core.screen.Screen {
                             // launcher on the same row (launcher 16 dp + 56 dp pill +
                             // 12 dp gap), not above it: on a short folded cover the
                             // stacked placement covered the middle of the content.
-                            end = if (ws.arrangement == WorkspaceArrangement.SIDE_BY_SIDE) 16.dp else LocalLauncherEndInset.current,
+                            start = 16.dp,
+                            end = 16.dp,
                             bottom = when (ws.arrangement) {
                                 WorkspaceArrangement.SIDE_BY_SIDE, WorkspaceArrangement.STACKED -> 16.dp
                                 // Single column: the shell's real clearance (96 dp above the

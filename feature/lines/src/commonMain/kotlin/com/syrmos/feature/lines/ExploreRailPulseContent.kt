@@ -239,7 +239,7 @@ internal fun ExploreRailPulseContent(
             RailPulseReportContext(
                 scopeId = originId ?: stableCommunityScopeId(selectedOriginName),
                 title = pulseText(lang, "Ichnos at $selectedOriginName", "Ichnos στο $selectedOriginName", "Ichnos në $selectedOriginName", "Ichnos a $selectedOriginName"),
-                subtitle = pulseText(lang, "Community rail status near your origin", "Κατάσταση rail κοντά στην αφετηρία σου", "Gjendja rail pranë nisjes tënde", "Stato ferroviario vicino alla partenza"),
+                subtitle = pulseText(lang, "Community rail status near your origin", "Σιδηροδρομική κατάσταση κοντά στην αφετηρία σου", "Gjendja hekurudhore pranë nisjes tënde", "Stato ferroviario vicino alla partenza"),
             )
         }
     }

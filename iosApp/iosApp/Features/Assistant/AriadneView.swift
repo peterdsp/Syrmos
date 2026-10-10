@@ -89,6 +89,10 @@ struct AriadneView: View {
         .presentationDetents([.large])
         .presentationCornerRadius(28)
         .presentationDragIndicator(.visible)
+        .onChange(of: loc.language) { _, _ in
+            input = ""
+            model.resetForLanguageChange()
+        }
     }
 
     private var backdrop: some View {
