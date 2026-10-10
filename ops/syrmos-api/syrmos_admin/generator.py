@@ -251,7 +251,10 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
         status_payload = {
             "status": status_row["status"],
             "rawMessage": status_row["raw_message"],
-            "rawMessageEn": status_row["raw_message_en"] if "raw_message_en" in cols else status_row["raw_message"],
+            # An absent English translation must remain absent.  Copying the
+            # Greek source into rawMessageEn makes the API lie about its
+            # language and prevents clients from distinguishing fallback text.
+            "rawMessageEn": status_row["raw_message_en"] if "raw_message_en" in cols else "",
             "rawMessageSq": status_row["raw_message_sq"] if "raw_message_sq" in cols else "",
             "rawMessageIt": status_row["raw_message_it"] if "raw_message_it" in cols else "",
             "serviceUntil": status_row["service_until"],
@@ -311,11 +314,15 @@ def _build_announcements(conn: sqlite3.Connection) -> dict:
         announcements.append({
             "id": r["id"],
             "title": r["title"],
-            "titleEn": r["title_en"] if has_en else r["title"],
+            # Keep a missing translation empty.  Falling back to the Greek
+            # source under an English field makes clients treat Greek as a
+            # valid English translation and is the root of several mixed-
+            # language cards.  Clients own the explicit, visible fallback.
+            "titleEn": (r["title_en"] if has_en else "") or "",
             "titleSq": (r["title_sq"] if has_sq else "") or "",
             "titleIt": (r["title_it"] if has_it else "") or "",
             "summary": r["summary"],
-            "summaryEn": r["summary_en"] if has_en else r["summary"],
+            "summaryEn": (r["summary_en"] if has_en else "") or "",
             "summarySq": (r["summary_sq"] if has_sq else "") or "",
             "summaryIt": (r["summary_it"] if has_it else "") or "",
             "url": r["url"],
@@ -372,11 +379,12 @@ def _build_news(conn: sqlite3.Connection) -> dict:
         news.append({
             "id": r["id"],
             "title": r["title"],
-            "titleEn": r["title_en"] or r["title"],
+            # Do not mislabel Greek source text as English in the API.
+            "titleEn": r["title_en"] or "",
             "titleSq": r["title_sq"] or "",
             "titleIt": (r["title_it"] if has_it else "") or "",
             "summary": r["summary"],
-            "summaryEn": r["summary_en"] or r["summary"],
+            "summaryEn": r["summary_en"] or "",
             "summarySq": r["summary_sq"] or "",
             "summaryIt": (r["summary_it"] if has_it else "") or "",
             "url": r["url"],

@@ -66,7 +66,9 @@ class RailNewsService(private val httpClient: HttpClient) {
                 RailNewsItem(
                     id = item.id,
                     title = item.title,
-                    titleEn = item.titleEn.ifBlank { item.title },
+                    // Do not relabel the Greek source as English.  Missing
+                    // translations are handled by localizedTitle().
+                    titleEn = item.titleEn,
                     titleSq = item.titleSq,
                     titleIt = item.titleIt,
                     summary = item.summary,

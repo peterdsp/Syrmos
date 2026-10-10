@@ -145,7 +145,9 @@ class STASYAnnouncementService(
                 STASYServiceStatus(
                     status = it.status,
                     rawMessage = it.rawMessage,
-                    rawMessageEn = it.rawMessageEn.ifBlank { it.rawMessage },
+                    // Preserve an absent translation so localizedMessage()
+                    // can apply the explicit, language-aware fallback.
+                    rawMessageEn = it.rawMessageEn,
                     rawMessageSq = it.rawMessageSq,
                     rawMessageIt = it.rawMessageIt,
                     serviceUntil = it.serviceUntil,
@@ -159,7 +161,10 @@ class STASYAnnouncementService(
                 STASYAnnouncement(
                     id = item.id,
                     title = item.title,
-                    titleEn = item.titleEn.ifBlank { item.title },
+                    // Keep the API's missing-translation signal intact.  The
+                    // localized presenter applies the explicit reader-facing
+                    // fallback instead of storing Greek as English.
+                    titleEn = item.titleEn,
                     titleSq = item.titleSq,
                     titleIt = item.titleIt,
                     date = item.date,
