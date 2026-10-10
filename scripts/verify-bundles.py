@@ -28,6 +28,12 @@ BUNDLES = [
     ROOT / "iosApp/iosApp/Resources/seed-schedules-v2",
 ]
 
+STATION_COMPLEX_FILES = [
+    ROOT / "core/data/src/commonMain/composeResources/files/seed/station-complexes.json",
+    ROOT / "androidApp/src/androidMain/assets/files/seed/station-complexes.json",
+    ROOT / "iosApp/iosApp/Resources/seed-schedules-v2/station-complexes.json",
+]
+
 # Lines the apps expect to find offline. Subset of /api/lines: M3_AIR is a
 # virtual schedule-only line so it's in the bundle but not in /api/lines.
 LINE_IDS = ["M1", "M2", "M3", "T6", "T7", "A1", "A2", "A3", "A4"]
@@ -171,6 +177,16 @@ def main() -> int:
                 exit_code = 1
         else:
             print("  ok")
+    for path in STATION_COMPLEX_FILES:
+        print(f"checking {path.relative_to(ROOT)}")
+        try:
+            payload = check_file(path)
+            if not payload.get("complexes"):
+                raise BundleError(f"no station complexes: {path}")
+            print("  ok")
+        except (BundleError, json.JSONDecodeError) as e:
+            print(f"  {e}")
+            exit_code = 1
     if exit_code:
         print("\nFAIL: bundle verification found degradations", file=sys.stderr)
     else:

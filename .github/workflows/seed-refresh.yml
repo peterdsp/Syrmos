@@ -43,7 +43,9 @@ jobs:
         run: |
           if git diff --quiet -- core/data/src/commonMain/composeResources/files/seed/schedules-v2 \
                                  androidApp/src/androidMain/assets/files/seed/schedules-v2 \
-                                 iosApp/iosApp/Resources/seed-schedules-v2; then
+                                 iosApp/iosApp/Resources/seed-schedules-v2 \
+                                 core/data/src/commonMain/composeResources/files/seed/station-complexes.json \
+                                 androidApp/src/androidMain/assets/files/seed/station-complexes.json; then
             echo "no seed drift"
             exit 0
           fi
@@ -51,6 +53,8 @@ jobs:
           git config user.email "info@peterdsp.dev"
           git add core/data/src/commonMain/composeResources/files/seed/schedules-v2 \
                   androidApp/src/androidMain/assets/files/seed/schedules-v2 \
-                  iosApp/iosApp/Resources/seed-schedules-v2
+                  iosApp/iosApp/Resources/seed-schedules-v2 \
+                  core/data/src/commonMain/composeResources/files/seed/station-complexes.json \
+                  androidApp/src/androidMain/assets/files/seed/station-complexes.json
           git commit -m "Refresh bundled seeds from /api/* snapshot"
           git push origin HEAD

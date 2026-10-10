@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -174,6 +175,16 @@ def main() -> None:
             + (1 if announcements is not None else 0)
         )
         print(f"wrote {n_files} files ({total} bytes) -> {dest.relative_to(ROOT)}")
+
+    # The API snapshot replaces each schedules-v2 directory wholesale. Rebuild
+    # the reviewed station-complex registry afterwards so Athens interchange
+    # membership remains bundled on iOS and stays synchronized with the KMP and
+    # Android copies when lines.json changes.
+    subprocess.run(
+        ["node", str(ROOT / "scripts/build-station-complexes.mjs")],
+        check=True,
+        cwd=ROOT,
+    )
 
 
 if __name__ == "__main__":
