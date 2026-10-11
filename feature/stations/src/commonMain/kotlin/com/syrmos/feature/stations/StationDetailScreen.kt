@@ -83,6 +83,7 @@ fun StationDetailScreen(
     // recreation, so hoist a saveable list state rather than let the reload reset it.
     val listState = rememberLazyListState()
     var showMapSheet by remember { mutableStateOf(false) }
+    var ticketLine by remember { mutableStateOf<Line?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uriHandler = LocalUriHandler.current
 
@@ -220,7 +221,13 @@ fun StationDetailScreen(
                     ) {
                         uiState.interchangeTargets.forEach { target ->
                             Card(
-                                onClick = { onOpenTransfer(target.line.id, target.stationId) },
+                                onClick = {
+                                    if (target.line.type == com.syrmos.core.model.transit.LineType.SUBURBAN) {
+                                        ticketLine = target.line
+                                    } else {
+                                        onOpenTransfer(target.line.id, target.stationId)
+                                    }
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
@@ -436,6 +443,39 @@ fun StationDetailScreen(
                         })
                     }
                     Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+
+        if (ticketLine != null) {
+            ModalBottomSheet(
+                onDismissRequest = { ticketLine = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            ) {
+                val line = ticketLine ?: return@ModalBottomSheet
+                Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+                    Text(line.localizedName(lang), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (lang == AppLanguage.GREEK) "Αγορά εισιτηρίου για τον προαστιακό" else "Buy a suburban railway ticket",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            ticketLine = null
+                            uriHandler.openUri("https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (lang == AppLanguage.GREEK) "Αγορά στην Hellenic Train" else "Buy on Hellenic Train")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (lang == AppLanguage.GREEK) "Η πληρωμή και η έκδοση γίνονται στον επίσημο ιστότοπο της Hellenic Train." else "Payment and ticket issuance happen on the official Hellenic Train website.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

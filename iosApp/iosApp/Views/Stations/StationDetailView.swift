@@ -8,6 +8,7 @@ struct StationDetailView: View {
     @State private var hasLoadedOnce: Bool = false
     @State private var nowTick = SyrmosClock.now
     @State private var showMapSheet = false
+    @State private var ticketLine: TransitLine?
     @State private var safariURL: URL?
     @State private var apiFailed = false
 
@@ -63,19 +64,22 @@ struct StationDetailView: View {
             if !interchangeTargets.isEmpty {
                 Section(loc.language == .greek ? "Ανταπόκριση" : loc.language == .albanian ? "Korrespondencë" : loc.language == .italian ? "Interscambio" : "Interchange") {
                     ForEach(interchangeTargets, id: \.line.id) { target in
-                        NavigationLink {
-                            DestinationDetailView(
-                                stationId: target.stationId,
-                                lineId: target.line.id,
-                                onStationViewed: { _, _ in }
-                            )
-                        } label: {
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(target.line.color)
-                                    .frame(width: 12, height: 12)
-                                Text(target.line.localizedName(loc.language))
-                                    .font(.subheadline)
+                        Group {
+                            if target.line.type == .suburban {
+                                Button { ticketLine = target.line } label: {
+                                    interchangeRow(target.line)
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink {
+                                    DestinationDetailView(
+                                        stationId: target.stationId,
+                                        lineId: target.line.id,
+                                        onStationViewed: { _, _ in }
+                                    )
+                                } label: {
+                                    interchangeRow(target.line)
+                                }
                             }
                         }
                     }
@@ -178,6 +182,21 @@ struct StationDetailView: View {
             StationMapSheet(station: station)
         }
         .inAppSafari(url: $safariURL)
+        .sheet(item: $ticketLine) { line in
+            HellenicTrainTicketSheet(line: line, safariURL: $safariURL)
+                .presentationDetents([.height(250), .medium])
+        }
+    }
+
+    private func interchangeRow(_ line: TransitLine) -> some View {
+        HStack(spacing: 12) {
+            Circle().fill(line.color).frame(width: 12, height: 12)
+            Text(line.localizedName(loc.language)).font(.subheadline)
+            Spacer()
+            if line.type == .suburban {
+                Image(systemName: "ticket").foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var isSuburbanStation: Bool {
@@ -492,6 +511,31 @@ private struct StationLinePill: View {
         case "A4": return "A4"
         default:   return lineId
         }
+    }
+}
+
+private struct HellenicTrainTicketSheet: View {
+    let line: TransitLine
+    @Binding var safariURL: URL?
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var loc = LocalizationManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(line.localizedName(loc.language))
+                .font(.title3.weight(.bold))
+            Text(loc.language == .greek ? "Αγορά εισιτηρίου για τον προαστιακό" : "Buy a suburban railway ticket")
+                .foregroundStyle(.secondary)
+            Button {
+                dismiss()
+                safariURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
+            } label: {
+                Label(loc.language == .greek ? "Αγορά στην Hellenic Train" : "Buy on Hellenic Train", systemImage: "ticket")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(24)
     }
 }
 
