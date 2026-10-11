@@ -28,6 +28,10 @@ storyboard. Android versionCode 233.
 
 ## Unreleased
 
+- Added the suburban ticket sheet to station route rows (`42689f42`).
+- Added Home live-train detail navigation (`08ea432e`), carrying the selected
+  train from the live Home board into its detail view.
+
 ## 3.0.0-beta.8 - 2026-09-30
 
 The station-complex all-directions departures board, a local-first Ariadne, and
