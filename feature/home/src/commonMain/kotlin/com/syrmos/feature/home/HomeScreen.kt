@@ -127,6 +127,7 @@ fun HomeScreen(
     onLineClick: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
     onMapClick: () -> Unit = {},
+    onLiveTrainClick: (String) -> Unit = {},
     onEnableLocation: () -> Unit = {},
     scrollToWeatherRequest: Int = 0,
 ) {
@@ -415,6 +416,7 @@ fun HomeScreen(
                     trains = realTrains,
                     lines = uiState.lines,
                     lang = lang,
+                    onTrainClick = onLiveTrainClick,
                 )
             }
         }
@@ -2199,6 +2201,7 @@ private fun LiveTrainsSection(
     trains: List<LiveSuburbanTrain>,
     lines: List<Line>,
     lang: AppLanguage,
+    onTrainClick: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
@@ -2219,7 +2222,9 @@ private fun LiveTrainsSection(
             val lineColor = matchedLine?.color?.toComposeColor() ?: SyrmosColorTokens.suburban
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onTrainClick(train.id) },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(10.dp),
             ) {

@@ -27,6 +27,7 @@ import com.syrmos.app.screen.buildGuidanceJourney
 import com.syrmos.app.journey.ActiveJourneyRepository
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.TrainSelectionBus
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.app.platform.requestLocationPermission
 import com.syrmos.app.platform.requestUserLocation
@@ -114,6 +115,10 @@ private class HomeListScreen : cafe.adriel.voyager.core.screen.Screen {
                 navigator.push(LineDetailScreenRoute(lineId))
             },
             onMapClick = { tabNavigator.current = MapTab },
+            onLiveTrainClick = { trainId ->
+                TrainSelectionBus.request(trainId)
+                tabNavigator.current = MapTab
+            },
             onEnableLocation = {
                 scope.launch {
                     requestLocationPermission()

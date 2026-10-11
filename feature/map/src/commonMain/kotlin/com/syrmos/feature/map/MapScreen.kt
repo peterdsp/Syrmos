@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.TrainSelectionBus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.designsystem.component.LineColorIndicator
@@ -115,6 +116,13 @@ fun MapScreen(
     val lang by LocalizationManager.language.collectAsState()
     val announcementsRepository = koinInject<AnnouncementsRepository>()
     val lineDisruptions by announcementsRepository.lineDisruptions.collectAsState()
+
+    val requestedTrainId by TrainSelectionBus.requestedTrainId.collectAsState()
+    LaunchedEffect(requestedTrainId) {
+        val trainId = requestedTrainId ?: return@LaunchedEffect
+        viewModel.selectTrain(trainId)
+        TrainSelectionBus.consume()
+    }
 
     BoxWithConstraints(
         modifier = Modifier

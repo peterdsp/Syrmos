@@ -23,6 +23,7 @@ struct HomeView: View {
     @State private var showAllInsights = false
     @State private var showLocationDeniedAlert = false
     @State private var showTrackPicker = false
+    @State private var tappedLiveTrain: LiveTrain?
     /// The board row the rider explicitly selected. Actions target THIS group,
     /// so a refresh that reorders the board cannot retarget a tap.
     @State private var selectedBoardGroupId: String?
@@ -114,6 +115,9 @@ struct HomeView: View {
             .background(Color.syrmosBackground)
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })
+            }
+            .sheet(item: $tappedLiveTrain) { train in
+                TrainDetailSheet(train: train)
             }
             .safeAreaInset(edge: .top, spacing: 8) {
                 CompactTabHeader("Syrmos", subtitle: loc[.appSubtitle])
@@ -1461,6 +1465,9 @@ struct HomeView: View {
                 }
 
                 ForEach(realTrains.prefix(4)) { train in
+                    Button {
+                        tappedLiveTrain = train
+                    } label: {
                     HStack(spacing: 10) {
                         VStack(spacing: 2) {
                             Text(train.lineId)
@@ -1499,6 +1506,8 @@ struct HomeView: View {
                     .padding(12)
                     .background(Color.syrmosSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
