@@ -1,6 +1,5 @@
 package com.syrmos.core.designsystem.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +28,6 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.transit.LineColor
-import org.jetbrains.compose.resources.painterResource
 
 /**
  * A single (line -> destination) card: a destination-first heading with the line
@@ -105,12 +102,13 @@ fun GroupedDepartureCard(
             verticalAlignment = Alignment.Top,
         ) {
             Box {
-                if (vehicleResource != null) {
-                    Image(
-                        painter = painterResource(vehicleResource),
+                    if (vehicleResource != null) {
+                    VehicleIcon(
+                        lineId = lineId!!,
+                        destination = destination,
+                        isAirport = isAirport,
                         contentDescription = null,
                         modifier = Modifier.width(44.dp).height(28.dp),
-                        contentScale = ContentScale.Fit,
                     )
                 } else {
                     LineColorIndicator(

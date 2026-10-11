@@ -42,7 +42,22 @@ kotlin {
             implementation(libs.androidx.glance.material3)
             implementation(libs.androidx.work.runtime)
         }
+
+        // Keep Android-only parity tests in the Android target while reusing
+        // the same KMP contracts exercised by iOS and the other targets.
+        androidUnitTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.datetime)
+        }
     }
+}
+
+dependencies {
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.8.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.8.0")
 }
 
 android {
@@ -55,8 +70,9 @@ android {
         // 105 (rejected) and 106 (released 2026-07-16) are consumed and can
         // never be reused. Bump this before every release; Play refuses a code
         // it has already seen, even from a discarded upload.
-        versionCode = 231
+        versionCode = 232
         versionName = "3.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
         create("release") {

@@ -1,5 +1,10 @@
 package com.syrmos.core.designsystem.component
 
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import syrmos.core.designsystem.generated.resources.Res
 import syrmos.core.designsystem.generated.resources.metro_m1_left_to_piraeus
@@ -51,5 +56,29 @@ object VehicleIcons {
             "A4" -> if ("piraeus" in dir) Res.drawable.train_p2_left_to_piraeus else Res.drawable.train_p2_right_to_kiato
             else -> null
         }
+    }
+}
+
+/**
+ * Static vehicle artwork kept behind a small, stable composable boundary.
+ * Live departure values must not be part of this component's inputs: countdown
+ * updates can then recompose the row without changing the icon identity.
+ */
+@Composable
+fun VehicleIcon(
+    lineId: String,
+    destination: String,
+    isAirport: Boolean = false,
+    contentDescription: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    val resource = VehicleIcons.resourceFor(lineId, destination, isAirport)
+    if (resource != null) {
+        Image(
+            painter = org.jetbrains.compose.resources.painterResource(resource),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Fit,
+        )
     }
 }

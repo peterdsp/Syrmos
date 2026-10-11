@@ -290,7 +290,7 @@ fun LineDetailScreen(
                         uiState.liveTrains.isEmpty() -> {}
 
                         else -> {
-                            items(uiState.liveTrains) { liveTrain ->
+                            items(uiState.liveTrains, key = { it.id }) { liveTrain ->
                                 LiveTrainCard(
                                     train = liveTrain,
                                     lineColor = line.color,
@@ -313,7 +313,10 @@ fun LineDetailScreen(
                             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                         )
                     }
-                    items(uiState.upcomingDepartures) { dep ->
+                    items(
+                        uiState.upcomingDepartures,
+                        key = { dep -> "${dep.lineId}:${dep.direction}:${dep.time}" },
+                    ) { dep ->
                         DepartureCard(
                             lineName = line.name,
                             lineColor = line.color,
@@ -337,7 +340,7 @@ fun LineDetailScreen(
                     )
                 }
 
-                itemsIndexed(uiState.stations) { index, station ->
+                itemsIndexed(uiState.stations, key = { _, station -> station.id }) { index, station ->
                     StationRow(
                         station = station,
                         lineColor = line.color,

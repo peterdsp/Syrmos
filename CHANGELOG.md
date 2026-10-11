@@ -10,6 +10,18 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.11 - 2026-10-11
+
+Stable vehicle-icon rendering across live refreshes and scrolling, plus the
+existing Duo launch/splash presentation carried through the native iOS launch
+storyboard. Android versionCode 232.
+
+- Added stable Compose item keys for live trains, departures, and stations.
+- Isolated static vehicle artwork from frequently changing departure state on
+  both Android and iOS shared UI.
+- Kept the Duo inner/cover launch presentation on the existing branded
+  `StartScreen` launch asset.
+
 ## Unreleased
 
 ## 3.0.0-beta.8 - 2026-09-30

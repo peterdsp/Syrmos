@@ -1,6 +1,5 @@
 package com.syrmos.core.designsystem.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +27,6 @@ import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.model.transit.LineColor
-import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun DepartureCard(
@@ -104,11 +101,12 @@ fun DepartureCard(
             ) {
                 Box {
                     if (vehicleResource != null) {
-                        Image(
-                            painter = painterResource(vehicleResource),
+                        VehicleIcon(
+                            lineId = lineId!!,
+                            destination = direction,
+                            isAirport = isAirport,
                             contentDescription = "$lineName $direction",
                             modifier = Modifier.width(44.dp).height(28.dp),
-                            contentScale = ContentScale.Fit,
                         )
                     } else {
                         LineColorIndicator(
