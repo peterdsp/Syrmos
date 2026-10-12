@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessible
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsRailway
+import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MyLocation
@@ -162,7 +163,7 @@ fun MapScreen(
                     simulatedTrains = emptyList(),
                     liveTrains = emptyList(),
                     visibleLiveTrains = emptyList(),
-                    busVehicles = emptyList(),
+                    busVehicles = if (uiState.showAirportBuses) uiState.busVehicles else emptyList(),
                 ),
                 onStationSelected = viewModel::selectStation,
                 onTrainSelected = viewModel::selectTrain,
@@ -222,6 +223,23 @@ fun MapScreen(
                             tint = Color.White,
                         )
                     }
+                }
+            }
+
+            Surface(
+                onClick = viewModel::toggleAirportBusVisibility,
+                modifier = Modifier.size(56.dp).liquidGlassOverlay(),
+                shape = CircleShape,
+                color = if (uiState.showAirportBuses) SyrmosColorTokens.brand else MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+                shadowElevation = 6.dp,
+                tonalElevation = 2.dp,
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.DirectionsBus,
+                        contentDescription = vehicleText(lang, "Show or hide airport buses", "Εμφάνιση ή απόκρυψη λεωφορείων αεροδρομίου", "Shfaq ose fshih autobusët e aeroportit", "Mostra o nascondi gli autobus aeroportuali"),
+                        tint = if (uiState.showAirportBuses) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 

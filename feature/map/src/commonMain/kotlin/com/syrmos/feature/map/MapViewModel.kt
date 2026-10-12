@@ -95,6 +95,7 @@ data class MapUiState(
     // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
     val busVehicles: List<AirportBusVehicle> = emptyList(),
+    val showAirportBuses: Boolean = true,
     // Subtle map offline indicator: true when the device is offline OR no live
     // data has arrived within the freshness window. Recomputed on the sim tick so
     // it flips within ~1s of losing/regaining live data.
@@ -365,6 +366,10 @@ class MapViewModel(
                 delay(PollBackoff.nextDelayMillis(failures, LIVE_POLL_BASE_MS))
             }
         }
+    }
+
+    fun toggleAirportBusVisibility() {
+        _uiState.update { it.copy(showAirportBuses = !it.showAirportBuses) }
     }
 
     private fun pollLivePositions() {
