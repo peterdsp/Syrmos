@@ -78,6 +78,7 @@ REMOTE
 
 echo ">>> installing systemd units"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-admin.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-airport-bus.service /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-24mmm.service /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-24mmm.timer /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-backup.service /etc/systemd/system/"
@@ -112,6 +113,29 @@ echo ">>> patching ~/syrmos-proxy/nginx.conf with dynamic API routes + reloading
 ssh "$PI" bash <<'REMOTE'
 set -e
 conf=~/syrmos-proxy/nginx.conf
+if ! grep -q "location = /api/airport-buses" "$conf"; then
+  cp "$conf" "$conf.bak.airport-buses.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- normalized airport bus snapshot ---
+        location = /api/airport-buses {
+            proxy_pass http://127.0.0.1:8092/api/airport-buses$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Cache-Control "public, max-age=15, must-revalidate" always;
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched airport buses")
+PY
+fi
 if ! grep -q "/api/departures/next" "$conf"; then
   cp "$conf" "$conf.bak.$(date +%s)"
   python3 - <<'PY'
@@ -248,5 +272,7 @@ REMOTE
 
 echo ">>> restarting admin service"
 ssh "$PI" "sudo systemctl restart syrmos-admin.service"
+echo ">>> enabling unified airport bus watcher"
+ssh "$PI" "sudo systemctl daemon-reload && sudo systemctl enable --now syrmos-airport-bus.service"
 
 echo "done"

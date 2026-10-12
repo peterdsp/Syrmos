@@ -1,0 +1,119 @@
+{
+  "updated_at": "2026-10-12T12:34:56+00:00",
+  "operators": {
+    "oasa": {
+      "operator": "oasa",
+      "source": "https://www.oasa.gr/en/telematics/",
+      "attribution": "Live bus data from OASA Telematics",
+      "routes": [
+        {
+          "operator": "oasa",
+          "route_id": "X95",
+          "public_name": "X95 Syntagma – Airport",
+          "public_name_en": "X95 Syntagma – Airport",
+          "public_name_el": "Χ95 Σύνταγμα – Αεροδρόμιο",
+          "origin": "Syntagma",
+          "destination": "Athens Airport",
+          "airport": "AIA",
+          "color": "#E8792B",
+          "direction": "unknown",
+          "is_operational": true,
+          "source": "oasa_telematics",
+          "source_url": "https://www.oasa.gr/en/telematics/",
+          "attribution": "Live bus data from OASA Telematics",
+          "observed_at": "2026-10-12T12:34:56+00:00",
+          "to_airport_route_codes": [2051],
+          "from_airport_route_codes": [2052]
+        }
+      ],
+      "vehicles": [
+        {
+          "vehicle_id": "12345",
+          "line_id": "X95",
+          "route_id": "X95",
+          "operator": "oasa",
+          "latitude": 37.9364,
+          "longitude": 23.9045,
+          "heading": 125.5,
+          "observed_at": "2026-10-12T12:34:56+00:00",
+          "source": "oasa_telematics",
+          "source_url": "https://www.oasa.gr/en/telematics/",
+          "confidence": "live",
+          "attribution": "Live bus data from OASA Telematics",
+          "to_airport": true
+        }
+      ],
+      "arrivals": [
+        {
+          "line_id": "X95",
+          "route_id": "X95",
+          "operator": "oasa",
+          "stop_id": "10705",
+          "stop_name": "Athens Airport",
+          "destination": "Syntagma",
+          "direction": "to_airport",
+          "scheduled_time": null,
+          "estimated_minutes": 5,
+          "vehicle_id": "12345",
+          "source": "oasa_telematics",
+          "source_url": "https://www.oasa.gr/en/telematics/",
+          "observed_at": "2026-10-12T12:34:56+00:00",
+          "freshness": 0.0,
+          "confidence": "live",
+          "service_status": "operational",
+          "attribution": "Live bus data from OASA Telematics"
+        }
+      ],
+      "alerts": []
+    },
+    "oseth": {
+      "operator": "oseth",
+      "source": "https://oseth.com.gr/en/",
+      "attribution": "Live bus data from OSETH/OASTH",
+      "routes": [
+        {
+          "operator": "oseth",
+          "route_id": "X3",
+          "public_name": "X3 Airport – Mikra Metro",
+          "public_name_en": "X3 Airport – Mikra Metro",
+          "public_name_el": "Χ3 Αεροδρόμιο – Μετρό Μίκρα",
+          "origin": "Makedonia Airport",
+          "destination": "Mikra",
+          "airport": "SKG",
+          "color": "#0E7490",
+          "direction": "unknown",
+          "is_operational": true,
+          "source": "oseth_api",
+          "source_url": "https://oseth.com.gr/en/",
+          "attribution": "Live bus data from OSETH/OASTH",
+          "observed_at": "2026-10-12T12:34:56+00:00"
+        }
+      ],
+      "vehicles": [],
+      "arrivals": [],
+      "alerts": []
+    }
+  },
+  "sources": [
+    {
+      "operator": "oasa",
+      "name": "OASA Telematics",
+      "source_url": "https://www.oasa.gr/en/telematics/",
+      "attribution": "Live bus data from OASA Telematics",
+      "is_live": true,
+      "last_tested": "2026-10-12T12:34:56+00:00",
+      "notes": "Live data from telematics.oasa.gr. Athens airport express buses X93/X95/X96/X97."
+    },
+    {
+      "operator": "oseth",
+      "name": "OSETH/OASTH",
+      "source_url": "https://oseth.com.gr/en/",
+      "attribution": "Live bus data from OSETH/OASTH",
+      "is_live": false,
+      "last_tested": "2026-10-12T12:34:56+00:00",
+      "notes": "Thessaloniki airport buses. Implementation in progress - live data not yet available."
+    }
+  ],
+  "generated_at": "2026-10-12T12:34:56.100+00:00",
+  "generation_duration": 0.100
+}

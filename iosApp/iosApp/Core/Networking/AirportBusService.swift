@@ -33,19 +33,430 @@ enum AirportBusService {
         if let cached = cache, SyrmosClock.now.timeIntervalSince(cached.0) < ttl {
             return cached.1
         }
-        guard let url = URL(string: "\(base)/api/oasa-airport-buses") else { return nil }
-        var req = URLRequest(url: url)
-        req.timeoutInterval = 6
         do {
-            let (data, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
-            let payload = try JSONDecoder().decode(Payload.self, from: data)
-            let live = reduce(payload)
+            guard let unified = await fetchUnified() else { return nil }
+            let etas = reduceUnified(unified).operators["oasa"]?.etasByLine ?? [:]
+            let live = LiveAirportBuses(
+                updatedAt: unified.updatedAt.flatMap { ISO8601DateFormatter().date(from: $0) },
+                etasByLine: etas
+            )
             cache = (SyrmosClock.now, live)
             return live
         } catch {
             return nil
         }
+    }
+
+    // MARK: - Unified Normalized Model
+
+    /// Unified operator data from the new normalized endpoint
+    struct UnifiedOperatorData: Decodable {
+        let operator: String
+        let routes: [UnifiedRoute]
+        let vehicles: [UnifiedVehicle]
+        let arrivals: [UnifiedArrival]
+        let alerts: [UnifiedAlert]
+        let source: String?
+        let attribution: String?
+    }
+
+    /// Normalized route metadata
+    struct UnifiedRoute: Decodable, Identifiable {
+        let id: String
+        let operator: String
+        let route_id: String
+        let public_name: String
+        let public_name_en: String?
+        let public_name_el: String?
+        let origin: String
+        let destination: String
+        let airport: String
+        let color: String
+        let direction: String?
+        let is_operational: Bool
+        let source: String?
+        let source_url: String?
+        let attribution: String?
+        let observed_at: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id = "route_id"
+            case operator
+            case route_id
+            case public_name
+            case public_name_en
+            case public_name_el
+            case origin
+            case destination
+            case airport
+            case color
+            case direction
+            case is_operational
+            case source
+            case source_url
+            case attribution
+            case observed_at
+        }
+    }
+
+    /// Normalized vehicle position
+    struct UnifiedVehicle: Decodable, Identifiable {
+        let id: String
+        let vehicle_id: String
+        let line_id: String
+        let route_id: String
+        let operator: String
+        let latitude: Double
+        let longitude: Double
+        let heading: Double
+        let observed_at: String
+        let source: String?
+        let source_url: String?
+        let confidence: String?
+        let attribution: String?
+        let to_airport: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case id = "vehicle_id"
+            case vehicle_id
+            case line_id
+            case route_id
+            case operator
+            case latitude
+            case longitude
+            case heading
+            case observed_at
+            case source
+            case source_url
+            case confidence
+            case attribution
+            case to_airport
+        }
+    }
+
+    /// Normalized arrival/ETA
+    struct UnifiedArrival: Decodable {
+        let line_id: String
+        let route_id: String
+        let operator: String
+        let stop_id: String
+        let stop_name: String
+        let destination: String
+        let direction: String?
+        let scheduled_time: String?
+        let estimated_minutes: Int?
+        let vehicle_id: String?
+        let source: String?
+        let source_url: String?
+        let observed_at: String
+        let freshness: Double?
+        let confidence: String?
+        let service_status: String?
+        let attribution: String?
+    }
+
+    /// Normalized alert
+    struct UnifiedAlert: Decodable {
+        let alert_id: String
+        let operator: String
+        let title: String
+        let summary: String
+        let url: String?
+        let severity: String?
+        let source: String?
+        let source_url: String?
+        let observed_at: String?
+        let attribution: String?
+        let route_id: String?
+        let title_en: String?
+        let summary_en: String?
+        let valid_from: String?
+        let valid_until: String?
+    }
+
+    /// Unified response from /api/airport-buses
+    struct UnifiedPayload: Decodable {
+        let updated_at: String
+        let operators: [String: UnifiedOperatorData]?
+        let sources: [UnifiedSource]?
+        let generated_at: String?
+        let generation_duration: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case updated_at
+            case operators
+            case sources
+            case generated_at
+            case generation_duration
+        }
+    }
+
+    /// Source information
+    struct UnifiedSource: Decodable {
+        let operator: String?
+        let name: String?
+        let source_url: String?
+        let attribution: String?
+        let is_live: Bool?
+        let last_tested: String?
+        let notes: String?
+    }
+
+    /// Unified airport bus data for all operators
+    struct UnifiedAirportBuses: Equatable {
+        let updatedAt: Date?
+        let operators: [String: OperatorData]
+        let sources: [SourceInfo]
+        let vehiclesByLine: [String: [Int]]
+        let linkForOASA: URL?
+        let linkForOSETH: URL?
+
+        var isEmpty: Bool { operators.isEmpty }
+        func soonest(_ line: String, operator: String) -> Int? { operators[operator]?.etasByLine[line]?.first }
+    }
+
+    struct OperatorData: Equatable {
+        let updatedAt: Date?
+        let etasByLine: [String: [Int]]
+        let vehicles: [AirportBusVehicles.AirportBusVehicle]
+        let alerts: [ServiceAlert]
+        let routes: [UnifiedRoute]
+        let source: String?
+        let attribution: String?
+        let operator: String
+    }
+
+    struct ServiceAlert: Identifiable, Equatable {
+        let id: String
+        let title: String
+        let summary: String
+        let operator: String
+        let severity: String
+        let url: URL?
+
+        // For Equatable conformity
+        static func == (lhs: ServiceAlert, rhs: ServiceAlert) -> Bool {
+            lhs.id == rhs.id && lhs.title == rhs.title && lhs.summary == rhs.summary
+        }
+    }
+
+    /// Source information for display
+    struct SourceInfo: Equatable {
+        let operator: String
+        let name: String
+        let sourceUrl: URL?
+        let attribution: String
+        let isLive: Bool
+        let lastTested: Date?
+        let notes: String?
+    }
+
+    /// Fetch unified airport bus data from the new normalized endpoint
+    static func fetchUnified() async -> UnifiedAirportBuses? {
+        if SyrmosSchedulesStore.shared.offlineOnly { return nil }
+
+        guard let url = URL(string: "\(base)/api/airport-buses") else { return nil }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 8
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            let payload = try JSONDecoder().decode(UnifiedPayload.self, from: data)
+            return reduceUnified(payload)
+        } catch {
+            return nil
+        }
+    }
+
+    /// Fetch data for a specific operator
+    static func fetchUnified(operator: String) async -> OperatorData? {
+        if SyrmosSchedulesStore.shared.offlineOnly { return nil }
+
+        guard let url = URL(string: "\(base)/api/airport-buses/\(operator)") else { return nil }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 8
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            let payload = try JSONDecoder().decode(UnifiedOperatorPayload.self, from: data)
+            return reduceOperator(payload)
+        } catch {
+            return nil
+        }
+    }
+
+    /// Single operator payload
+    struct UnifiedOperatorPayload: Decodable {
+        let operator: String
+        let updated_at: String?
+        let routes: [UnifiedRoute]
+        let vehicles: [UnifiedVehicle]
+        let arrivals: [UnifiedArrival]
+        let alerts: [UnifiedAlert]
+        let source: String?
+        let attribution: String?
+        let generated_at: String?
+        let generation_duration: Double?
+    }
+
+    /// Reduce unified payload to simple structure
+    static func reduceUnified(_ payload: UnifiedPayload) -> UnifiedAirportBuses {
+        var operatorsData: [String: OperatorData] = [:]
+        var allSources: [SourceInfo] = []
+        var vehiclesByLine: [String: [Int]] = [:]
+        var linkForOASA: URL? = nil
+        var linkForOSETH: URL? = nil
+
+        // Process each operator
+        for (opKey, opData) in payload.operators ?? [:] {
+            var etasByLine: [String: [Int]] = [:]
+            var vehiclesForOp: [AirportBusVehicles.AirportBusVehicle] = []
+            var alertsForOp: [ServiceAlert] = []
+            var routesForOp: [UnifiedRoute] = opData.routes
+
+            // Process arrivals
+            for arrival in opData.arrivals {
+                let line = arrival.line_id
+                if let minutes = arrival.estimated_minutes, minutes >= 0 {
+                    etasByLine[line, default: []].append(minutes)
+                }
+            }
+
+            // Sort ETAs for each line
+            for line in etasByLine.keys {
+                etasByLine[line] = etasByLine[line]?.sorted() ?? []
+                vehiclesByLine[line] = etasByLine[line] ?? []
+            }
+
+            // Process vehicles
+            for vehicle in opData.vehicles {
+                if vehicle.latitude != 0 && vehicle.longitude != 0 {
+                    let coord = CLLocationCoordinate2D(latitude: vehicle.latitude, longitude: vehicle.longitude)
+                    let vehicleId = AirportBusVehicles.AirportBusVehicle(
+                        id: vehicle.vehicle_id,
+                        lineId: vehicle.line_id,
+                        coordinate: coord,
+                        toAirport: vehicle.to_airport
+                    )
+                    vehiclesForOp.append(vehicleId)
+                }
+            }
+
+            // Process alerts
+            for alert in opData.alerts {
+                let serviceAlert = ServiceAlert(
+                    id: alert.alert_id,
+                    title: alert.title,
+                    summary: alert.summary,
+                    operator: alert.operator,
+                    severity: alert.severity ?? "info",
+                    url: alert.url.flatMap { URL(string: $0) }
+                )
+                alertsForOp.append(serviceAlert)
+            }
+
+            // Create operator data
+            let opUpdatedAt = parseTimestamp(payload.updated_at)
+            let operatorData = OperatorData(
+                updatedAt: opUpdatedAt,
+                etasByLine: etasByLine,
+                vehicles: vehiclesForOp,
+                alerts: alertsForOp,
+                routes: routesForOp,
+                source: opData.source,
+                attribution: opData.attribution,
+                operator: opKey
+            )
+            operatorsData[opKey] = operatorData
+
+            // Build source info
+            if opKey == "oasa" {
+                linkForOASA = opData.source.flatMap { URL(string: $0) }
+            } else if opKey == "oseth" {
+                linkForOSETH = opData.source.flatMap { URL(string: $0) }
+            }
+        }
+
+        // Process sources from payload
+        for source in payload.sources ?? [] {
+            let sourceInfo = SourceInfo(
+                operator: source.operator ?? "",
+                name: source.name ?? "",
+                sourceUrl: source.source_url.flatMap { URL(string: $0) },
+                attribution: source.attribution ?? "",
+                isLive: source.is_live ?? false,
+                lastTested: parseTimestamp(source.last_tested ?? ""),
+                notes: source.notes
+            )
+            allSources.append(sourceInfo)
+        }
+
+        return UnifiedAirportBuses(
+            updatedAt: parseTimestamp(payload.updated_at),
+            operators: operatorsData,
+            sources: allSources,
+            vehiclesByLine: vehiclesByLine,
+            linkForOASA: linkForOASA,
+            linkForOSETH: linkForOSETH
+        )
+    }
+
+    /// Reduce single operator payload
+    static func reduceOperator(_ payload: UnifiedOperatorPayload) -> OperatorData {
+        var etasByLine: [String: [Int]] = [:]
+        var vehiclesForOp: [AirportBusVehicles.AirportBusVehicle] = []
+        var alertsForOp: [ServiceAlert] = []
+
+        // Process arrivals
+        for arrival in payload.arrivals {
+            let line = arrival.line_id
+            if let minutes = arrival.estimated_minutes, minutes >= 0 {
+                etasByLine[line, default: []].append(minutes)
+            }
+        }
+
+        // Sort ETAs
+        for line in etasByLine.keys {
+            etasByLine[line] = etasByLine[line]?.sorted() ?? []
+        }
+
+        // Process vehicles
+        for vehicle in payload.vehicles {
+            if vehicle.latitude != 0 && vehicle.longitude != 0 {
+                let coord = CLLocationCoordinate2D(latitude: vehicle.latitude, longitude: vehicle.longitude)
+                let vehicleId = AirportBusVehicles.AirportBusVehicle(
+                    id: vehicle.vehicle_id,
+                    lineId: vehicle.line_id,
+                    coordinate: coord,
+                    toAirport: vehicle.to_airport
+                )
+                vehiclesForOp.append(vehicleId)
+            }
+        }
+
+        // Process alerts
+        for alert in payload.alerts {
+            let serviceAlert = ServiceAlert(
+                id: alert.alert_id,
+                title: alert.title,
+                summary: alert.summary,
+                operator: alert.operator,
+                severity: alert.severity ?? "info",
+                url: alert.url.flatMap { URL(string: $0) }
+            )
+            alertsForOp.append(serviceAlert)
+        }
+
+        return OperatorData(
+            updatedAt: parseTimestamp(payload.updated_at ?? ""),
+            etasByLine: etasByLine,
+            vehicles: vehiclesForOp,
+            alerts: alertsForOp,
+            routes: payload.routes,
+            source: payload.source,
+            attribution: payload.attribution,
+            operator: payload.operator
+        )
     }
 
     // MARK: - Pure mapping (unit-tested, no network)

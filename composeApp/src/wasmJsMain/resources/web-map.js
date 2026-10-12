@@ -2573,7 +2573,7 @@
         const now = Date.now();
         if (airportBusCache && (now - airportBusCache.at) < 12_000) return airportBusCache.data;
         try {
-            const r = await fetch("https://api-syrmos.peterdsp.dev/api/oasa-airport-buses");
+            const r = await fetch("https://api-syrmos.peterdsp.dev/api/airport-buses");
             if (!r.ok) return null;
             const payload = await r.json();
             const data = SyrmosAirport.reduceAirportBuses(payload);
@@ -3627,7 +3627,7 @@
     // train stream: buses come from /api/oasa-airport-buses (positions + ETAs),
     // trains from /api/trains. 15s cadence matches the watcher's 30s writes.
     function connectAirportBusStream() {
-        const URL = "https://api-syrmos.peterdsp.dev/api/oasa-airport-buses";
+        const URL = "https://api-syrmos.peterdsp.dev/api/airport-buses";
         async function pollOnce() {
             try {
                 const res = await fetch(URL, { cache: "no-store" });
@@ -5021,7 +5021,7 @@
 
     async function pollOasaBuses() {
         try {
-            const resp = await fetch("https://api-syrmos.peterdsp.dev/api/oasa-airport-buses");
+            const resp = await fetch("https://api-syrmos.peterdsp.dev/api/airport-buses");
             if (!resp.ok) return;
             oasaBusData = await resp.json();
             if (oasaBusData && oasaBusData.vehicles) {

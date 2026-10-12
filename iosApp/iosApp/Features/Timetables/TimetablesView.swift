@@ -111,6 +111,7 @@ struct TimetablesView: View {
     @State private var airportDepartures: [Departure] = []
     @State private var cityAirportDepartures: [Departure] = []
     @State private var liveBuses: AirportBusService.LiveAirportBuses? = nil
+    @State private var selectedAirportBus: AirportBusDetail?
     /// Thessaloniki only: next metro departures at each interchange station
     /// (Mikra on L2, Nea Elvetia on L1) that feeds an airport shuttle, keyed by
     /// station id. Athens is fed by direct rail so it uses the two lists above.
@@ -225,6 +226,11 @@ struct TimetablesView: View {
             .onChange(of: selectedCalendarEvent) { _, event in
                 if let event { flightTime = event.startDate }
             }
+            .sheet(item: $selectedAirportBus) { bus in
+                AirportBusDetailSheet(bus: bus, live: liveBuses, language: loc.language)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
         }
     }
 
@@ -288,7 +294,8 @@ struct TimetablesView: View {
                 language: loc.language,
                 dayOffset: dayOffset,
                 metroDepartures: airportDepartures,
-                liveBuses: liveBuses
+                liveBuses: liveBuses,
+                onBusTap: { selectedAirportBus = $0 }
             )
         } else {
             airportSectionTitle(
@@ -1062,6 +1069,7 @@ private struct AirportDepartureList: View {
     let dayOffset: Int
     let metroDepartures: [Departure]
     var liveBuses: AirportBusService.LiveAirportBuses? = nil
+    var onBusTap: (AirportBusDetail) -> Void = { _ in }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -1073,6 +1081,13 @@ private struct AirportDepartureList: View {
                         rowBody(row, navigable: true)
                     }
                     .buttonStyle(.plain)
+                } else if let bus = AirportBusDetail.from(row: row, language: language) {
+                    Button { onBusTap(bus) } label: {
+                        rowBody(row, navigable: true)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(row.route), \(row.destination)")
+                    .accessibilityHint("Show airport bus live information and official source")
                 } else {
                     rowBody(row, navigable: false)
                 }

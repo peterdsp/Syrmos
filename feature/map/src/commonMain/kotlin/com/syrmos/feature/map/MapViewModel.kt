@@ -354,7 +354,7 @@ class MapViewModel(
             var failures = 0
             while (isActive) {
                 try {
-                    val vehicles = AirportBusVehicles.parse(airportBusService.fetchAirportBuses())
+                    val vehicles = AirportBusVehicles.parseUnified(airportBusService.fetchUnified(), operator = "oasa")
                     _uiState.update { it.copy(busVehicles = vehicles) }
                     failures = 0
                 } catch (e: Exception) {

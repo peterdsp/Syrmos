@@ -1,0 +1,55 @@
+{
+  "updatedAt": "2026-10-12T12:34:56+00:00",
+  "vehicles": [
+    {
+      "vehicleId": "12345",
+      "lat": 37.9364,
+      "lng": 23.9045,
+      "heading": 125.5,
+      "routeCode": 2051,
+      "lineId": "X95",
+      "timestamp": "2026-10-12 12:34:56"
+    },
+    {
+      "vehicleId": "67890",
+      "lat": 37.9400,
+      "lng": 23.9100,
+      "heading": 45.0,
+      "routeCode": 5675,
+      "lineId": "X93",
+      "timestamp": "2026-10-12 12:34:45"
+    }
+  ],
+  "airportArrivals": [
+    {
+      "lineId": "X95",
+      "routeCode": 2051,
+      "vehicleId": "12345",
+      "minutesAway": 5
+    },
+    {
+      "lineId": "X95",
+      "routeCode": 2051,
+      "vehicleId": "12346",
+      "minutesAway": 12
+    },
+    {
+      "lineId": "X93",
+      "routeCode": 5675,
+      "vehicleId": "67890",
+      "minutesAway": 8
+    },
+    {
+      "lineId": "X97",
+      "routeCode": 5373,
+      "vehicleId": "54321",
+      "minutesAway": 15
+    }
+  ],
+  "routes": {
+    "X93": {"toAirport": [5675], "fromAirport": [5676]},
+    "X95": {"toAirport": [2051], "fromAirport": [2052]},
+    "X96": {"toAirport": [5532, 3196], "fromAirport": [5533, 3008]},
+    "X97": {"toAirport": [5373, 5375], "fromAirport": [5374, 5376]}
+  }
+}

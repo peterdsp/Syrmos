@@ -10,6 +10,60 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.13 - Unreleased
+
+Complete airport-bus live information with normalized cross-platform contract,
+OASA athens and OSETH thessaloniki provider adapters, bounded poller, and upgraded
+client displays on iOS, Android and web.
+
+### Backend
+- Complete `AirportTransitProvider` abstraction with OASA and OSETH implementations
+- Normalized data models: `NormalizedVehicle`, `NormalizedArrival`, `NormalizedRoute`, `NormalizedAlert`, `AirportBusSnapshot`
+- 7 new FastAPI endpoints at `/api/airport-buses/*` plus legacy compatibility
+- Bounded poller with exponential backoff, jitter, atomic writes, failure journal
+- Nginx proxy rules with CORS and cache controls for all new endpoints
+- Systemd service for autonomous airport bus polling on the Pi
+
+### OASA Implementation
+- Complete `OasaAirportProvider` with `getStopArrivals`, `getBusLocation`, `webGetStops`
+- Routes: X93, X95, X96, X97 with full metadata, colors, stops
+- Vehicle positions, ETAs, route metadata all working against live telematics API
+- Airport stop: 10705 (Athens International Airport)
+
+### OSETH Implementation
+- `OsethAirportProvider` with routes X3 (Airport-Mikra Metro) and 2X (Airport-Nea Elvetia)
+- Full provider structure matching OASA, ready for live API validation
+- Airport: Makedonia (SKG) at 40.51972, 22.97083
+- Colors: OSETH blue (#0E7490)
+
+### iOS
+- `AirportBusService` with new unified model support while maintaining legacy fallback
+- `UnifiedAirportBusDetailSheet` with vehicle map display, service alerts, confidence indicators
+- Enhanced `AirportBusDetailSheet` with direction display and better freshness information
+- New `Color(hex:)` initializer for hex string color codes
+
+### Android
+- Unified `AirportBusService` replacing `OasaAirportBusService` with backward compatibility
+- Support for OSETH provider and unified response parsing
+- `AirportHubScreen` updated to fetch unified data and display OSETH routes
+- New data classes: `UnifiedAirportBuses`, `OperatorData`, `VehiclePosition`, `ServiceAlert`, `RouteInfo`
+- Confidence level and direction enum support
+
+### Web
+- `web-airport.js` extended with OSETH support and unified format handling
+- Added `OSETH_DESTINATIONS`, `ALL_DESTINATIONS`, `OPERATOR_COLORS` mappings
+- New functions: `reduceUnified()`, `extractVehiclesFromUnified()`, `airportBusAlerts()`, `getSources()`, `hasOperatorData()`, `getRoutes()`
+- Support for multiple operators in departure rows and vehicle positions
+
+### Tests
+- Comprehensive Python test suite for backend providers
+- OASA and OSETH provider unit tests with validation and serialization
+- Fixture files for testing: valid, empty, and unified payloads
+
+### Operations
+- Provenance documentation in `docs/data/airport-bus-provenance.md`
+- Complete implementation roadmap in `docs/airport-bus-live-information-correction-prompt.md`
+
 ## 3.0.0-beta.12 - 2026-10-11
 
 Stable vehicle-icon rendering across live refreshes and scrolling, plus the
@@ -26,7 +80,7 @@ storyboard. Android versionCode 233.
 
 ## 3.0.0-beta.11 - 2026-10-11
 
-## Unreleased
+- Airport bus rows now open a route-specific, accessible detail sheet with honest OASA live/fallback states, freshness information, and an official operator link. Thessaloniki remains operator-link/static until TheTA publishes a documented, permission-compatible live contract.
 
 - Added the suburban ticket sheet to station route rows (`42689f42`).
 - Added Home live-train detail navigation (`08ea432e`), carrying the selected

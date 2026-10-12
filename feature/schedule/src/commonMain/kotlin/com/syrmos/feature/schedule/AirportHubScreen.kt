@@ -79,7 +79,7 @@ import com.syrmos.core.data.sync.StationOffsetsRepository
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
-import com.syrmos.core.network.OasaAirportBusService
+import com.syrmos.core.network.AirportBusService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.Clock
@@ -109,7 +109,7 @@ fun AirportHubScreen(
 ) {
     val sync = koinInject<ScheduleSyncRepository>()
     val offsetsRepo = koinInject<StationOffsetsRepository>()
-    val airportBusService = koinInject<OasaAirportBusService>()
+    val airportBusService = koinInject<AirportBusService>()
     val bundles by sync.lineBundles.collectAsState()
     val offsets by offsetsRepo.offsets.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
@@ -144,13 +144,20 @@ fun AirportHubScreen(
     // misleading for a future day). Refreshed every 15s while the tab is shown;
     // any failure leaves EMPTY, so bus rows fall back to a neutral 24/7 badge.
     var liveBuses by remember { mutableStateOf(LiveAirportBuses.EMPTY) }
+    // Unified airport bus data
+    var unifiedBuses by remember { mutableStateOf<UnifiedAirportBuses?>(null) }
+
     LaunchedEffect(selectedCity, dayOffset) {
         if (selectedCity != AirportCity.ATHENS || dayOffset != 0) {
             liveBuses = LiveAirportBuses.EMPTY
+            unifiedBuses = null
             return@LaunchedEffect
         }
         while (isActive) {
-            liveBuses = AirportBusEtas.reduce(airportBusService.fetchAirportBuses())
+            // Try unified first
+            val unified = airportBusService.fetchUnified()
+            unifiedBuses = if (unified != null) AirportBusEtas.reduceToUnified(unified) else null
+            liveBuses = AirportBusEtas.reduceUnified(unified, operator = "oasa")
             delay(15_000)
         }
     }

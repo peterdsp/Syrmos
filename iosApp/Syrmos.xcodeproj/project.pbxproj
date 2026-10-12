@@ -86,6 +86,7 @@
 		B1A2C3D4E5F60718293A1B01 /* SyrmosAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A1B00 /* SyrmosAppIntents.swift */; };
 		B1C2D3E4F5A607182939AAAA /* LiveStreamPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A607182939AABB /* LiveStreamPlayerView.swift */; };
 		B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09288EF8307B4CDC9D065AED /* TimetablesView.swift */; };
+	F2A1B8C0D4E64C5A9B01A001 /* AirportBusDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A1B8C0D4E64C5A9B01A002 /* AirportBusDetailSheet.swift */; };
 		B2C3D4E5F6071829A3B4C5D6 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* Localization.swift */; };
 		B3621A83DE8D374BF385359C /* WatchNearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6A64F2930A00B9F04C461 /* WatchNearbyView.swift */; };
 		B3CF93A36099BA1907847163 /* SyrmosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287CAA4712C3ADBF08B416E3 /* SyrmosApp.swift */; };
@@ -449,6 +450,7 @@
 		FF201314EADCD2EA1936941F /* Complications-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SyrmosWatch/Complications-Info.plist"; sourceTree = SOURCE_ROOT; };
 		C0F8EA0447A54742B5757B83 /* AirportBusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusService.swift; sourceTree = SOURCE_ROOT; };
 		D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/AirportServiceRows.swift; sourceTree = SOURCE_ROOT; };
+	F2A1B8C0D4E64C5A9B01A002 /* AirportBusDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Features/Timetables/AirportBusDetailSheet.swift; sourceTree = SOURCE_ROOT; };
 		90A7818792314F8DBE8F37C6 /* AirportServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirportServiceTests.swift; sourceTree = "<group>"; };
 		34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusVehicles.swift; sourceTree = SOURCE_ROOT; };
 		0AFD2915EBC14AC08E32956E /* DepartureGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Schedule/DepartureGrouping.swift; sourceTree = SOURCE_ROOT; };
@@ -817,6 +819,7 @@
 			children = (
 				09288EF8307B4CDC9D065AED /* TimetablesView.swift */,
 				D75EB12B0AA648BCB7AD0BB5 /* AirportServiceRows.swift */,
+				F2A1B8C0D4E64C5A9B01A002 /* AirportBusDetailSheet.swift */,
 				DBADA13AF3954288A721329B /* TimetablesIcons.swift */,
 			);
 			name = Timetables;
@@ -1136,6 +1139,7 @@
 				8A72EAE7260D46FDA05D490B /* SafariSheet.swift in Sources */,
 				4DFE1212D427449286398220 /* StationMapSheet.swift in Sources */,
 				B264406F57304E569BAAED79 /* TimetablesView.swift in Sources */,
+				F2A1B8C0D4E64C5A9B01A001 /* AirportBusDetailSheet.swift in Sources */,
 				E0924DBFD89E4529BE2607A6 /* DepartureGrouping.swift in Sources */,
 				916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */,
 				2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */,
