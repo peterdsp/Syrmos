@@ -8,6 +8,7 @@ internal actual fun PlatformMapView(
     uiState: MapUiState,
     onStationSelected: (String) -> Unit,
     onTrainSelected: (String) -> Unit,
+    onBusSelected: (String) -> Unit,
     modifier: Modifier,
     initialScale: Float,
 ) {

@@ -101,6 +101,7 @@ data class MapUiState(
     // it flips within ~1s of losing/regaining live data.
     val mapOffline: Boolean = false,
     val selectedTrain: LiveSuburbanTrain? = null,
+    val selectedBus: AirportBusVehicle? = null,
     val selectedSimulatedTrain: SimulatedTrain? = null,
     val showTrains: Boolean = true,
     val showLiveTrainsSheet: Boolean = false,
@@ -371,6 +372,9 @@ class MapViewModel(
     fun toggleAirportBusVisibility() {
         _uiState.update { it.copy(showAirportBuses = !it.showAirportBuses) }
     }
+
+    fun selectBus(id: String) { _uiState.update { s -> s.copy(selectedBus = s.busVehicles.firstOrNull { it.id == id }, selectedStation = null, selectedTrain = null, selectedSimulatedTrain = null) } }
+    fun clearBusSelection() { _uiState.update { it.copy(selectedBus = null) } }
 
     private fun pollLivePositions() {
         scope.launch {

@@ -8,6 +8,7 @@ internal expect fun PlatformMapView(
     uiState: MapUiState,
     onStationSelected: (String) -> Unit,
     onTrainSelected: (String) -> Unit = {},
+    onBusSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     initialScale: Float = 1f,
 )

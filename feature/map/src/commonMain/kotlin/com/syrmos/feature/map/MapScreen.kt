@@ -167,6 +167,7 @@ fun MapScreen(
                 ),
                 onStationSelected = viewModel::selectStation,
                 onTrainSelected = viewModel::selectTrain,
+                onBusSelected = viewModel::selectBus,
                 modifier = Modifier.fillMaxSize(),
                 initialScale = initialScale,
             )
@@ -286,6 +287,33 @@ fun MapScreen(
 
         // Single column only: on a paired layout the selection reads in the
         // inspector pane and the map keeps its full canvas.
+        if (!paired) AnimatedVisibility(
+            visible = uiState.selectedBus != null && uiState.selectedStation == null && uiState.selectedTrain == null,
+            enter = slideInVertically(animationSpec = tween(350), initialOffsetY = { it }),
+            exit = slideOutVertically(animationSpec = tween(300), targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().zIndex(2f),
+        ) {
+            val bus = uiState.selectedBus
+            if (bus != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding().padding(bottom = 88.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${bus.lineId} airport bus", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            IconButton(onClick = viewModel::clearBusSelection) { Icon(Icons.Filled.Close, "Close") }
+                        }
+                        Text("Live vehicle position", color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
+                        Text("Destination and next-stop data are shown when supplied by the operator feed.", style = MaterialTheme.typography.bodyMedium)
+                        Text("Speed: not supplied by the verified feed", style = MaterialTheme.typography.bodySmall)
+                        Text("Weather: unavailable offline", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+
         if (!paired) AnimatedVisibility(
             visible = uiState.selectedStation != null,
             enter = slideInVertically(
