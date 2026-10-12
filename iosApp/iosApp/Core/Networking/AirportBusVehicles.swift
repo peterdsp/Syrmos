@@ -11,7 +11,7 @@ struct AirportBusVehicle: Identifiable {
     let toAirport: Bool?
 }
 
-/// Polls /api/oasa-airport-buses for live X93/95/96/97 vehicle positions and
+/// Reads the snapshot-backed /api/airport-buses feed for live X93/95/96/97 vehicle positions and
 /// publishes them for the map. Mirrors LiveTrainService (a single shared poller)
 /// and the web `airportBusVehicles` transform, so all clients plot the same
 /// vehicles. ETAs for the departure lists come from `AirportBusService`; this is
@@ -47,15 +47,10 @@ final class LiveAirportBusService: ObservableObject {
             vehicles = []
             return true // intentional offline-only mode, not a poll failure
         }
-        guard let url = URL(string: "https://api-syrmos.peterdsp.dev/api/oasa-airport-buses") else { return false }
-        var req = URLRequest(url: url)
-        req.timeoutInterval = 8
-        req.cachePolicy = .reloadIgnoringLocalCacheData
         do {
-            let (data, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return false }
-            let payload = try JSONDecoder().decode(Payload.self, from: data)
-            vehicles = Self.parse(payload)
+            guard let unified = await AirportBusService.fetchUnified(),
+                  let oasa = unified.operators["oasa"] else { return false }
+            vehicles = oasa.vehicles
             return true
         } catch {
             // Keep the last frame on transient errors.

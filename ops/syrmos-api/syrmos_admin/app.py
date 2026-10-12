@@ -1658,47 +1658,6 @@ def api_airport_buses_operator_route(operator: str, route_id: str):
                          "arrivals": [a for a in operator_data.get("arrivals", []) if a.get("route_id") == route_id or a.get("line_id") == route_id],
                          "alerts": [a for a in operator_data.get("alerts", []) if a.get("route_id") in (None, route_id)]})
 
-    import time as _time
-    start = _time.time()
-
-    operator_lower = operator.lower()
-
-    if operator_lower == "oasa":
-        provider = abp_mod.OasaAirportProvider()
-    elif operator_lower == "oseth":
-        provider = abp_mod.OsethAirportProvider()
-    else:
-        raise HTTPException(status_code=404, detail=f"Unknown operator: {operator}")
-
-    try:
-        route_metadata = provider.fetch_route_metadata(route_id)
-        vehicles = provider.fetch_vehicles(route_id)
-        arrivals = provider.fetch_arrivals()
-        # Filter arrivals to this route
-        route_arrivals = [a for a in arrivals if a.line_id == route_id]
-        alerts = provider.fetch_alerts(route_id)
-
-        if route_metadata is None:
-            raise HTTPException(status_code=404, detail=f"Route {route_id} not found")
-
-        duration = _time.time() - start
-        return JSONResponse({
-            "operator": operator_lower,
-            "route_id": route_id,
-            "source": provider.source_url,
-            "attribution": provider.attribution,
-            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "route": route_metadata.to_dict(),
-            "vehicles": [v.to_dict() for v in vehicles],
-            "arrivals": [a.to_dict() for a in route_arrivals],
-            "alerts": [a.to_dict() for a in alerts],
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "generation_duration": duration,
-        })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/api/airport-buses/{operator}/{route_id}/vehicles")
 def api_airport_buses_operator_route_vehicles(operator: str, route_id: str):
     """Get live vehicle positions for a specific route.
@@ -1717,36 +1676,6 @@ def api_airport_buses_operator_route_vehicles(operator: str, route_id: str):
     return JSONResponse({"operator": operator.lower(), "route_id": route_id,
                          "updated_at": snapshot.get("updated_at"),
                          "vehicles": [v for v in operator_data.get("vehicles", []) if v.get("route_id") == route_id]})
-
-    import time as _time
-    start = _time.time()
-
-    operator_lower = operator.lower()
-
-    if operator_lower == "oasa":
-        provider = abp_mod.OasaAirportProvider()
-    elif operator_lower == "oseth":
-        provider = abp_mod.OsethAirportProvider()
-    else:
-        raise HTTPException(status_code=404, detail=f"Unknown operator: {operator}")
-
-    try:
-        vehicles = provider.fetch_vehicles(route_id)
-
-        duration = _time.time() - start
-        return JSONResponse({
-            "operator": operator_lower,
-            "route_id": route_id,
-            "source": provider.source_url,
-            "attribution": provider.attribution,
-            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "vehicles": [v.to_dict() for v in vehicles],
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "generation_duration": duration,
-        })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/api/airport-buses/{operator}/{route_id}/alerts")
 def api_airport_buses_operator_route_alerts(operator: str, route_id: str):
@@ -1767,36 +1696,6 @@ def api_airport_buses_operator_route_alerts(operator: str, route_id: str):
                          "updated_at": snapshot.get("updated_at"),
                          "alerts": [a for a in operator_data.get("alerts", []) if a.get("route_id") in (None, route_id)]})
 
-    import time as _time
-    start = _time.time()
-
-    operator_lower = operator.lower()
-
-    if operator_lower == "oasa":
-        provider = abp_mod.OasaAirportProvider()
-    elif operator_lower == "oseth":
-        provider = abp_mod.OsethAirportProvider()
-    else:
-        raise HTTPException(status_code=404, detail=f"Unknown operator: {operator}")
-
-    try:
-        alerts = provider.fetch_alerts(route_id)
-
-        duration = _time.time() - start
-        return JSONResponse({
-            "operator": operator_lower,
-            "route_id": route_id,
-            "source": provider.source_url,
-            "attribution": provider.attribution,
-            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "alerts": [a.to_dict() for a in alerts],
-            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "generation_duration": duration,
-        })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.get("/api/airport-buses/sources")
 def api_airport_buses_sources():
     """Get metadata about all airport bus data sources.
@@ -1811,43 +1710,33 @@ def api_airport_buses_sources():
         - last_tested: When the source was last validated
         - notes: Additional notes
     """
-    oasa_provider = abp_mod.OasaAirportProvider()
-    oseth_provider = abp_mod.OsethAirportProvider()
-
-    # Test OASA connectivity
-    oasa_live = True
-    try:
-        oasa_routes = oasa_provider.discover_routes()
-        if not oasa_routes:
-            oasa_live = False
-    except Exception:
-        oasa_live = False
-
-    # OSETH is not yet implemented
-    oseth_live = False
+    snapshot = _airport_bus_snapshot()
+    operators = snapshot.get("operators", {})
+    oasa_data = operators.get("oasa", {})
+    oseth_data = operators.get("oseth", {})
 
     return JSONResponse({
         "sources": [
             {
                 "operator": "oasa",
                 "name": "OASA Telematics",
-                "source_url": oasa_provider.source_url,
-                "attribution": oasa_provider.attribution,
-                "is_live": oasa_live,
-                "last_tested": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "notes": "Live data from telematics.oasa.gr. Athens airport express buses X93/X95/X96/X97.",
+                "source_url": oasa_data.get("source"),
+                "attribution": oasa_data.get("attribution"),
+                "is_live": bool(oasa_data.get("is_live")),
+                "last_tested": snapshot.get("updated_at"),
+                "notes": "Snapshot-backed OASA airport-bus data.",
             },
             {
                 "operator": "oseth",
                 "name": "OSETH/OASTH",
-                "source_url": oseth_provider.source_url,
-                "attribution": oseth_provider.attribution,
-                "is_live": oseth_live,
-                "last_tested": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "notes": "Thessaloniki airport buses. Implementation in progress - live data not yet available.",
+                "source_url": oseth_data.get("source"),
+                "attribution": oseth_data.get("attribution"),
+                "is_live": bool(oseth_data.get("is_live")),
+                "last_tested": snapshot.get("updated_at"),
+                "notes": "Snapshot-backed OSETH data; live availability follows the watcher status.",
             },
         ],
-        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "generated_at": snapshot.get("generated_at"),
     })
 
 
@@ -1893,60 +1782,36 @@ def api_oasa_airport_buses_legacy():
         }
     }
     """
-    import time as _time
-    start = _time.time()
-
-    # Fetch using the OASA provider and convert to legacy format
-    provider = abp_mod.OasaAirportProvider()
-
-    try:
-        vehicles = provider.fetch_vehicles()
-        arrivals = provider.fetch_arrivals()
-        routes = provider.discover_routes()
-
-        # Convert normalized vehicles to legacy format
-        legacy_vehicles = []
-        for v in vehicles:
-            legacy_vehicles.append({
-                "vehicleId": v.vehicle_id,
-                "lat": v.latitude,
-                "lng": v.longitude,
-                "heading": v.heading,
-                "routeCode": 0,  # Not available in normalized form
-                "lineId": v.line_id,
-                "timestamp": v.observed_at.isoformat(),
-            })
-
-        # Convert normalized arrivals to legacy format
-        legacy_arrivals = []
-        for a in arrivals:
-            legacy_arrivals.append({
-                "lineId": a.line_id,
-                "routeCode": 0,  # Not available
-                "vehicleId": a.vehicle_id or "",
-                "minutesAway": a.estimated_minutes or 0,
-            })
-
-        # Sort by minutesAway
-        legacy_arrivals.sort(key=lambda x: x["minutesAway"])
-
-        # Build routes map
-        routes_map = {}
-        for r in routes:
-            # Extract route codes from to/from airport
-            to_codes = [c for c in (r.to_airport_route_codes or []) if isinstance(c, int)]
-            from_codes = [c for c in (r.from_airport_route_codes or []) if isinstance(c, int)]
-            routes_map[r.route_id] = {
-                "toAirport": to_codes,
-                "fromAirport": from_codes,
+    snapshot = _airport_bus_snapshot()
+    data = snapshot.get("operators", {}).get("oasa", {})
+    return JSONResponse({
+        "updatedAt": snapshot.get("updated_at"),
+        "vehicles": [
+            {
+                "vehicleId": v.get("vehicle_id", ""),
+                "lat": v.get("latitude"),
+                "lng": v.get("longitude"),
+                "heading": v.get("heading"),
+                "routeCode": v.get("route_code", 0),
+                "lineId": v.get("route_id", v.get("line_id", "")),
+                "timestamp": v.get("observed_at"),
             }
-
-        duration = _time.time() - start
-        return JSONResponse({
-            "updatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "vehicles": legacy_vehicles,
-            "airportArrivals": legacy_arrivals,
-            "routes": routes_map,
-        })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            for v in data.get("vehicles", [])
+        ],
+        "airportArrivals": [
+            {
+                "lineId": a.get("route_id", a.get("line_id", "")),
+                "routeCode": a.get("route_code", 0),
+                "vehicleId": a.get("vehicle_id", ""),
+                "minutesAway": a.get("estimated_minutes", 0),
+            }
+            for a in data.get("arrivals", [])
+        ],
+        "routes": {
+            r.get("route_id", ""): {
+                "toAirport": r.get("to_airport_route_codes", []),
+                "fromAirport": r.get("from_airport_route_codes", []),
+            }
+            for r in data.get("routes", [])
+        },
+    })
