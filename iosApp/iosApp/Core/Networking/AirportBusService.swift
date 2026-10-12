@@ -86,7 +86,6 @@ enum AirportBusService {
         enum CodingKeys: String, CodingKey {
             case id = "route_id"
             case operatorId = "operator"
-            case route_id
             case public_name
             case public_name_en
             case public_name_el
@@ -122,7 +121,6 @@ enum AirportBusService {
 
         enum CodingKeys: String, CodingKey {
             case id = "vehicle_id"
-            case vehicle_id
             case line_id
             case route_id
             case operatorId = "operator"
@@ -221,7 +219,7 @@ enum AirportBusService {
     }
 
     /// Unified airport bus data for all operators
-    struct UnifiedAirportBuses: Equatable {
+    struct UnifiedAirportBuses {
         let updatedAt: Date?
         let operators: [String: OperatorData]
         let sources: [SourceInfo]
@@ -233,10 +231,10 @@ enum AirportBusService {
         func soonest(_ line: String, operator operatorId: String) -> Int? { operators[operatorId]?.etasByLine[line]?.first }
     }
 
-    struct OperatorData: Equatable {
+    struct OperatorData {
         let updatedAt: Date?
         let etasByLine: [String: [Int]]
-        let vehicles: [AirportBusVehicles.AirportBusVehicle]
+        let vehicles: [AirportBusVehicle]
         let alerts: [ServiceAlert]
         let routes: [UnifiedRoute]
         let source: String?

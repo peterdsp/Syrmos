@@ -38,7 +38,7 @@ struct UnifiedAirportBusDetail: Identifiable, Equatable {
     let confidence: SourceConfidence
     let sourceURL: URL?
     let eta: Int?
-    let vehiclePositions: [AirportBusVehicles.AirportBusVehicle]
+    let vehiclePositions: [AirportBusVehicle]
     let alerts: [AirportBusService.ServiceAlert]
     let hasVehicles: Bool
     let direction: String?
@@ -76,7 +76,7 @@ private func detailText(_ language: AppLanguage, _ en: String, _ el: String, _ s
 import MapKit
 
 struct VehicleMapView: UIViewRepresentable {
-    let vehicles: [AirportBusVehicles.AirportBusVehicle]
+    let vehicles: [AirportBusVehicle]
     let airportCoordinate: CLLocationCoordinate2D?
     
     func makeUIView(context: Context) -> MKMapView {
@@ -385,5 +385,5 @@ extension UnifiedAirportBusDetail {
         freshness: nil,
         attribution: "Live bus data from OASA Telematics"
     )
-    return UnifiedAirportBusDetailSheet(detail: mockDetail, language: .english)
+    UnifiedAirportBusDetailSheet(detail: mockDetail, language: .english)
 }
