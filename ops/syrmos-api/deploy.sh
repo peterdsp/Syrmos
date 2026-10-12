@@ -119,7 +119,7 @@ if ! grep -q "location = /api/airport-buses" "$conf"; then
 from pathlib import Path
 p = Path.home() / "syrmos-proxy/nginx.conf"
 txt = p.read_text()
-marker = "# --- admin UI (FastAPI"
+marker = "        location = /api/train-timestamps"
 block = """        # --- normalized airport bus snapshot ---
         location = /api/airport-buses {
             proxy_pass http://127.0.0.1:8092/api/airport-buses$is_args$args;
