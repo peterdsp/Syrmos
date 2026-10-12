@@ -1,7 +1,7 @@
 package com.syrmos.feature.schedule
 
-import com.syrmos.core.network.OasaAirportBusService.OasaAirportBusResponse
-import com.syrmos.core.network.OasaAirportBusService.OasaBusArrival
+import com.syrmos.core.network.AirportBusService.OasaAirportBusResponse
+import com.syrmos.core.network.AirportBusService.OasaBusArrival
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

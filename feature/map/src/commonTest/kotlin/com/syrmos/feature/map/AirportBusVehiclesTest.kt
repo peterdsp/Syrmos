@@ -1,7 +1,7 @@
 package com.syrmos.feature.map
 
-import com.syrmos.core.network.OasaAirportBusService.OasaAirportBusResponse
-import com.syrmos.core.network.OasaAirportBusService.OasaBusVehicle
+import com.syrmos.core.network.AirportBusService.OasaAirportBusResponse
+import com.syrmos.core.network.AirportBusService.OasaBusVehicle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

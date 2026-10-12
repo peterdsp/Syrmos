@@ -271,7 +271,7 @@ struct UnifiedAirportBusDetailSheet: View {
                     // Freshness and attribution
                     VStack(alignment: .leading, spacing: 4) {
                         if let freshness = detail.freshness {
-                            Text("Updated \(TimeInterval formatting)".localized(language))
+                            Text("Updated \(Int(freshness)) min ago".localized(language))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         if let attribution = detail.attribution {
@@ -312,7 +312,7 @@ struct UnifiedAirportBusDetailSheet: View {
 
 extension UnifiedAirportBusDetail {
     static func fromUnified(
-        operator: String,
+        operator operatorId: String,
         route: String,
         routeData: AirportBusService.UnifiedRoute?,
         operatorData: AirportBusService.OperatorData?,
@@ -326,17 +326,17 @@ extension UnifiedAirportBusDetail {
         let alerts = operatorData.alerts
         let routeMeta = routeData ?? operatorData.routes.first { $0.route_id == route }
         
-        let colorHex = routeMeta?.color ?? (operator == "oasa" ? "#E8792B" : "#0E7490")
+        let colorHex = routeMeta?.color ?? (operatorId == "oasa" ? "#E8792B" : "#0E7490")
         let confidence = confidenceLevel(from: routeMeta?.confidence ?? "unknown")
         
         return UnifiedAirportBusDetail(
-            id: "\(operator)_\(route)",
+            id: "\(operatorId)_\(route)",
             route: route,
             routeId: route,
-            operatorName: operator.capitalized,
+            operatorName: operatorId.capitalized,
             origin: routeMeta?.origin ?? "",
             destination: routeMeta?.destination ?? "",
-            airport: routeMeta?.airport ?? (operator == "oasa" ? "AIA" : "SKG"),
+            airport: routeMeta?.airport ?? (operatorId == "oasa" ? "AIA" : "SKG"),
             colorHex: colorHex,
             confidence: confidence,
             sourceURL: URL(string: routeMeta?.source_url ?? ""),
