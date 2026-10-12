@@ -221,6 +221,34 @@ class AirportBusWatcher:
             oseth_arrivals = self.oseth_provider.fetch_arrivals()
             oseth_alerts = self.oseth_provider.fetch_alerts()
 
+            def route_payload(provider, route):
+                """Publish route geometry with the atomic live snapshot.
+
+                OASA exposes ordered stop coordinates rather than a shape
+                endpoint.  The stop-derived polyline is therefore the
+                authoritative fallback and remains usable offline. OSETH
+                currently exposes the same verified airport/interchange
+                catalogue through the provider.
+                """
+                payload = route.to_dict()
+                stops = provider.fetch_stops(route.route_id)
+                valid_stops = [
+                    s for s in stops
+                    if isinstance(s.get("latitude"), (int, float))
+                    and isinstance(s.get("longitude"), (int, float))
+                    and -90 <= s["latitude"] <= 90
+                    and -180 <= s["longitude"] <= 180
+                    and not (s["latitude"] == 0 and s["longitude"] == 0)
+                ]
+                valid_stops.sort(key=lambda s: (s.get("direction", ""), s.get("sequence", 0)))
+                payload["stops"] = valid_stops
+                payload["shape"] = [
+                    {"latitude": s["latitude"], "longitude": s["longitude"], "sequence": s.get("sequence", 0)}
+                    for s in valid_stops
+                ]
+                payload["geometry_source"] = "ordered_operator_stops"
+                return payload
+
             return {
                 "updated_at": now.isoformat(),
                 "generated_at": now.isoformat(),
@@ -230,7 +258,7 @@ class AirportBusWatcher:
                         "operator": "oasa",
                         "source": self.oasa_provider.source_url,
                         "attribution": self.oasa_provider.attribution,
-                        "routes": [r.to_dict() for r in oasa_routes],
+                        "routes": [route_payload(self.oasa_provider, r) for r in oasa_routes],
                         "vehicles": [v.to_dict() for v in oasa_vehicles],
                         "arrivals": [a.to_dict() for a in oasa_arrivals],
                         "alerts": [a.to_dict() for a in oasa_alerts],
@@ -239,7 +267,7 @@ class AirportBusWatcher:
                         "operator": "oseth",
                         "source": self.oseth_provider.source_url,
                         "attribution": self.oseth_provider.attribution,
-                        "routes": [r.to_dict() for r in oseth_routes],
+                        "routes": [route_payload(self.oseth_provider, r) for r in oseth_routes],
                         "vehicles": [v.to_dict() for v in oseth_vehicles],
                         "arrivals": [a.to_dict() for a in oseth_arrivals],
                         "alerts": [a.to_dict() for a in oseth_alerts],

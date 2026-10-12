@@ -95,6 +95,7 @@ data class MapUiState(
     // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
     val busVehicles: List<AirportBusVehicle> = emptyList(),
+    val airportBusRoutes: List<OasaAirportBusService.UnifiedRoute> = emptyList(),
     val showAirportBuses: Boolean = true,
     // Subtle map offline indicator: true when the device is offline OR no live
     // data has arrived within the freshness window. Recomputed on the sim tick so
@@ -356,8 +357,14 @@ class MapViewModel(
             var failures = 0
             while (isActive) {
                 try {
-                    val vehicles = AirportBusVehicles.parseUnified(airportBusService.fetchUnified(), operator = "oasa")
-                    _uiState.update { it.copy(busVehicles = vehicles) }
+                    // The normalized snapshot contains both Athens/OASA and
+                    // Thessaloniki/OSETH. Keep one atomic snapshot and render
+                    // both operators; filtering to OASA made Thessaloniki
+                    // silently disappear from the map.
+                    val snapshot = airportBusService.fetchUnified()
+                    val vehicles = AirportBusVehicles.parseUnified(snapshot)
+                    val routes = snapshot?.operators?.values?.flatMap { it.routes }.orEmpty()
+                    _uiState.update { it.copy(busVehicles = vehicles, airportBusRoutes = routes) }
                     failures = 0
                 } catch (e: Exception) {
                     // Keep the last vehicles on screen and back off (don't clobber

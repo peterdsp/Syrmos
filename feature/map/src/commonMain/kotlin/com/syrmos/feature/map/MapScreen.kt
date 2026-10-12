@@ -295,6 +295,12 @@ fun MapScreen(
         ) {
             val bus = uiState.selectedBus
             if (bus != null) {
+                val route = uiState.airportBusRoutes.firstOrNull { it.route_id == bus.lineId }
+                val nextStop = route?.stops?.firstOrNull { stop ->
+                    bus.toAirport == null ||
+                        (bus.toAirport == true && stop.direction == "to_airport") ||
+                        (bus.toAirport == false && stop.direction == "from_airport")
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding().padding(bottom = 88.dp),
                     shape = RoundedCornerShape(24.dp),
@@ -306,7 +312,8 @@ fun MapScreen(
                             IconButton(onClick = viewModel::clearBusSelection) { Icon(Icons.Filled.Close, "Close") }
                         }
                         Text("Live vehicle position", color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
-                        Text("Destination and next-stop data are shown when supplied by the operator feed.", style = MaterialTheme.typography.bodyMedium)
+                        Text("${route?.destination ?: "Destination unavailable from operator feed"}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Next stop: ${nextStop?.stop_name ?: "not supplied by the verified feed"}", style = MaterialTheme.typography.bodyMedium)
                         Text("Speed: not supplied by the verified feed", style = MaterialTheme.typography.bodySmall)
                         Text("Weather: unavailable offline", style = MaterialTheme.typography.bodySmall)
                     }

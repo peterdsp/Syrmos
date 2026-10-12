@@ -1000,13 +1000,20 @@ class OsethAirportProvider(AirportTransitProvider):
             "direction": "both",
         }
 
-        # Metro interchange stop
+        # Metro interchange stop. These coordinates are from the bundled
+        # Thessaloniki station catalogue (the same source used by the offline
+        # map). Never emit 0/0: clients correctly reject null-island points.
+        metro_coordinates = {
+            "X3": (40.567590, 22.966672),       # TM2_MIK / Mikra
+            "2X": (40.593231, 22.968863),       # TM1_NEL / Nea Elvetia
+        }
+        latitude, longitude = metro_coordinates[route_id]
         metro_stop = {
             "stop_id": f"THS_{destination.upper().replace(' ', '_')}",
             "stop_name": destination,
             "stop_name_el": route_metadata.get("destination_el", destination),
-            "latitude": 0.0,
-            "longitude": 0.0,
+            "latitude": latitude,
+            "longitude": longitude,
             "sequence": 2,
             "direction": "both",
         }

@@ -90,6 +90,24 @@ class AirportBusService(
 
     // MARK: - Unified data classes
 
+    @Serializable
+    data class UnifiedRouteStop(
+        val stop_id: String = "",
+        val stop_name: String = "",
+        val stop_name_el: String? = null,
+        val latitude: Double = 0.0,
+        val longitude: Double = 0.0,
+        val sequence: Int = 0,
+        val direction: String? = null,
+    )
+
+    @Serializable
+    data class UnifiedShapePoint(
+        val latitude: Double = 0.0,
+        val longitude: Double = 0.0,
+        val sequence: Int = 0,
+    )
+
     /// Normalized route metadata
     @Serializable
     data class UnifiedRoute(
@@ -114,6 +132,12 @@ class AirportBusService(
         val from_airport_route_codes: List<Int> = emptyList(),
         val to_airport_stop_ids: List<Int> = emptyList(),
         val from_airport_stop_ids: List<Int> = emptyList(),
+        // Ordered operator stop catalogue and its verified stop-derived
+        // geometry. These fields are optional for backwards-compatible cached
+        // snapshots and are safe to use offline.
+        val stops: List<UnifiedRouteStop> = emptyList(),
+        val shape: List<UnifiedShapePoint> = emptyList(),
+        val geometry_source: String? = null,
     )
 
     /// Normalized vehicle position
