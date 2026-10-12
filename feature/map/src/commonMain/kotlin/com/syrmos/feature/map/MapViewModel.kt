@@ -96,6 +96,7 @@ data class MapUiState(
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
     val busVehicles: List<AirportBusVehicle> = emptyList(),
     val airportBusRoutes: List<OasaAirportBusService.UnifiedRoute> = emptyList(),
+    val airportBusArrivals: List<OasaAirportBusService.UnifiedArrival> = emptyList(),
     val showAirportBuses: Boolean = true,
     // Subtle map offline indicator: true when the device is offline OR no live
     // data has arrived within the freshness window. Recomputed on the sim tick so
@@ -364,7 +365,8 @@ class MapViewModel(
                     val snapshot = airportBusService.fetchUnified()
                     val vehicles = AirportBusVehicles.parseUnified(snapshot)
                     val routes = snapshot?.operators?.values?.flatMap { it.routes }.orEmpty()
-                    _uiState.update { it.copy(busVehicles = vehicles, airportBusRoutes = routes) }
+                    val arrivals = snapshot?.operators?.values?.flatMap { it.arrivals }.orEmpty()
+                    _uiState.update { it.copy(busVehicles = vehicles, airportBusRoutes = routes, airportBusArrivals = arrivals) }
                     failures = 0
                 } catch (e: Exception) {
                     // Keep the last vehicles on screen and back off (don't clobber

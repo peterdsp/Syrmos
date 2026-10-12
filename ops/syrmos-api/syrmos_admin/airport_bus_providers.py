@@ -33,11 +33,14 @@ Usage:
 from __future__ import annotations
 
 import json
+import csv
+import io
 import logging
 import random
 import time
 import urllib.error
 import urllib.request
+import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timedelta, timezone
@@ -835,6 +838,8 @@ class OsethAirportProvider(AirportTransitProvider):
     API_BASE = "https://oseth.com.gr/el/telematics-api/"
     USER_AGENT = "syrmos-airport-bus-provider/1.0 (+https://syrmos.peterdsp.dev)"
     REQUEST_TIMEOUT = 15.0
+    GTFS_URL = "https://data.gov.gr/dataset/42c9a7da-c86c-48b1-914c-f340e8bef00d/resource/28c807ed-ef95-441a-966c-51c0eb6ac86f/download/20261002_gtfs.zip"
+    GTFS_ROUTE_IDS = {"2X": ("02X_0745_1_3", "02X_0745_2_3"), "X3": ("03Χ_9718_1_3", "03Χ_9718_2_3")}
 
     # Thessaloniki airport code
     AIRPORT_CODE = "SKG"
@@ -882,6 +887,7 @@ class OsethAirportProvider(AirportTransitProvider):
     def __init__(self, timeout: float = REQUEST_TIMEOUT, user_agent: Optional[str] = None):
         self.timeout = timeout
         self.user_agent = user_agent or self.USER_AGENT
+        self._gtfs_cache: Optional[dict[str, Any]] = None
 
     @property
     def operator(self) -> Operator:
@@ -906,6 +912,53 @@ class OsethAirportProvider(AirportTransitProvider):
                 return json.loads(raw)
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
             logger.warning(f"OSETH fetch failed: {url} -> {e}")
+            return None
+
+    def _fetch_gtfs(self) -> dict[str, Any]:
+        """Load the latest OSETH airport subset from the official GTFS release.
+
+        GTFS is static scheduled data: it supplies authoritative route shapes
+        and stops, while the OSETH web telematics API remains the live source.
+        Cache it for the process lifetime so the 30-second watcher never
+        downloads a 46 MB feed repeatedly.
+        """
+        if self._gtfs_cache is not None:
+            return self._gtfs_cache
+        req = urllib.request.Request(self.GTFS_URL, headers={"User-Agent": self.user_agent})
+        with urllib.request.urlopen(req, timeout=self.timeout) as response:
+            archive = zipfile.ZipFile(io.BytesIO(response.read()))
+        def table(name):
+            return list(csv.DictReader(io.TextIOWrapper(archive.open(name), encoding="utf-8-sig")))
+        routes = table("routes.txt")
+        airport_routes = [r for r in routes if "ΑΕΡΟΔΡΟΜΙΟ" in r.get("route_long_name", "").upper()]
+        wanted = {r["route_id"] for r in airport_routes}
+        trips = [t for t in table("trips.txt") if t.get("route_id") in wanted]
+        trip_ids = {t["trip_id"] for t in trips}
+        stop_times = [s for s in table("stop_times.txt") if s.get("trip_id") in trip_ids]
+        stops = {s["stop_id"]: s for s in table("stops.txt")}
+        shapes = {}
+        for p in table("shapes.txt"):
+            shapes.setdefault(p["shape_id"], []).append(p)
+        for points in shapes.values():
+            points.sort(key=lambda p: int(p["shape_pt_sequence"]))
+        by_trip = {t["trip_id"]: t for t in trips}
+        self._gtfs_cache = {"routes": airport_routes, "trips": by_trip, "stop_times": stop_times, "stops": stops, "shapes": shapes}
+        return self._gtfs_cache
+
+    def _gtfs_route(self, route_id: str) -> Optional[dict[str, Any]]:
+        try:
+            feed = self._fetch_gtfs()
+            ids = set(self.GTFS_ROUTE_IDS.get(route_id, ()))
+            route = next((r for r in feed["routes"] if r["route_id"] in ids), None)
+            if not route:
+                return None
+            trip = next(t for t in feed["trips"].values() if t["route_id"] == route["route_id"])
+            ordered = sorted((s for s in feed["stop_times"] if s["trip_id"] == trip["trip_id"]), key=lambda s: int(s["stop_sequence"]))
+            stops = [feed["stops"][s["stop_id"]] for s in ordered if s["stop_id"] in feed["stops"]]
+            shape = [{"latitude": float(p["shape_pt_lat"]), "longitude": float(p["shape_pt_lon"]), "sequence": int(p["shape_pt_sequence"])} for p in feed["shapes"].get(trip.get("shape_id", ""), [])]
+            return {"route": route, "stops": stops, "shape": shape}
+        except (OSError, KeyError, StopIteration, ValueError, zipfile.BadZipFile) as exc:
+            logger.warning("OSETH GTFS load failed: %s", exc)
             return None
         except Exception as e:
             logger.error(f"OSETH unexpected error fetching {url}: {e}")
@@ -983,6 +1036,17 @@ class OsethAirportProvider(AirportTransitProvider):
         if route_id not in self.ROUTE_CODES:
             return []
 
+        gtfs = self._gtfs_route(route_id)
+        if gtfs:
+            direction = "to_airport" if route_id == "X3" else "from_airport"
+            return [{
+                "stop_id": f"OSETH_{s['stop_id']}",
+                "stop_name": s.get("stop_name", ""),
+                "stop_name_el": s.get("stop_name", ""),
+                "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]),
+                "sequence": i + 1, "direction": direction,
+            } for i, s in enumerate(gtfs["stops"])]
+
         # known stops from database seeding
         route_metadata = self.ROUTE_METADATA.get(route_id, {})
         origin = route_metadata.get("origin", "")
@@ -1019,6 +1083,10 @@ class OsethAirportProvider(AirportTransitProvider):
         }
 
         return [airport_stop, metro_stop]
+
+    def fetch_shape(self, route_id: str) -> list[dict[str, Any]]:
+        gtfs = self._gtfs_route(route_id)
+        return gtfs["shape"] if gtfs else []
 
     def fetch_arrivals(self, stop_id: Optional[str] = None) -> list[NormalizedArrival]:
         """Fetch live arrivals at a stop.

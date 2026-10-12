@@ -314,8 +314,19 @@ fun MapScreen(
                         Text("Live vehicle position", color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
                         Text("${route?.destination ?: "Destination unavailable from operator feed"}", style = MaterialTheme.typography.bodyMedium)
                         Text("Next stop: ${nextStop?.stop_name ?: "not supplied by the verified feed"}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Speed: not supplied by the verified feed", style = MaterialTheme.typography.bodySmall)
-                        Text("Weather: unavailable offline", style = MaterialTheme.typography.bodySmall)
+                        val etas = uiState.airportBusArrivals.filter { arrival ->
+                            arrival.line_id == bus.lineId || arrival.route_id == bus.lineId
+                        }.sortedBy { it.estimated_minutes ?: Int.MAX_VALUE }.take(3)
+                        if (etas.isNotEmpty()) {
+                            Text("Next buses", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            etas.forEach { eta ->
+                                Text("${eta.stop_name}: ${eta.estimated_minutes?.let { "$it min" } ?: eta.scheduled_time ?: "time unavailable"}", style = MaterialTheme.typography.bodySmall)
+                            }
+                        } else {
+                            Text("Next-bus ETAs are not available from the current snapshot", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text("Speed: not supplied by the verified operator feed", style = MaterialTheme.typography.bodySmall)
+                        Text("Weather: use the free Open-Meteo weather card for the vehicle area", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

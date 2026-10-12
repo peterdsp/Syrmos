@@ -242,11 +242,12 @@ class AirportBusWatcher:
                 ]
                 valid_stops.sort(key=lambda s: (s.get("direction", ""), s.get("sequence", 0)))
                 payload["stops"] = valid_stops
-                payload["shape"] = [
+                official_shape = getattr(provider, "fetch_shape", lambda _route_id: [])(route.route_id)
+                payload["shape"] = official_shape or [
                     {"latitude": s["latitude"], "longitude": s["longitude"], "sequence": s.get("sequence", 0)}
                     for s in valid_stops
                 ]
-                payload["geometry_source"] = "ordered_operator_stops"
+                payload["geometry_source"] = "oseth_gtfs_shapes" if official_shape else "ordered_operator_stops"
                 return payload
 
             return {

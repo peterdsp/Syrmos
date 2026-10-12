@@ -205,6 +205,7 @@ internal actual fun PlatformMapView(
         }
     val lineColors = remember { loadLineColors(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
+    val airportBusRouteOverlays = remember { mutableListOf<Polyline>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
@@ -371,6 +372,33 @@ internal actual fun PlatformMapView(
             }
             lineOverlays.add(polyline)
             mapView.overlays.add(0, polyline)
+        }
+        mapView.invalidate()
+    }
+
+    // Airport routes are supplied by the atomic normalized snapshot. Draw their
+    // verified shape first, falling back to the ordered stop geometry when a
+    // provider has no shape. This is free, offline-capable data: no routing API
+    // or map-matching service is needed at runtime.
+    LaunchedEffect(uiState.airportBusRoutes, uiState.showAirportBuses) {
+        airportBusRouteOverlays.forEach { mapView.overlays.remove(it) }
+        airportBusRouteOverlays.clear()
+        if (uiState.showAirportBuses) {
+            uiState.airportBusRoutes.forEach { route ->
+                val points = (route.shape.sortedBy { it.sequence }.map { GeoPoint(it.latitude, it.longitude) }
+                    .ifEmpty { route.stops.sortedBy { it.sequence }.map { GeoPoint(it.latitude, it.longitude) } })
+                if (points.size < 2) return@forEach
+                val line = Polyline().apply {
+                    outlinePaint.color = parseHex(route.color.ifBlank { "#D97706" })
+                    outlinePaint.strokeWidth = 5f
+                    outlinePaint.strokeCap = Paint.Cap.ROUND
+                    outlinePaint.strokeJoin = Paint.Join.ROUND
+                    outlinePaint.alpha = 205
+                    setPoints(points)
+                }
+                airportBusRouteOverlays += line
+                mapView.overlays.add(0, line)
+            }
         }
         mapView.invalidate()
     }
