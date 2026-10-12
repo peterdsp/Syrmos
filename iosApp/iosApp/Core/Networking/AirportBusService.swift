@@ -51,19 +51,23 @@ enum AirportBusService {
 
     /// Unified operator data from the new normalized endpoint
     struct UnifiedOperatorData: Decodable {
-        let operator: String
+        let operatorId: String
         let routes: [UnifiedRoute]
         let vehicles: [UnifiedVehicle]
         let arrivals: [UnifiedArrival]
         let alerts: [UnifiedAlert]
         let source: String?
         let attribution: String?
+        enum CodingKeys: String, CodingKey {
+            case operatorId = "operator"
+            case routes, vehicles, arrivals, alerts, source, attribution
+        }
     }
 
     /// Normalized route metadata
     struct UnifiedRoute: Decodable, Identifiable {
         let id: String
-        let operator: String
+        let operatorId: String
         let route_id: String
         let public_name: String
         let public_name_en: String?
@@ -81,7 +85,7 @@ enum AirportBusService {
 
         enum CodingKeys: String, CodingKey {
             case id = "route_id"
-            case operator
+            case operatorId = "operator"
             case route_id
             case public_name
             case public_name_en
@@ -105,7 +109,7 @@ enum AirportBusService {
         let vehicle_id: String
         let line_id: String
         let route_id: String
-        let operator: String
+        let operatorId: String
         let latitude: Double
         let longitude: Double
         let heading: Double
@@ -121,7 +125,7 @@ enum AirportBusService {
             case vehicle_id
             case line_id
             case route_id
-            case operator
+            case operatorId = "operator"
             case latitude
             case longitude
             case heading
@@ -138,7 +142,7 @@ enum AirportBusService {
     struct UnifiedArrival: Decodable {
         let line_id: String
         let route_id: String
-        let operator: String
+        let operatorId: String
         let stop_id: String
         let stop_name: String
         let destination: String
@@ -153,12 +157,17 @@ enum AirportBusService {
         let confidence: String?
         let service_status: String?
         let attribution: String?
+        enum CodingKeys: String, CodingKey {
+            case line_id, route_id, operatorId = "operator", stop_id, stop_name
+            case destination, direction, scheduled_time, estimated_minutes, vehicle_id
+            case source, source_url, observed_at, freshness, confidence, service_status, attribution
+        }
     }
 
     /// Normalized alert
     struct UnifiedAlert: Decodable {
         let alert_id: String
-        let operator: String
+        let operatorId: String
         let title: String
         let summary: String
         let url: String?
@@ -172,6 +181,11 @@ enum AirportBusService {
         let summary_en: String?
         let valid_from: String?
         let valid_until: String?
+        enum CodingKeys: String, CodingKey {
+            case alert_id, operatorId = "operator", title, summary, url, severity
+            case source, source_url, observed_at, attribution, route_id, title_en, summary_en
+            case valid_from, valid_until
+        }
     }
 
     /// Unified response from /api/airport-buses
@@ -193,13 +207,17 @@ enum AirportBusService {
 
     /// Source information
     struct UnifiedSource: Decodable {
-        let operator: String?
+        let operatorId: String?
         let name: String?
         let source_url: String?
         let attribution: String?
         let is_live: Bool?
         let last_tested: String?
         let notes: String?
+        enum CodingKeys: String, CodingKey {
+            case operatorId = "operator"
+            case name, source_url, attribution, is_live, last_tested, notes
+        }
     }
 
     /// Unified airport bus data for all operators
@@ -212,7 +230,7 @@ enum AirportBusService {
         let linkForOSETH: URL?
 
         var isEmpty: Bool { operators.isEmpty }
-        func soonest(_ line: String, operator: String) -> Int? { operators[operator]?.etasByLine[line]?.first }
+        func soonest(_ line: String, operator operatorId: String) -> Int? { operators[operatorId]?.etasByLine[line]?.first }
     }
 
     struct OperatorData: Equatable {
@@ -223,14 +241,14 @@ enum AirportBusService {
         let routes: [UnifiedRoute]
         let source: String?
         let attribution: String?
-        let operator: String
+        let operatorId: String
     }
 
     struct ServiceAlert: Identifiable, Equatable {
         let id: String
         let title: String
         let summary: String
-        let operator: String
+        let operatorId: String
         let severity: String
         let url: URL?
 
@@ -242,7 +260,7 @@ enum AirportBusService {
 
     /// Source information for display
     struct SourceInfo: Equatable {
-        let operator: String
+        let operatorId: String
         let name: String
         let sourceUrl: URL?
         let attribution: String
@@ -269,10 +287,10 @@ enum AirportBusService {
     }
 
     /// Fetch data for a specific operator
-    static func fetchUnified(operator: String) async -> OperatorData? {
+    static func fetchUnified(operator operatorId: String) async -> OperatorData? {
         if SyrmosSchedulesStore.shared.offlineOnly { return nil }
 
-        guard let url = URL(string: "\(base)/api/airport-buses/\(operator)") else { return nil }
+        guard let url = URL(string: "\(base)/api/airport-buses/\(operatorId)") else { return nil }
         var req = URLRequest(url: url)
         req.timeoutInterval = 8
         do {
@@ -287,7 +305,7 @@ enum AirportBusService {
 
     /// Single operator payload
     struct UnifiedOperatorPayload: Decodable {
-        let operator: String
+        let operatorId: String
         let updated_at: String?
         let routes: [UnifiedRoute]
         let vehicles: [UnifiedVehicle]
@@ -297,6 +315,10 @@ enum AirportBusService {
         let attribution: String?
         let generated_at: String?
         let generation_duration: Double?
+        enum CodingKeys: String, CodingKey {
+            case operatorId = "operator", updated_at, routes, vehicles, arrivals, alerts
+            case source, attribution, generated_at, generation_duration
+        }
     }
 
     /// Reduce unified payload to simple structure
@@ -348,7 +370,7 @@ enum AirportBusService {
                     id: alert.alert_id,
                     title: alert.title,
                     summary: alert.summary,
-                    operator: alert.operator,
+                    operatorId: alert.operatorId,
                     severity: alert.severity ?? "info",
                     url: alert.url.flatMap { URL(string: $0) }
                 )
@@ -365,7 +387,7 @@ enum AirportBusService {
                 routes: routesForOp,
                 source: opData.source,
                 attribution: opData.attribution,
-                operator: opKey
+                operatorId: opKey
             )
             operatorsData[opKey] = operatorData
 
@@ -380,7 +402,7 @@ enum AirportBusService {
         // Process sources from payload
         for source in payload.sources ?? [] {
             let sourceInfo = SourceInfo(
-                operator: source.operator ?? "",
+                operatorId: source.operatorId ?? "",
                 name: source.name ?? "",
                 sourceUrl: source.source_url.flatMap { URL(string: $0) },
                 attribution: source.attribution ?? "",
@@ -440,7 +462,7 @@ enum AirportBusService {
                 id: alert.alert_id,
                 title: alert.title,
                 summary: alert.summary,
-                operator: alert.operator,
+                operatorId: alert.operatorId,
                 severity: alert.severity ?? "info",
                 url: alert.url.flatMap { URL(string: $0) }
             )
@@ -455,7 +477,7 @@ enum AirportBusService {
             routes: payload.routes,
             source: payload.source,
             attribution: payload.attribution,
-            operator: payload.operator
+            operatorId: payload.operatorId
         )
     }
 

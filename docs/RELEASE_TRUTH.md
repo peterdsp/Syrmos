@@ -1,5 +1,10 @@
 # Syrmos Verified Release Truth & Reconciliation Ledger
 
+> **Audit note (2026-10-13):** This ledger's historical tables below predate
+> `5063b5ea` / `v3.0.0-beta.13`. Do not use their older HEAD, tag, or store
+> claims as current beta.13 evidence until the beta.13 workflow, artifact,
+> processing, installation, and runtime checks are recorded separately.
+
 > Repository: `Syrmos` (`/Users/peterdsp/git/Syrmos`)  
 > Generated: October 2026 (Audit against branch `master` at commit `42689f42`)  
 > Audited across: Git tags (52 tags), GitHub Releases API (`gh release list`), `CHANGELOG.md`, `project.pbxproj`, `build.gradle.kts`, `RELEASE-EVIDENCE-3.0.0.md`, and CI workflows.
