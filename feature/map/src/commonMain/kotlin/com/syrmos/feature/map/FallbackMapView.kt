@@ -169,14 +169,14 @@ private fun DrawScope.drawFallbackMap(
                     moveTo(points.first().x, points.first().y)
                     for (point in points.drop(1)) lineTo(point.x, point.y)
                 }
-                drawPath(path, route.color.toComposeColor(), style = Stroke(width = (3f * scale).coerceIn(1.5f, 9f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(path, airportBusColor(route.color), style = Stroke(width = (3f * scale).coerceIn(1.5f, 9f), cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
             for (stop in route.stops) {
                 if (stop.latitude == 0.0 || stop.longitude == 0.0) continue
                 val p = latLonToScreen(stop.latitude, stop.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
                 if (p.x !in -40f..(canvasWidth + 40f) || p.y !in -40f..(canvasHeight + 40f)) continue
                 drawCircle(Color.White, radius = (5f * scale).coerceIn(3f, 12f), center = p)
-                drawCircle(route.color.toComposeColor(), radius = (3f * scale).coerceIn(2f, 8f), center = p)
+                drawCircle(airportBusColor(route.color), radius = (3f * scale).coerceIn(2f, 8f), center = p)
             }
         }
         for (bus in uiState.busVehicles) {
@@ -302,6 +302,13 @@ private fun DrawScope.drawFallbackMap(
         scale = scale,
         textMeasurer = textMeasurer,
     )
+}
+
+/** Airport-bus colours arrive from the normalized API as CSS-style hex strings. */
+private fun airportBusColor(raw: String): Color {
+    val value = raw.trim().removePrefix("#").removePrefix("0x")
+    val parsed = value.toLongOrNull(radix = 16) ?: return Color(0xFF0083C9)
+    return if (value.length <= 6) Color(0xFF000000L or parsed) else Color(parsed)
 }
 
 private fun DrawScope.drawSimulatedTrains(

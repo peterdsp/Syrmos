@@ -2282,30 +2282,133 @@ final class SyrmosBusAnnotation: NSObject, MKAnnotation {
 struct AirportBusVehicleDetailSheet: View {
     let vehicle: AirportBusVehicle
     let language: AppLanguage
+    @ObservedObject private var service = LiveAirportBusService.shared
+
+    private var route: AirportBusService.UnifiedRoute? {
+        service.unified?.operators.values
+            .flatMap(\.routes)
+            .first { $0.route_id == vehicle.lineId || $0.public_name == vehicle.lineId }
+    }
+
+    private var orderedStops: [AirportBusService.UnifiedStop] {
+        (route?.stops ?? []).sorted { ($0.sequence ?? .max) < ($1.sequence ?? .max) }
+    }
+
+    private var nextStop: AirportBusService.UnifiedStop? {
+        guard !orderedStops.isEmpty else { return nil }
+        return orderedStops.min {
+            distanceSquared($0.latitude, $0.longitude) < distanceSquared($1.latitude, $1.longitude)
+        }
+    }
+
+    private func distanceSquared(_ latitude: Double, _ longitude: Double) -> Double {
+        let dLat = latitude - vehicle.coordinate.latitude
+        let dLon = longitude - vehicle.coordinate.longitude
+        return dLat * dLat + dLon * dLon
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                Label(vehicle.lineId, systemImage: "bus.fill")
-                    .font(.title2.bold())
-                LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction") {
-                    Text(SyrmosBusAnnotation.directionText(vehicle.toAirport, lang: language))
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if let route {
+                        NavigationLink {
+                            AirportBusRouteTimetableSheet(route: route, language: language)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Label(vehicle.lineId, systemImage: "bus.fill")
+                                    .font(.title2.bold())
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(language == .greek ? "Άνοιγμα δρομολογίων ανά στάση" : "Opens timetable by stop")
+                    } else {
+                        Label(vehicle.lineId, systemImage: "bus.fill").font(.title2.bold())
+                    }
+                    LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction") {
+                        Text(SyrmosBusAnnotation.directionText(vehicle.toAirport, lang: language))
+                    }
+                    if let nextStop {
+                        LabeledContent(language == .greek ? "Επόμενη στάση" : "Next stop") {
+                            Text(nextStop.stop_name)
+                        }
+                    }
+                    if !orderedStops.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(language == .greek ? "Στάσεις διαδρομής" : "Route stops")
+                                .font(.headline)
+                            ForEach(orderedStops) { stop in
+                                HStack(spacing: 10) {
+                                    Image(systemName: stop.id == nextStop?.id ? "location.fill" : "circle.fill")
+                                        .foregroundStyle(stop.id == nextStop?.id ? .blue : .secondary)
+                                        .font(.caption)
+                                    Text(stop.stop_name)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    Text(language == .greek
+                         ? "Οι ώρες εμφανίζονται ανά στάση όταν παρέχονται από τον πάροχο. Η πραγματική κυκλοφορία μπορεί να προκαλέσει μικρή διαφορά λίγων λεπτών."
+                         : "Times are shown per stop when supplied by the operator. Real traffic can cause a small difference of a few minutes.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-                LabeledContent(language == .greek ? "Θέση" : "Position") {
-                    Text(String(format: "%.5f, %.5f", vehicle.coordinate.latitude, vehicle.coordinate.longitude))
-                        .monospacedDigit()
-                }
-                Text(language == .greek
-                     ? "Ζωντανό λεωφορείο. Άφιξη, ταχύτητα και επόμενη στάση εμφανίζονται μόνο όταν παρέχονται από τον πάροχο."
-                     : "Live bus. Arrival, speed and next stop are shown only when supplied by the operator.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Spacer()
+                .padding(20)
             }
-            .padding(20)
             .navigationTitle(language == .greek ? "Λεωφορείο" : "Bus")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+}
+
+struct AirportBusRouteTimetableSheet: View {
+    let route: AirportBusService.UnifiedRoute
+    let language: AppLanguage
+    @ObservedObject private var service = LiveAirportBusService.shared
+
+    private var stops: [AirportBusService.UnifiedStop] {
+        (route.stops ?? []).sorted { ($0.sequence ?? .max) < ($1.sequence ?? .max) }
+    }
+
+    private func time(for stop: AirportBusService.UnifiedStop) -> String {
+        // The current iOS cache exposes verified live ETAs by line. It does
+        // not expose verified clock times for every intermediate stop yet.
+        // Keep those cells explicitly unavailable instead of inventing times.
+        return language == .greek ? "Μη διαθέσιμο" : "Unavailable"
+    }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(stops) { stop in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(stop.stop_name)
+                            Text(language == .greek ? "Στάση \(stop.sequence ?? 0)" : "Stop \(stop.sequence ?? 0)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(time(for: stop)).font(.subheadline.bold()).monospacedDigit()
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(stop.stop_name), \(time(for: stop))")
+                }
+            } header: {
+                Text(language == .greek ? "Ώρες ανά στάση" : "Times by stop")
+            } footer: {
+                Text(language == .greek
+                     ? "Οι χρόνοι είναι οι διαθέσιμοι από τον πάροχο. Η πραγματική κίνηση μπορεί να προκαλέσει μικρή διαφορά λίγων λεπτών."
+                     : "These are the times currently supplied by the operator. Real traffic may cause a small difference of a few minutes.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle(route.public_name.isEmpty ? route.route_id : route.public_name)
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 

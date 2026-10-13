@@ -178,7 +178,9 @@ struct RootView: View {
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: kOnboardingCompletedKey)
 
     var body: some View {
-        if hasCompletedOnboarding {
+        if ProcessInfo.processInfo.arguments.contains("--syrmos-mockup-capture") {
+            MockupCaptureView()
+        } else if hasCompletedOnboarding {
             ContentView()
                 .modifier(WhatsNewPresenter())
         } else {
@@ -248,7 +250,11 @@ struct ContentView: View {
             }
             .tint(.syrmosPrimary)
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
+        // TabView owns the transition between tabs. Animating the entire
+        // ContentView as well caused two tab trees to be composited during a
+        // rapid switch on iOS 26, producing duplicated headers, status-bar
+        // content and a tab bar drawn over the outgoing screen. Keep tab
+        // selection atomic; individual controls may still animate locally.
         // Foldables and iPad (master plan, Ariadne): with room for two panes the
         // conversation docks as a trailing inspector beside the content; on a
         // compact width the system presents the same view as a sheet. One view,
@@ -391,4 +397,84 @@ private struct AriadneLauncherPill: View {
         }
         .buttonStyle(.plain)
     }
+}
+
+/// Deterministic presentation-only surface used to export the three Duo mockup images.
+struct MockupCaptureView: View {
+    @State private var screen: String
+    private let navy = Color(red: 0.04, green: 0.09, blue: 0.16)
+    private let orange = Color(red: 0.91, green: 0.45, blue: 0.16)
+    private let teal = Color(red: 0.05, green: 0.46, blue: 0.55)
+
+    init(screen: String? = nil) {
+        _screen = State(initialValue: screen ?? ProcessInfo.processInfo.environment["SYRMOS_MOCKUP_SCREEN"] ?? "home")
+    }
+
+    var body: some View {
+        ZStack {
+            navy.ignoresSafeArea()
+            switch screen {
+            case "map": map
+            case "explore": explore
+            default: home
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var home: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header("Good evening")
+                Text("Airport connections").font(.largeTitle.bold()).foregroundStyle(.white)
+                HStack(spacing: 10) { routeChip("X95", orange); routeChip("X93", orange); routeChip("X3", teal); routeChip("01X", teal) }
+                card { Label("Rain in progress", systemImage: "cloud.rain.fill").font(.headline).foregroundStyle(.white); Text("Athens · severe weather alert").font(.subheadline).foregroundStyle(.white.opacity(0.7)) }
+                card {
+                    Text("Next airport buses").font(.headline).foregroundStyle(.white)
+                    busRow("X95", "Syntagma → Airport", "6 min", orange)
+                    busRow("X3", "Mikra Metro → Airport", "12 min", teal)
+                    busRow("01X", "Airport → Thessaloniki", "18 min", teal)
+                }
+                Text("DEMO DATA · verified route presentation").font(.caption2).foregroundStyle(.white.opacity(0.45))
+            }.padding(24)
+        }
+    }
+
+    private var map: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header("Airport buses").padding(.horizontal, 24)
+            ZStack {
+                LinearGradient(colors: [navy, Color(red: 0.08, green: 0.2, blue: 0.25)], startPoint: .top, endPoint: .bottom)
+                Canvas { context, size in
+                    var p = Path(); p.move(to: CGPoint(x: 0, y: size.height * 0.72)); p.addCurve(to: CGPoint(x: size.width, y: size.height * 0.3), control1: CGPoint(x: size.width * 0.3, y: size.height * 0.5), control2: CGPoint(x: size.width * 0.7, y: size.height * 0.8)); context.stroke(p, with: .color(orange), lineWidth: 8)
+                    var q = Path(); q.move(to: CGPoint(x: 0, y: size.height * 0.3)); q.addCurve(to: CGPoint(x: size.width, y: size.height * 0.68), control1: CGPoint(x: size.width * 0.35, y: size.height * 0.7), control2: CGPoint(x: size.width * 0.7, y: size.height * 0.42)); context.stroke(q, with: .color(teal), lineWidth: 7)
+                }
+                VStack {
+                    HStack { stopLabel("Mikra Metro", teal); Spacer(); stopLabel("Airport", orange) }.padding(.horizontal, 42).padding(.top, 90)
+                    Spacer()
+                    HStack { stopLabel("Nea Elvetia", teal); Spacer(); stopLabel("Terminal 1", orange) }.padding(.horizontal, 90).padding(.bottom, 190)
+                }
+                VStack { Spacer(); card { HStack { Text("X3 · Thessaloniki Airport").font(.headline).foregroundStyle(.white); Spacer(); Text("DEMO").font(.caption.bold()).foregroundStyle(teal) }; Text("Mikra Metro ↔ Airport").foregroundStyle(.white.opacity(0.72)); Text("Bus stops · route geometry · direction verified").font(.caption).foregroundStyle(.white.opacity(0.55)) }.padding(20) }
+            }
+        }
+    }
+
+    private var explore: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header("Explore")
+                Text("Airport routes").font(.largeTitle.bold()).foregroundStyle(.white)
+                card { Text("Athens").font(.title3.bold()).foregroundStyle(.white); busRow("X95", "Syntagma ↔ Airport", "24/7", orange); busRow("X93", "Kifisos ↔ Airport", "24/7", orange) }
+                card { Text("Thessaloniki").font(.title3.bold()).foregroundStyle(.white); busRow("X3", "Mikra Metro ↔ Airport", "scheduled", teal); busRow("01X", "Airport ↔ City", "scheduled", teal); busRow("01N", "Night airport service", "scheduled", teal) }
+                card { Label("Airport bus stops", systemImage: "mappin.and.ellipse").font(.headline).foregroundStyle(.white); Text("Tap a stop for direction, verified arrivals and freshness.").foregroundStyle(.white.opacity(0.7)) }
+                Text("DEMO DATA · no live values shown in this capture").font(.caption2).foregroundStyle(.white.opacity(0.45))
+            }.padding(24)
+        }
+    }
+
+    private func header(_ title: String) -> some View { Text(title).font(.title2.bold()).foregroundStyle(.white).padding(.top, 18) }
+    private func card(@ViewBuilder _ content: () -> some View) -> some View { VStack(alignment: .leading, spacing: 10, content: content).padding(18).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
+    private func routeChip(_ text: String, _ color: Color) -> some View { Text(text).font(.caption.bold()).foregroundStyle(.white).padding(.horizontal, 12).padding(.vertical, 8).background(color, in: Capsule()) }
+    private func stopLabel(_ text: String, _ color: Color) -> some View { HStack(spacing: 6) { Circle().fill(color).frame(width: 12, height: 12); Text(text).font(.caption.bold()).foregroundStyle(.white).padding(.horizontal, 9).padding(.vertical, 6).background(.black.opacity(0.45), in: Capsule()) } }
+    private func busRow(_ line: String, _ title: String, _ eta: String, _ color: Color) -> some View { HStack { Text(line).font(.caption.bold()).foregroundStyle(.white).frame(width: 42, height: 28).background(color, in: Capsule()); Text(title).foregroundStyle(.white.opacity(0.85)); Spacer(); Text(eta).font(.caption.bold()).foregroundStyle(.white) }.padding(.vertical, 4) }
 }
