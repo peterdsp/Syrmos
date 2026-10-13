@@ -157,6 +157,36 @@ private fun DrawScope.drawFallbackMap(
         )
     }
 
+    // Airport buses use the authoritative snapshot geometry/stops. Keep them
+    // visually distinct from rail and render them on WASM as well as Android.
+    if (uiState.showAirportBuses) {
+        for (route in uiState.airportBusRoutes) {
+            val points = route.shape.sortedBy { it.sequence }
+                .filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }
+                .map { latLonToScreen(it.latitude, it.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale) }
+            if (points.size > 1) {
+                val path = Path().apply {
+                    moveTo(points.first().x, points.first().y)
+                    for (point in points.drop(1)) lineTo(point.x, point.y)
+                }
+                drawPath(path, route.color.toComposeColor(), style = Stroke(width = (3f * scale).coerceIn(1.5f, 9f), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+            for (stop in route.stops) {
+                if (stop.latitude == 0.0 || stop.longitude == 0.0) continue
+                val p = latLonToScreen(stop.latitude, stop.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+                if (p.x !in -40f..(canvasWidth + 40f) || p.y !in -40f..(canvasHeight + 40f)) continue
+                drawCircle(Color.White, radius = (5f * scale).coerceIn(3f, 12f), center = p)
+                drawCircle(route.color.toComposeColor(), radius = (3f * scale).coerceIn(2f, 8f), center = p)
+            }
+        }
+        for (bus in uiState.busVehicles) {
+            val p = latLonToScreen(bus.latitude, bus.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale)
+            if (p.x !in -60f..(canvasWidth + 60f) || p.y !in -60f..(canvasHeight + 60f)) continue
+            drawCircle(Color(0xFFE8792B), radius = (9f * scale).coerceIn(5f, 18f), center = p)
+            drawCircle(Color.White, radius = (5f * scale).coerceIn(3f, 10f), center = p)
+        }
+    }
+
     val dotRadius = (6f * scale).coerceIn(3f, 18f)
     val interchangeRadius = (9f * scale).coerceIn(5f, 26f)
     val selectedStation = uiState.selectedStation
