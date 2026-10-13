@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 /// Live OASA airport express-bus ETAs, from the Pi at /api/oasa-airport-buses.
 ///
@@ -35,9 +36,9 @@ enum AirportBusService {
         }
         do {
             guard let unified = await fetchUnified() else { return nil }
-            let etas = reduceUnified(unified).operators["oasa"]?.etasByLine ?? [:]
+            let etas = unified.operators["oasa"]?.etasByLine ?? [:]
             let live = LiveAirportBuses(
-                updatedAt: unified.updatedAt.flatMap { ISO8601DateFormatter().date(from: $0) },
+                updatedAt: unified.updatedAt,
                 etasByLine: etas
             )
             cache = (SyrmosClock.now, live)
@@ -66,7 +67,6 @@ enum AirportBusService {
 
     /// Normalized route metadata
     struct UnifiedRoute: Decodable, Identifiable {
-        let id: String
         let operatorId: String
         let route_id: String
         let public_name: String
@@ -82,10 +82,14 @@ enum AirportBusService {
         let source_url: String?
         let attribution: String?
         let observed_at: String?
+        let confidence: String?
+        let stops: [UnifiedStop]?
+        let shape: [UnifiedShapePoint]?
+        var id: String { route_id }
 
         enum CodingKeys: String, CodingKey {
-            case id = "route_id"
             case operatorId = "operator"
+            case route_id
             case public_name
             case public_name_en
             case public_name_el
@@ -98,13 +102,27 @@ enum AirportBusService {
             case source
             case source_url
             case attribution
-            case observed_at
+            case observed_at, confidence, stops, shape
         }
+    }
+
+    struct UnifiedStop: Decodable, Identifiable {
+        let stop_id: String
+        let stop_name: String
+        let latitude: Double
+        let longitude: Double
+        let sequence: Int?
+        var id: String { stop_id }
+    }
+
+    struct UnifiedShapePoint: Decodable {
+        let latitude: Double
+        let longitude: Double
+        let sequence: Int?
     }
 
     /// Normalized vehicle position
     struct UnifiedVehicle: Decodable, Identifiable {
-        let id: String
         let vehicle_id: String
         let line_id: String
         let route_id: String
@@ -118,9 +136,10 @@ enum AirportBusService {
         let confidence: String?
         let attribution: String?
         let to_airport: Bool?
+        var id: String { vehicle_id }
 
         enum CodingKeys: String, CodingKey {
-            case id = "vehicle_id"
+            case vehicle_id
             case line_id
             case route_id
             case operatorId = "operator"
@@ -330,7 +349,7 @@ enum AirportBusService {
         // Process each operator
         for (opKey, opData) in payload.operators ?? [:] {
             var etasByLine: [String: [Int]] = [:]
-            var vehiclesForOp: [AirportBusVehicles.AirportBusVehicle] = []
+            var vehiclesForOp: [AirportBusVehicle] = []
             var alertsForOp: [ServiceAlert] = []
             var routesForOp: [UnifiedRoute] = opData.routes
 
@@ -352,7 +371,7 @@ enum AirportBusService {
             for vehicle in opData.vehicles {
                 if vehicle.latitude != 0 && vehicle.longitude != 0 {
                     let coord = CLLocationCoordinate2D(latitude: vehicle.latitude, longitude: vehicle.longitude)
-                    let vehicleId = AirportBusVehicles.AirportBusVehicle(
+                    let vehicleId = AirportBusVehicle(
                         id: vehicle.vehicle_id,
                         lineId: vehicle.line_id,
                         coordinate: coord,
@@ -424,7 +443,7 @@ enum AirportBusService {
     /// Reduce single operator payload
     static func reduceOperator(_ payload: UnifiedOperatorPayload) -> OperatorData {
         var etasByLine: [String: [Int]] = [:]
-        var vehiclesForOp: [AirportBusVehicles.AirportBusVehicle] = []
+        var vehiclesForOp: [AirportBusVehicle] = []
         var alertsForOp: [ServiceAlert] = []
 
         // Process arrivals
@@ -444,7 +463,7 @@ enum AirportBusService {
         for vehicle in payload.vehicles {
             if vehicle.latitude != 0 && vehicle.longitude != 0 {
                 let coord = CLLocationCoordinate2D(latitude: vehicle.latitude, longitude: vehicle.longitude)
-                let vehicleId = AirportBusVehicles.AirportBusVehicle(
+                let vehicleId = AirportBusVehicle(
                     id: vehicle.vehicle_id,
                     lineId: vehicle.line_id,
                     coordinate: coord,

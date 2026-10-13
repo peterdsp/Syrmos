@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import CoreLocation
 
 struct HomeView: View {
     @StateObject private var stasyService = STASYService()
@@ -113,6 +114,12 @@ struct HomeView: View {
                 }
             )
             .background(Color.syrmosBackground)
+            // The iOS 26 glass tab bar is visually floating/translucent. Keep
+            // the final card in the scrollable content area instead of letting
+            // the bar cover its text and actions.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 88)
+            }
             .sheet(isPresented: $showTrackPicker) {
                 TrackPickerSheet(onDismiss: { showTrackPicker = false })
             }
@@ -129,7 +136,12 @@ struct HomeView: View {
             }
             .task {
                 locationService.requestIfNeeded()
-                await weather.refresh()
+                // This first refresh is only a no-location fallback. Once
+                // Core Location delivers a fix, the onChange below refreshes
+                // the exact user position instead of leaving Athens cached.
+                if locationService.currentLocation == nil {
+                    await weather.refresh()
+                }
                 await stasyService.fetchAnnouncements()
                 await railNewsService.fetchNews()
 
@@ -140,6 +152,16 @@ struct HomeView: View {
                     alerts: stasyService.announcements
                 )
                 handleDeepLink(deepLinkRouter.pending, proxy: proxy)
+            }
+            .onChange(of: locationService.currentLocation) { _, location in
+                guard let location else { return }
+                Task {
+                    await weather.refresh(
+                        latitude: location.coordinate.latitude,
+                        longitude: location.coordinate.longitude,
+                        placeName: nearestWeatherPlace(for: location)
+                    )
+                }
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
@@ -194,6 +216,10 @@ struct HomeView: View {
             .onChange(of: selectedNearbyId) { _, _ in persistRestoration() }
             }
         }
+    }
+
+    private func nearestWeatherPlace(for location: CLLocation) -> String {
+        locationService.nearbyStations.first?.station.displayName ?? "Your location"
     }
 
     private func handleDeepLink(

@@ -1318,6 +1318,7 @@ private struct StopsDisclosure: View {
 /// the same pane rectangles. `pairs` is false for single-focus tasks (forms).
 struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     var pairs: Bool = true
+    var fullBleed: Bool = false
     /// Whether the companion currently carries content. An empty companion (an
     /// invitation card) is worth a column beside the task, never the upper
     /// region of a stacked pair; when false a stacked result renders the single
@@ -1355,8 +1356,8 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
             // Compact widths keep the full width (the views own their 16 pt
             // gutters); only a wider window is centred to the readable column.
             combined()
-                .frame(maxWidth: Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
-                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity)
+                .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
                 .frame(maxWidth: .infinity)
                 .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .sideBySide:
@@ -1364,8 +1365,8 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)
         case .stacked where !companionHasContent:
             combined()
-                .frame(maxWidth: Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
-                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity)
+                .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
                 .frame(maxWidth: .infinity)
                 .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
         case .stacked:

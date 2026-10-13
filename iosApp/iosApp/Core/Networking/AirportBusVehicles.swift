@@ -21,6 +21,7 @@ final class LiveAirportBusService: ObservableObject {
     static let shared = LiveAirportBusService()
 
     @Published var vehicles: [AirportBusVehicle] = []
+    @Published var unified: AirportBusService.UnifiedAirportBuses?
 
     private var task: Task<Void, Never>?
 
@@ -49,8 +50,9 @@ final class LiveAirportBusService: ObservableObject {
         }
         do {
             guard let unified = await AirportBusService.fetchUnified(),
-                  let oasa = unified.operators["oasa"] else { return false }
-            vehicles = oasa.vehicles
+                  !unified.operators.isEmpty else { return false }
+            self.unified = unified
+            vehicles = unified.operators.values.flatMap(\.vehicles)
             return true
         } catch {
             // Keep the last frame on transient errors.

@@ -183,7 +183,7 @@ struct UnifiedAirportBusDetailSheet: View {
     }
 
     private var color: Color {
-        Color(hex: detail.colorHex)
+        Color(hex: detail.colorHex) ?? .syrmosPrimary
     }
 
     var body: some View {
@@ -220,7 +220,7 @@ struct UnifiedAirportBusDetailSheet: View {
                     // Vehicle positions map (if available)
                     if detail.hasVehicles && !detail.vehiclePositions.isEmpty && airportCoordinate != nil {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Live vehicle positions".localized(language))
+                            Text(detailText(language, "Live vehicle positions", "Ζωντανές θέσεις λεωφορείων", "Pozicionet e autobusëve", "Posizioni autobus in tempo reale"))
                                 .font(.subheadline).foregroundStyle(.secondary)
                             VehicleMapView(
                                 vehicles: detail.vehiclePositions,
@@ -240,7 +240,7 @@ struct UnifiedAirportBusDetailSheet: View {
                     // Alerts section
                     if !detail.alerts.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Service alerts".localized(language))
+                            Text(detailText(language, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio"))
                                 .font(.headline)
                             ForEach(detail.alerts) { alert in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -252,7 +252,7 @@ struct UnifiedAirportBusDetailSheet: View {
                                         Button {
                                             openURL(url)
                                         } label: {
-                                            Text("More information".localized(language))
+                                            Text(detailText(language, "More information", "Περισσότερες πληροφορίες", "Më shumë informacion", "Maggiori informazioni"))
                                                 .font(.caption)
                                         }
                                     }
@@ -271,7 +271,7 @@ struct UnifiedAirportBusDetailSheet: View {
                     // Freshness and attribution
                     VStack(alignment: .leading, spacing: 4) {
                         if let freshness = detail.freshness {
-                            Text("Updated \(Int(freshness)) min ago".localized(language))
+                            Text(detailText(language, "Updated \(Int(freshness)) min ago", "Ενημερώθηκε πριν από \(Int(freshness)) λεπτά", "Përditësuar para \(Int(freshness)) minutash", "Aggiornato \(Int(freshness)) min fa"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         if let attribution = detail.attribution {

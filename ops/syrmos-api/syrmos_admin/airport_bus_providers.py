@@ -195,6 +195,10 @@ class NormalizedRoute:
     from_airport_stop_ids: list[int] = field(default_factory=list)
     direction: Direction = Direction.UNKNOWN
     is_operational: bool = True
+    # Static geometry from the authoritative operator feed. Kept on the
+    # snapshot so clients can render offline without calling a provider.
+    stops: list[dict[str, Any]] = field(default_factory=list)
+    shape: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -565,6 +569,8 @@ class OasaAirportProvider(AirportTransitProvider):
                 source_url=self.source_url,
                 attribution=self.attribution,
                 observed_at=now,
+                stops=[{"stop_id": s.get("stop_id"), "stop_name": s.get("stop_name"), "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]), "sequence": i} for i, s in enumerate(gtfs["stops"]) if s.get("stop_lat") and s.get("stop_lon")],
+                shape=gtfs["shape"],
             )
             routes.append(route)
 
@@ -599,6 +605,8 @@ class OasaAirportProvider(AirportTransitProvider):
             source_url=self.source_url,
             attribution=self.attribution,
             observed_at=now,
+            stops=[{"stop_id": s.get("stop_id"), "stop_name": s.get("stop_name"), "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]), "sequence": i} for i, s in enumerate(gtfs["stops"]) if s.get("stop_lat") and s.get("stop_lon")],
+            shape=gtfs["shape"],
         )
 
     def fetch_stops(self, route_id: str) -> list[dict[str, Any]]:
@@ -807,7 +815,7 @@ class OasaAirportProvider(AirportTransitProvider):
 
 
 # =============================================================================
-# OSETH Provider Implementation (Placeholder)
+# OSETH provider implementation
 # =============================================================================
 
 class OsethAirportProvider(AirportTransitProvider):
@@ -815,31 +823,19 @@ class OsethAirportProvider(AirportTransitProvider):
 
     Uses the OSETH/OASTH API for live data.
 
-    Based on the OASA Telematics pattern, the OSETH API likely provides:
-    - getStopArrivals: Get arrivals at a stop
-    - getBusLocation: Get vehicle positions for a route
-    - webGetStops: Get ordered stops for a route
-
-    API documentation reference: https://oasth.readthedocs.io/en/latest/live-data.html
-    Live endpoint: https://oseth.com.gr/el/telematics-api/
-
-    Known routes for Thessaloniki:
-    - X3: Airport <-> Mikra Metro (new with Line 2 extension)
-    - 2X: Airport <-> Nea Elvetia Metro
-
-    Note: The API is likely geo-blocked to Greek IPs. This provider
-    is designed to run on the Pi in Greece.
-
-    See docs/data/airport-bus-provenance.md for validation status.
+    GTFS-backed scheduled routes and geometry.  The public OSETH telematics
+    page is retained as the source link, but no undocumented live endpoint is
+    called: live fields remain unavailable until an endpoint contract is
+    verified against the official service.
     """
 
-    # Official OSETH web telematics API. The legacy api.oseth.gr hostname is
-    # not resolvable; the public site serves JSON under this same-origin path.
+    # Official OSETH telematics documentation. No undocumented endpoint is
+    # called until its response contract is verified.
     API_BASE = "https://oseth.com.gr/el/telematics-api/"
     USER_AGENT = "syrmos-airport-bus-provider/1.0 (+https://syrmos.peterdsp.dev)"
     REQUEST_TIMEOUT = 15.0
     GTFS_URL = "https://data.gov.gr/dataset/42c9a7da-c86c-48b1-914c-f340e8bef00d/resource/28c807ed-ef95-441a-966c-51c0eb6ac86f/download/20261002_gtfs.zip"
-    GTFS_ROUTE_IDS = {"2X": ("02X_0745_1_3", "02X_0745_2_3"), "X3": ("03Χ_9718_1_3", "03Χ_9718_2_3")}
+    AIRPORT_ROUTE_NAMES = {"01X", "01N", "1N", "02X", "03X", "X3", "79", "79E"}
 
     # Thessaloniki airport code
     AIRPORT_CODE = "SKG"
@@ -848,13 +844,7 @@ class OsethAirportProvider(AirportTransitProvider):
     # product identifier until the official stop catalogue is imported.
     AIRPORT_STOP = "THS_AIR"
 
-    # Legacy route-code mapping retained for the existing normalized contract.
-    # The official API uses route-instance IDs (for example 01_7429_2_3), not
-    # the numeric OASA-style codes used by the old implementation.
-    ROUTE_CODES = {
-        "X3": {"to_airport": [101], "from_airport": [102]},
-        "2X": {"to_airport": [201], "from_airport": [202]},
-    }
+    ROUTE_CODES = {}
 
     # All route codes for querying vehicle positions
     ALL_ROUTE_CODES = []
@@ -945,11 +935,20 @@ class OsethAirportProvider(AirportTransitProvider):
         self._gtfs_cache = {"routes": airport_routes, "trips": by_trip, "stop_times": stop_times, "stops": stops, "shapes": shapes}
         return self._gtfs_cache
 
+    @staticmethod
+    def _display_route_id(route: dict[str, Any]) -> str:
+        """Return the official display code, normalizing Greek chi to X."""
+        name = (route.get("route_short_name") or route.get("route_id") or "").strip().upper()
+        return name.replace("Χ", "X")
+
+    def _airport_routes(self) -> list[dict[str, Any]]:
+        feed = self._fetch_gtfs()
+        return [r for r in feed["routes"] if self._display_route_id(r) in self.AIRPORT_ROUTE_NAMES]
+
     def _gtfs_route(self, route_id: str) -> Optional[dict[str, Any]]:
         try:
             feed = self._fetch_gtfs()
-            ids = set(self.GTFS_ROUTE_IDS.get(route_id, ()))
-            route = next((r for r in feed["routes"] if r["route_id"] in ids), None)
+            route = next((r for r in self._airport_routes() if self._display_route_id(r) == route_id.upper().replace("Χ", "X")), None)
             if not route:
                 return None
             trip = next(t for t in feed["trips"].values() if t["route_id"] == route["route_id"])
@@ -961,7 +960,7 @@ class OsethAirportProvider(AirportTransitProvider):
             logger.warning("OSETH GTFS load failed: %s", exc)
             return None
         except Exception as e:
-            logger.error(f"OSETH unexpected error fetching {url}: {e}")
+            logger.error("OSETH unexpected GTFS parsing error: %s", e)
             return None
 
     def discover_routes(self) -> list[NormalizedRoute]:
@@ -969,8 +968,12 @@ class OsethAirportProvider(AirportTransitProvider):
         routes = []
         now = datetime.now(timezone.utc)
 
-        for route_id, metadata in self.ROUTE_METADATA.items():
-            codes = self.ROUTE_CODES.get(route_id, {})
+        for route in self._airport_routes():
+            route_id = self._display_route_id(route)
+            metadata = self.ROUTE_METADATA.get(route_id, {"public_name": route.get("route_long_name", route_id), "origin": "Makedonia Airport", "destination": route.get("route_long_name", route_id), "color": "#0E7490"})
+            gtfs = self._gtfs_route(route_id)
+            if not gtfs:
+                continue
             route = NormalizedRoute(
                 operator=Operator.OSETH,
                 route_id=route_id,
@@ -981,13 +984,13 @@ class OsethAirportProvider(AirportTransitProvider):
                 destination=metadata["destination"],
                 airport=self.AIRPORT_CODE,
                 color=metadata["color"],
-                to_airport_route_codes=codes.get("to_airport", []),
-                from_airport_route_codes=codes.get("from_airport", []),
+                to_airport_route_codes=[],
+                from_airport_route_codes=[],
                 to_airport_stop_ids=[],
                 from_airport_stop_ids=[],
                 direction=Direction.UNKNOWN,
                 is_operational=True,
-                source="oseth_api",
+                source="oseth_gtfs",
                 source_url=self.source_url,
                 attribution=self.attribution,
                 observed_at=now,
@@ -998,11 +1001,10 @@ class OsethAirportProvider(AirportTransitProvider):
 
     def fetch_route_metadata(self, route_id: str) -> Optional[NormalizedRoute]:
         """Fetch metadata for a specific route."""
-        if route_id not in self.ROUTE_METADATA:
+        gtfs = self._gtfs_route(route_id)
+        if not gtfs:
             return None
-
-        metadata = self.ROUTE_METADATA[route_id]
-        codes = self.ROUTE_CODES.get(route_id, {})
+        metadata = self.ROUTE_METADATA.get(route_id, {"public_name": gtfs["route"].get("route_long_name", route_id), "origin": "Makedonia Airport", "destination": gtfs["route"].get("route_long_name", route_id), "color": "#0E7490"})
         now = datetime.now(timezone.utc)
 
         return NormalizedRoute(
@@ -1015,13 +1017,13 @@ class OsethAirportProvider(AirportTransitProvider):
             destination=metadata["destination"],
             airport=self.AIRPORT_CODE,
             color=metadata["color"],
-            to_airport_route_codes=codes.get("to_airport", []),
-            from_airport_route_codes=codes.get("from_airport", []),
+            to_airport_route_codes=[],
+            from_airport_route_codes=[],
             to_airport_stop_ids=[],
             from_airport_stop_ids=[],
             direction=Direction.UNKNOWN,
             is_operational=True,
-            source="oseth_api",
+            source="oseth_gtfs",
             source_url=self.source_url,
             attribution=self.attribution,
             observed_at=now,
@@ -1033,9 +1035,6 @@ class OsethAirportProvider(AirportTransitProvider):
         For now, returns the known airport stop and metro interchange stops
         based on seed_thessaloniki_airport_buses.py.
         """
-        if route_id not in self.ROUTE_CODES:
-            return []
-
         gtfs = self._gtfs_route(route_id)
         if gtfs:
             direction = "to_airport" if route_id == "X3" else "from_airport"
@@ -1047,42 +1046,11 @@ class OsethAirportProvider(AirportTransitProvider):
                 "sequence": i + 1, "direction": direction,
             } for i, s in enumerate(gtfs["stops"])]
 
-        # known stops from database seeding
-        route_metadata = self.ROUTE_METADATA.get(route_id, {})
-        origin = route_metadata.get("origin", "")
-        destination = route_metadata.get("destination", "")
+        # No guessed fallback geometry or stops: offline data is only valid
+        # when the official feed was successfully loaded.
+        return []
 
-        # Return simplified stop information
-        # Airport stop
-        airport_stop = {
-            "stop_id": self.AIRPORT_STOP,
-            "stop_name": origin,
-            "stop_name_el": route_metadata.get("origin_el", origin),
-            "latitude": 40.51972,
-            "longitude": 22.97083,
-            "sequence": 1,
-            "direction": "both",
-        }
-
-        # Metro interchange stop. These coordinates are from the bundled
-        # Thessaloniki station catalogue (the same source used by the offline
-        # map). Never emit 0/0: clients correctly reject null-island points.
-        metro_coordinates = {
-            "X3": (40.567590, 22.966672),       # TM2_MIK / Mikra
-            "2X": (40.593231, 22.968863),       # TM1_NEL / Nea Elvetia
-        }
-        latitude, longitude = metro_coordinates[route_id]
-        metro_stop = {
-            "stop_id": f"THS_{destination.upper().replace(' ', '_')}",
-            "stop_name": destination,
-            "stop_name_el": route_metadata.get("destination_el", destination),
-            "latitude": latitude,
-            "longitude": longitude,
-            "sequence": 2,
-            "direction": "both",
-        }
-
-        return [airport_stop, metro_stop]
+        return []
 
     def fetch_shape(self, route_id: str) -> list[dict[str, Any]]:
         gtfs = self._gtfs_route(route_id)
@@ -1094,136 +1062,24 @@ class OsethAirportProvider(AirportTransitProvider):
         The official website exposes route-instance metadata here; live stop
         arrivals are not the legacy getStopArrivals contract.
         """
-        arrivals = []
-        now = datetime.now(timezone.utc)
-
-        # Use the airport stop if no specific stop is requested
-        query_stop = stop_id if stop_id else self.AIRPORT_STOP
-
-        data = self._fetch_json(f"{self.API_BASE}/stop/{query_stop}/arrivals?language=el")
-        if not isinstance(data, list):
-            # API not validated yet, return empty
-            logger.debug(f"OSETH getStopArrivals returned non-list for stop {query_stop}")
-            return []
-
-        for item in data:
-            try:
-                # Assuming similar response format to OASA
-                route_code = int(item.get("route_code", 0))
-                line_id = self._route_code_to_line_id(route_code)
-                if not line_id:
-                    # Try to match by route_code in known codes
-                    line_id = self._find_line_by_route_code(route_code)
-                    if not line_id:
-                        continue
-
-                minutes_away = clamp_eta(int(item.get("btime2", 0) or 0))
-                vehicle_id = str(item.get("veh_code", "") or "")
-
-                metadata = self.ROUTE_METADATA.get(line_id, {})
-                direction = self._infer_direction(route_code, line_id)
-
-                arrival = NormalizedArrival(
-                    line_id=line_id,
-                    route_id=line_id,
-                    operator=Operator.OSETH,
-                    stop_id=str(query_stop),
-                    stop_name=metadata.get("origin", "Makedonia Airport") if query_stop == self.AIRPORT_STOP else f"Stop {query_stop}",
-                    destination=metadata.get("destination", "Unknown"),
-                    direction=direction,
-                    scheduled_time=None,
-                    estimated_minutes=minutes_away if minutes_away >= 0 else None,
-                    vehicle_id=vehicle_id if vehicle_id else None,
-                    source="oseth_api",
-                    source_url=self.source_url,
-                    observed_at=now,
-                    freshness=0.0,
-                    confidence=ConfidenceLevel.LIVE if minutes_away is not None else ConfidenceLevel.UNKNOWN,
-                    service_status=ServiceStatus.OPERATIONAL,
-                    attribution=self.attribution,
-                )
-                arrivals.append(arrival)
-            except (KeyError, ValueError, TypeError):
-                continue
-
-        return arrivals
+        # OSETH's public documentation does not publish a stable, validated
+        # arrivals contract. Do not call guessed paths or invent ETAs.
+        logger.info("OSETH live arrivals unavailable: no verified endpoint contract")
+        return []
 
     def fetch_vehicles(self, route_id: Optional[str] = None) -> list[NormalizedVehicle]:
         """Fetch live vehicle positions for all airport routes.
 
         If route_id is specified, only fetch vehicles for that route.
         Otherwise, fetch vehicles for all known airport routes.
-        Vehicle telemetry is served by the official OSETH site, not the old
-        api.oseth.gr getBusLocation endpoint.
+        Vehicle telemetry is unavailable until OSETH publishes a verified
+        response contract.
         """
-        vehicles = []
-        now = datetime.now(timezone.utc)
-
-        # Get all route codes or filter to the specified route
-        if route_id and route_id in self.ROUTE_CODES:
-            route_codes = (
-                self.ROUTE_CODES[route_id]["to_airport"] +
-                self.ROUTE_CODES[route_id]["from_airport"]
-            )
-        else:
-            route_codes = self.ALL_ROUTE_CODES
-
-        # Fetch positions for each route code
-        for code in route_codes:
-            data = self._fetch_json(f"{self.API_BASE}?act=getBusLocation&p1={code}")
-            if not isinstance(data, list):
-                continue
-
-            for item in data:
-                try:
-                    veh_no = str(item.get("VEH_NO", "") or "")
-                    line_id = self._route_code_to_line_id(int(item.get("ROUTE_CODE", code)))
-                    if not line_id:
-                        line_id = self._find_line_by_route_code(code)
-                        if not line_id:
-                            continue
-
-                    lat = float(item.get("CS_LAT", 0) or 0)
-                    lng = float(item.get("CS_LNG", 0) or 0)
-                    heading = float(item.get("VEH_HEADING", 0) or 0)
-
-                    # Skip invalid coordinates (null island)
-                    if lat == 0 and lng == 0:
-                        continue
-
-                    # Parse vehicle observation timestamp
-                    try:
-                        vehicle_ts_str = str(item.get("CS_DATE", ""))
-                        if vehicle_ts_str:
-                            vehicle_ts = validate_timestamp(vehicle_ts_str)
-                        else:
-                            vehicle_ts = now
-                    except ValidationError:
-                        vehicle_ts = now
-
-                    direction = self._infer_direction(code, line_id)
-                    to_airport = direction == Direction.TO_AIRPORT
-
-                    vehicle = NormalizedVehicle(
-                        vehicle_id=veh_no,
-                        line_id=line_id,
-                        route_id=line_id,
-                        operator=Operator.OSETH,
-                        latitude=lat,
-                        longitude=lng,
-                        heading=heading,
-                        to_airport=to_airport if direction != Direction.UNKNOWN else None,
-                        observed_at=vehicle_ts,
-                        source="oseth_api",
-                        source_url=self.source_url,
-                        confidence=ConfidenceLevel.LIVE,
-                        attribution=self.attribution,
-                    )
-                    vehicles.append(vehicle)
-                except (KeyError, ValueError, TypeError):
-                    continue
-
-        return vehicles
+        # No verified public vehicle endpoint is available. Returning an empty
+        # list lets the snapshot advertise scheduled geometry without claiming
+        # live positions.
+        logger.info("OSETH live vehicles unavailable: no verified endpoint contract")
+        return []
 
     def fetch_alerts(self, route_id: Optional[str] = None) -> list[NormalizedAlert]:
         """Fetch service alerts for OSETH airport buses.

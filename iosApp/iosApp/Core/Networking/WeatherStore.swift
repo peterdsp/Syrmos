@@ -21,7 +21,9 @@ enum WeatherCondition {
     /// contact numbers. Mirrors WeatherCondition.isSevere in KMP.
     var isSevere: Bool {
         switch self {
-        case .showers, .thunderstorm, .snow: return true
+        // Rain is actionable travel weather in Syrmos: the Home warning and
+        // weather notification must not wait for a thunderstorm code.
+        case .drizzle, .rain, .showers, .thunderstorm, .snow: return true
         default: return false
         }
     }
@@ -78,6 +80,7 @@ final class WeatherStore: ObservableObject {
 
     private static let athens = CLLocationCoordinate2D(latitude: 37.9838, longitude: 23.7275)
     private var lastFetch: Date?
+    private var lastFetchCoordinate: CLLocationCoordinate2D?
 
     private init() {}
 
@@ -86,7 +89,12 @@ final class WeatherStore: ObservableObject {
     func refresh(latitude: Double = athens.latitude,
                  longitude: Double = athens.longitude,
                  placeName: String = "Athens") async {
-        if let last = lastFetch, SyrmosClock.now.timeIntervalSince(last) < 60 { return }
+        if let last = lastFetch, SyrmosClock.now.timeIntervalSince(last) < 60,
+           let previous = lastFetchCoordinate {
+            let moved = CLLocation(latitude: previous.latitude, longitude: previous.longitude)
+                .distance(from: CLLocation(latitude: latitude, longitude: longitude))
+            if moved < 500 { return }
+        }
         guard var comps = URLComponents(string: "https://api.open-meteo.com/v1/forecast") else { return }
         comps.queryItems = [
             .init(name: "latitude", value: String(latitude)),
@@ -113,6 +121,7 @@ final class WeatherStore: ObservableObject {
             )
             snapshot = fresh
             lastFetch = SyrmosClock.now
+            lastFetchCoordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
             // Mirror into the App Group so the Weather + Alerts widget shows
             // real conditions instead of the offline placeholder.
             WidgetBridge.publishWeather(

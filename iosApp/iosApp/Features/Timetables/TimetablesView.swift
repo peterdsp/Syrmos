@@ -641,23 +641,26 @@ private struct AirportRouteMapCard: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 8) {
-                ForEach(routes, id: \.self) { route in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { selectedRoute = route }
-                    } label: {
-                        Text(route)
-                            // Atomic chip: a code such as X93 never wraps mid-code.
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(selectedRoute == route ? .white : routeColor(route))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 7)
-                            .background(selectedRoute == route ? routeColor(route) : routeColor(route).opacity(0.12), in: Capsule())
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(routes, id: \.self) { route in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { selectedRoute = route }
+                        } label: {
+                            Text(route)
+                                // Atomic chip: a code such as X93 never wraps mid-code.
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(selectedRoute == route ? .white : routeColor(route))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(selectedRoute == route ? routeColor(route) : routeColor(route).opacity(0.12), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 2)
             }
 
             // Endpoints line: real origin -> Airport, so the strip below reads

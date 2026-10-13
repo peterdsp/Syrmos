@@ -584,38 +584,18 @@ class TestOsethProvider(unittest.TestCase):
         self.assertEqual(provider.attribution, "Live bus data from OSETH/OASTH")
 
     def test_oseth_provider_discover_routes(self):
-        """Test discovering routes."""
+        """Unavailable feeds produce no guessed routes."""
         provider = OsethAirportProvider()
-        routes = provider.discover_routes()
-        
-        self.assertEqual(len(routes), 2)
-        route_ids = [r.route_id for r in routes]
-        self.assertIn("X3", route_ids)
-        self.assertIn("2X", route_ids)
-        
-        for route in routes:
-            self.assertEqual(route.operator, Operator.OSETH)
-            self.assertEqual(route.airport, "SKG")
-            self.assertEqual(route.color, "#0E7490")
+        with patch.object(provider, "_fetch_gtfs", return_value={"routes": [], "trips": {}, "stop_times": [], "stops": {}, "shapes": {}}):
+            self.assertEqual(provider.discover_routes(), [])
 
     def test_oseth_provider_fetch_route_metadata(self):
         """Test fetching metadata for a specific route."""
         provider = OsethAirportProvider()
         
-        # Test X3 route
+        # No network and no bundled feed means no fabricated metadata.
         metadata = provider.fetch_route_metadata("X3")
-        self.assertIsNotNone(metadata)
-        self.assertEqual(metadata.route_id, "X3")
-        self.assertEqual(metadata.operator, Operator.OSETH)
-        self.assertEqual(metadata.origin, "Makedonia Airport")
-        self.assertEqual(metadata.destination, "Mikra")
-        
-        # Test 2X route
-        metadata = provider.fetch_route_metadata("2X")
-        self.assertIsNotNone(metadata)
-        self.assertEqual(metadata.destination, "Nea Elvetia")
-        
-        # Test unknown route
+        self.assertIsNone(metadata)
         metadata = provider.fetch_route_metadata("UNKNOWN")
         self.assertIsNone(metadata)
 
@@ -623,16 +603,7 @@ class TestOsethProvider(unittest.TestCase):
         """Test fetching stops for a route."""
         provider = OsethAirportProvider()
         
-        # Should return airport stop and metro interchange
-        stops = provider.fetch_stops("X3")
-        self.assertEqual(len(stops), 2)
-        
-        # First stop should be the airport
-        self.assertEqual(stops[0]["stop_id"], "THS_AIR")
-        self.assertIn("Makedonia", stops[0]["stop_name"] or "")
-        
-        # Second stop should be the metro interchange
-        self.assertTrue(stops[1]["stop_id"].startswith("THS_"))
+        self.assertEqual(provider.fetch_stops("X3"), [])
 
     def test_oseth_provider_fetch_stops_unknown_route(self):
         """Test fetching stops for unknown route."""
@@ -668,28 +639,18 @@ class TestOsethProvider(unittest.TestCase):
         """Test route code to line ID mapping."""
         provider = OsethAirportProvider()
         
-        # Test known route codes
-        self.assertEqual(provider._route_code_to_line_id(101), "X3")
-        self.assertEqual(provider._route_code_to_line_id(102), "X3")
-        self.assertEqual(provider._route_code_to_line_id(201), "2X")
-        self.assertEqual(provider._route_code_to_line_id(202), "2X")
-        
-        # Test unknown route code
+        # Numeric OSETH-style codes are not part of the verified contract.
+        self.assertIsNone(provider._route_code_to_line_id(101))
+        self.assertIsNone(provider._route_code_to_line_id(201))
         self.assertIsNone(provider._route_code_to_line_id(999))
 
     def test_oseth_provider_direction_inference(self):
         """Test direction inference from route code."""
         provider = OsethAirportProvider()
         
-        # Test to airport direction
-        self.assertEqual(provider._infer_direction(101, "X3"), Direction.TO_AIRPORT)
-        self.assertEqual(provider._infer_direction(201, "2X"), Direction.TO_AIRPORT)
-        
-        # Test from airport direction
-        self.assertEqual(provider._infer_direction(102, "X3"), Direction.FROM_AIRPORT)
-        self.assertEqual(provider._infer_direction(202, "2X"), Direction.FROM_AIRPORT)
-        
-        # Test unknown route code
+        # Direction is supplied by GTFS trip/shape ordering, not guessed from
+        # undocumented numeric route codes.
+        self.assertEqual(provider._infer_direction(101, "X3"), Direction.UNKNOWN)
         self.assertEqual(provider._infer_direction(999, "X3"), Direction.UNKNOWN)
 
 

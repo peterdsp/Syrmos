@@ -251,11 +251,13 @@ enum VehicleIcons {
 enum MapVehicleSelection: Identifiable {
     case simulated(SimulatedTrain)
     case live(LiveTrain)
+    case airportBus(AirportBusVehicle)
 
     var id: String {
         switch self {
         case .simulated(let train): return "sim:\(train.id)"
         case .live(let train): return "live:\(train.id)"
+        case .airportBus(let bus): return "bus:\(bus.id)"
         }
     }
 }
@@ -273,6 +275,7 @@ struct TransitMapView: View {
     @StateObject private var stasyService = STASYService()
     @StateObject private var locationManager = MapLocationManager()
     @State private var tappedStation: MapStationNode?
+    @State private var tappedBusStop: AirportBusStopNode?
     @State private var tappedVehicle: MapVehicleSelection?
     @State private var showLiveTrainsSheet = false
     @State private var showLocationDeniedAlert = false
@@ -333,12 +336,27 @@ struct TransitMapView: View {
         }
     }
 
+    private var airportRoutes: [AirportBusService.UnifiedRoute] {
+        airportBusService.unified?.operators.values.flatMap(\.routes) ?? []
+    }
+    private var airportStops: [AirportBusStopNode] {
+        var result: [AirportBusStopNode] = []
+        for route in airportRoutes {
+            for stop in route.stops ?? [] where stop.latitude.isFinite && stop.longitude.isFinite && !(stop.latitude == 0 && stop.longitude == 0) {
+                result.append(AirportBusStopNode(route: route, stop: stop))
+            }
+        }
+        return result
+    }
+
     var body: some View {
         NavigationStack {
             // Foldables and tablets (master plan, Network Map contract): the
             // shared policy pairs the canvas with a station or train inspector;
             // a phone keeps the single column with the sheets. One map instance.
             SyrmosArrangement(
+                pairs: false,
+                fullBleed: true,
                 task: .map,
                 primary: { mapInspector },
                 companion: { mapContent },
@@ -415,6 +433,11 @@ struct TransitMapView: View {
                     .presentationDragIndicator(.visible)
                     .presentationContentInteraction(.scrolls)
             }
+            .sheet(item: $tappedBusStop) { stop in
+                AirportBusStopDetailSheet(stop: stop, language: loc.language)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .sheet(item: $tappedVehicle) { vehicle in
                 switch vehicle {
                 case .simulated(let train):
@@ -426,6 +449,10 @@ struct TransitMapView: View {
                         .presentationDetents([.fraction(0.7), .large])
                         .presentationDragIndicator(.visible)
                         .presentationContentInteraction(.scrolls)
+                case .airportBus(let bus):
+                    AirportBusVehicleDetailSheet(vehicle: bus, language: loc.language)
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
                 }
             }
     }
@@ -462,6 +489,8 @@ struct TransitMapView: View {
                     ScrollView { SimulatedVehicleDetailSheet(train: train) }
                 case .live(let train):
                     TrainDetailSheet(train: train)
+                case .airportBus(let bus):
+                    AirportBusVehicleDetailSheet(vehicle: bus, language: loc.language)
                 }
             } else {
                 mapInspectorPlaceholder
@@ -528,6 +557,8 @@ struct TransitMapView: View {
                     }(),
                     liveTrains: vehiclesHidden ? [] : visibleLiveTrains,
                     busVehicles: vehiclesHidden ? [] : airportBusService.vehicles,
+                    busRoutes: airportRoutes,
+                    busStops: airportStops,
                     stationDisruptions: stasyService.stationDisruptions,
                     recenterToUserPing: recenterToUserPing,
                     autoRecenterPing: autoRecenterPing,
@@ -537,6 +568,7 @@ struct TransitMapView: View {
                     onTrainTap: { vehicle in
                         tappedVehicle = vehicle
                     },
+                    onBusStopTap: { stop in tappedBusStop = stop },
                     initialRegion: restoredRegion,
                     onRegionChange: { region in persistRegion(region) }
                 )
@@ -1257,6 +1289,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
     let simulatedTrains: [SimulatedTrain]
     let liveTrains: [LiveTrain]
     let busVehicles: [AirportBusVehicle]
+    let busRoutes: [AirportBusService.UnifiedRoute]
+    let busStops: [AirportBusStopNode]
     let stationDisruptions: [String: String]
     /// Bumped from the parent's "Locate me" button to re-center on the
     /// user. Reading it in updateUIView() lets us tell a fresh request
@@ -1266,6 +1300,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
     var autoRecenterPing: Int = 0
     let onStationTap: (String) -> Void
     var onTrainTap: ((MapVehicleSelection) -> Void)?
+    var onBusStopTap: ((AirportBusStopNode) -> Void)?
     /// A camera to open on instead of the Athens default (scene restoration). Nil
     /// keeps the default frame.
     var initialRegion: MKCoordinateRegion? = nil
@@ -1342,10 +1377,21 @@ struct SyrmosMKMapView: UIViewRepresentable {
             poly.isBus = route.isBus
             mv.addOverlay(poly, level: .aboveLabels)
         }
+        for route in busRoutes {
+            let points = (route.shape ?? []).sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }
+            let coords = points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+            guard coords.count > 1 else { continue }
+            let poly = SyrmosColoredPolyline(coordinates: coords, count: coords.count)
+            poly.color = UIColor(Color(hex: route.color) ?? .syrmosPrimary)
+            poly.weight = 4
+            poly.isBus = true
+            mv.addOverlay(poly, level: .aboveLabels)
+        }
 
         for station in stations {
             mv.addAnnotation(SyrmosStationAnnotation(station: station))
         }
+        for stop in busStops { mv.addAnnotation(SyrmosBusStopAnnotation(stop: stop)) }
 
         // On-device audit: warn if any station the app renders falls outside the
         // Attica box (37.7-38.55 N, 22.65-24.15 E; A4 Kiato W to A3 Chalkida N).
@@ -1473,6 +1519,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     context.coordinator.dropDescriptor(id: ann.id)
                     mv.removeAnnotation(ann)
                 }
+            case .airportBus:
+                continue
             case .live(let t):
                 if let train = wantLive[t.id] {
                     // Refresh the live train in place: move the ring pin to its
@@ -1943,6 +1991,17 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.isHidden = currentBand < 2
                 return v
             }
+            if annotation is SyrmosBusStopAnnotation {
+                let id = "airportBusStop"
+                let v = (mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView)
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
+                v.annotation = annotation
+                v.canShowCallout = false
+                v.markerTintColor = UIColor(Color.syrmosPrimary)
+                v.glyphImage = UIImage(systemName: "bus.fill")
+                v.displayPriority = .defaultHigh
+                return v
+            }
             return nil
         }
 
@@ -1983,6 +2042,10 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 parent.onStationTap(station.station.id)
             } else if let trainAnnotation = view.annotation as? SyrmosTrainAnnotation {
                 parent.onTrainTap?(trainAnnotation.kind)
+            } else if let bus = view.annotation as? SyrmosBusAnnotation {
+                parent.onTrainTap?(.airportBus(bus.vehicle))
+            } else if let stop = view.annotation as? SyrmosBusStopAnnotation {
+                parent.onBusStopTap?(stop.stop)
             }
         }
 
@@ -2103,6 +2166,8 @@ struct SyrmosMKMapView: UIViewRepresentable {
                     ? UIColor(red: 0.61, green: 0.64, blue: 0.69, alpha: 1.0)   // ~#9CA3AF, matches web
                     : UIColor(SyrmosData.line(for: t.lineId)?.color ?? SyrmosData.lineColor(for: t.lineId))
                 return Self.liveTrainRingImage(color: color, muted: muted)
+            case .airportBus:
+                return UIImage(systemName: "bus.fill") ?? UIImage()
             }
         }
     }
@@ -2137,6 +2202,7 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
         switch kind {
         case .simulated(let t): return "sim:\(t.id)"
         case .live(let t):      return "live:\(t.id)"
+        case .airportBus(let b): return "bus:\(b.id)"
         }
     }
     /// Line the train rides, used by the Coordinator's tween system to
@@ -2147,6 +2213,7 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
         switch kind {
         case .simulated(let t): return t.lineId
         case .live(let t):      return t.lineId
+        case .airportBus(let b): return b.lineId
         }
     }
     init(simulated: SimulatedTrain) {
@@ -2163,6 +2230,7 @@ final class SyrmosTrainAnnotation: NSObject, MKAnnotation {
 /// polyline), so unlike SyrmosTrainAnnotation they plot at their true reported
 /// coordinate with no snapping.
 final class SyrmosBusAnnotation: NSObject, MKAnnotation {
+    var vehicle: AirportBusVehicle
     let busId: String
     var lineId: String
     var toAirport: Bool?
@@ -2175,6 +2243,7 @@ final class SyrmosBusAnnotation: NSObject, MKAnnotation {
     var id: String { "bus:\(busId)" }
 
     init(vehicle: AirportBusVehicle, lang: AppLanguage) {
+        self.vehicle = vehicle
         self.busId = vehicle.id
         self.lineId = vehicle.lineId
         self.toAirport = vehicle.toAirport
@@ -2185,6 +2254,7 @@ final class SyrmosBusAnnotation: NSObject, MKAnnotation {
     }
 
     func refresh(_ vehicle: AirportBusVehicle, lang: AppLanguage) {
+        self.vehicle = vehicle
         lineId = vehicle.lineId
         toAirport = vehicle.toAirport
         coordinate = vehicle.coordinate
@@ -2205,6 +2275,69 @@ final class SyrmosBusAnnotation: NSObject, MKAnnotation {
         case .some(true): return tr("To the airport", "Προς το αεροδρόμιο", "Drejt aeroportit", "Verso l'aeroporto")
         case .some(false): return tr("From the airport", "Από το αεροδρόμιο", "Nga aeroporti", "Dall'aeroporto")
         case .none: return tr("Express bus", "Λεωφορείο express", "Autobus express", "Bus express")
+        }
+    }
+}
+
+struct AirportBusVehicleDetailSheet: View {
+    let vehicle: AirportBusVehicle
+    let language: AppLanguage
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Label(vehicle.lineId, systemImage: "bus.fill")
+                    .font(.title2.bold())
+                LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction") {
+                    Text(SyrmosBusAnnotation.directionText(vehicle.toAirport, lang: language))
+                }
+                LabeledContent(language == .greek ? "Θέση" : "Position") {
+                    Text(String(format: "%.5f, %.5f", vehicle.coordinate.latitude, vehicle.coordinate.longitude))
+                        .monospacedDigit()
+                }
+                Text(language == .greek
+                     ? "Ζωντανό λεωφορείο. Άφιξη, ταχύτητα και επόμενη στάση εμφανίζονται μόνο όταν παρέχονται από τον πάροχο."
+                     : "Live bus. Arrival, speed and next stop are shown only when supplied by the operator.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(20)
+            .navigationTitle(language == .greek ? "Λεωφορείο" : "Bus")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+struct AirportBusStopNode: Identifiable {
+    let route: AirportBusService.UnifiedRoute
+    let stop: AirportBusService.UnifiedStop
+    var id: String { "\(route.operatorId):\(route.route_id):\(stop.stop_id)" }
+    var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude) }
+}
+
+final class SyrmosBusStopAnnotation: NSObject, MKAnnotation {
+    let stop: AirportBusStopNode
+    var coordinate: CLLocationCoordinate2D { stop.coordinate }
+    var title: String? { stop.stop.stop_name }
+    init(stop: AirportBusStopNode) { self.stop = stop; super.init() }
+}
+
+struct AirportBusStopDetailSheet: View {
+    let stop: AirportBusStopNode
+    let language: AppLanguage
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Label(stop.stop.stop_name, systemImage: "bus.fill").font(.title2.bold())
+                LabeledContent(language == .greek ? "Γραμμή" : "Route", value: stop.route.public_name)
+                LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction", value: stop.route.direction?.replacingOccurrences(of: "_", with: " ") ?? (language == .greek ? "Άγνωστη" : "Unavailable"))
+                Text(language == .greek ? "Οι αφίξεις εμφανίζονται μόνο όταν παρέχονται από τον πάροχο." : "Arrivals appear only when supplied by the operator.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Spacer()
+            }.padding(20)
+            .navigationTitle(language == .greek ? "Στάση λεωφορείου" : "Bus stop")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
