@@ -65,9 +65,10 @@ class TestValidation(unittest.TestCase):
         # UTC ISO
         result = validate_timestamp(datetime.now(timezone.utc).isoformat())
         self.assertIsNotNone(result)
-        self.assertEqual(result.year, 2026)
-        self.assertEqual(result.month, 10)
-        self.assertEqual(result.day, 12)
+        expected = datetime.now(timezone.utc)
+        self.assertEqual(result.year, expected.year)
+        self.assertEqual(result.month, expected.month)
+        self.assertEqual(result.day, expected.day)
         
         # With fractional seconds
         result = validate_timestamp((datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat())

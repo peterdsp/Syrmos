@@ -569,8 +569,6 @@ class OasaAirportProvider(AirportTransitProvider):
                 source_url=self.source_url,
                 attribution=self.attribution,
                 observed_at=now,
-                stops=[{"stop_id": s.get("stop_id"), "stop_name": s.get("stop_name"), "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]), "sequence": i} for i, s in enumerate(gtfs["stops"]) if s.get("stop_lat") and s.get("stop_lon")],
-                shape=gtfs["shape"],
             )
             routes.append(route)
 
@@ -605,8 +603,6 @@ class OasaAirportProvider(AirportTransitProvider):
             source_url=self.source_url,
             attribution=self.attribution,
             observed_at=now,
-            stops=[{"stop_id": s.get("stop_id"), "stop_name": s.get("stop_name"), "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]), "sequence": i} for i, s in enumerate(gtfs["stops"]) if s.get("stop_lat") and s.get("stop_lon")],
-            shape=gtfs["shape"],
         )
 
     def fetch_stops(self, route_id: str) -> list[dict[str, Any]]:
