@@ -28,7 +28,7 @@ import com.syrmos.core.model.status.LiveVehicleState
 import com.syrmos.core.model.alerts.AlertSeverity
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
-import com.syrmos.core.network.OasaAirportBusService
+import com.syrmos.core.network.AirportBusService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.datetime.Clock
@@ -95,8 +95,8 @@ data class MapUiState(
     // Live airport express-bus positions (X93/95/96/97) from the OASA telematics
     // feed. Plotted on the map beside the trains; blanked by the vehicles toggle.
     val busVehicles: List<AirportBusVehicle> = emptyList(),
-    val airportBusRoutes: List<OasaAirportBusService.UnifiedRoute> = emptyList(),
-    val airportBusArrivals: List<OasaAirportBusService.UnifiedArrival> = emptyList(),
+    val airportBusRoutes: List<AirportBusService.UnifiedRoute> = emptyList(),
+    val airportBusArrivals: List<AirportBusService.UnifiedArrival> = emptyList(),
     val showAirportBuses: Boolean = true,
     // Subtle map offline indicator: true when the device is offline OR no live
     // data has arrived within the freshness window. Recomputed on the sim tick so
@@ -120,7 +120,7 @@ class MapViewModel(
     private val transitPatternRepository: TransitPatternRepositoryImpl,
     private val liveTrackerService: RailwayGovLiveTrackerService,
     private val livePositionsService: SyrmosLivePositionsService,
-    private val airportBusService: OasaAirportBusService,
+    private val airportBusService: AirportBusService,
     private val stationOffsetsRepo: StationOffsetsRepository,
     private val scheduleSyncRepository: com.syrmos.core.data.sync.ScheduleSyncRepository,
     private val computeActiveTrains: ComputeActiveTrainsFromBandsUseCase,
