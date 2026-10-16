@@ -1677,6 +1677,61 @@
         }
     }
 
+    // Airport express routes are not part of the ordinary rail/bus lines seed.
+    // Draw their normalized snapshot geometry as a separate layer so the web map
+    // shows the same Athens and Thessaloniki connectors as the native clients.
+    const airportBusRouteLayer = L.layerGroup().addTo(map);
+    const airportBusRouteCacheKey = "syrmos.airport_bus_routes.v1";
+    const validAirportPoint = (point) => point && Number.isFinite(Number(point.latitude)) && Number.isFinite(Number(point.longitude)) && Number(point.latitude) !== 0 && Number(point.longitude) !== 0;
+    const airportBusSegments = (route) => {
+        const stops = (Array.isArray(route.stops) ? route.stops : []).filter(validAirportPoint);
+        const byDirection = new Map();
+        for (const stop of stops) {
+            const key = String(stop.direction || "");
+            if (!byDirection.has(key)) byDirection.set(key, []);
+            byDirection.get(key).push(stop);
+        }
+        const directional = [...byDirection.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, values]) => values.sort((a, b) => Number(a.sequence || 0) - Number(b.sequence || 0)).map((p) => [Number(p.latitude), Number(p.longitude)]))
+            .filter((segment) => segment.length > 1);
+        if (String(route.operator || "").toLowerCase() === "oasa" && directional.length > 1) return directional;
+        const shape = (Array.isArray(route.shape) ? route.shape : []).filter(validAirportPoint)
+            .sort((a, b) => Number(a.sequence || 0) - Number(b.sequence || 0))
+            .map((p) => [Number(p.latitude), Number(p.longitude)]);
+        return shape.length > 1 ? [shape] : directional;
+    };
+    const drawAirportBusRoutes = (payload) => {
+        airportBusRouteLayer.clearLayers();
+        for (const operatorData of Object.values(payload?.operators || {})) {
+            for (const route of operatorData.routes || []) {
+                const color = /^#[0-9A-Fa-f]{6}$/.test(route.color || "") ? route.color : "#D97706";
+                for (const segment of airportBusSegments(route)) {
+                    L.polyline(segment, {
+                        color,
+                        weight: 5,
+                        opacity: 0.92,
+                        lineCap: "round",
+                        lineJoin: "round",
+                        dashArray: "8 6",
+                    }).bindTooltip(`${route.public_name || route.route_id} · ${operatorData.operator || route.operator || "airport bus"}`, { direction: "top" }).addTo(airportBusRouteLayer);
+                }
+            }
+        }
+    };
+    try {
+        const cachedAirportRoutes = localStorage.getItem(airportBusRouteCacheKey);
+        if (cachedAirportRoutes) drawAirportBusRoutes(JSON.parse(cachedAirportRoutes));
+    } catch (_) {}
+    try {
+        const airportResponse = await fetch("https://api-syrmos.peterdsp.dev/api/airport-buses");
+        if (airportResponse.ok) {
+            const airportPayload = await airportResponse.json();
+            drawAirportBusRoutes(airportPayload);
+            try { localStorage.setItem(airportBusRouteCacheKey, JSON.stringify(airportPayload)); } catch (_) {}
+        }
+    } catch (_) {}
+
     function catmullRomSpline(points, numInterpolated) {
         if (points.length < 3) return points;
         const result = [points[0]];
