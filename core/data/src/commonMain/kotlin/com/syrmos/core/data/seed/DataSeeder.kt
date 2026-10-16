@@ -252,12 +252,14 @@ class DataSeeder(
     }
 
     companion object {
-        // Bumped to 11: trip schedules now carry valid_dates, so a date-scoped
+        // Bumped to 12: Thessaloniki metro stations now carry an explicit
+        // region, so same-named Athens stations cannot be selected by mistake.
+        // The previous bump to 11 made trip schedules carry valid_dates, so a date-scoped
         // seasonal trip (e.g. Pelion PL1) is hidden on days it does not run.
         // Without a bump an existing install keeps its old rows, which have
         // valid_dates NULL, and the seasonal trip keeps showing every matching
         // day. (Schema migration 3.sqm adds the column; the reseed fills it.)
-        const val SEED_VERSION = "11"
+        const val SEED_VERSION = "12"
 
         /**
          * Whether the bundled seed must be (re)written. Compares versions

@@ -112,6 +112,7 @@ enum AirportBusService {
         let latitude: Double
         let longitude: Double
         let sequence: Int?
+        let direction: String?
         var id: String { stop_id }
     }
 

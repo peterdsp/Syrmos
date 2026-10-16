@@ -161,15 +161,26 @@ private fun DrawScope.drawFallbackMap(
     // visually distinct from rail and render them on WASM as well as Android.
     if (uiState.showAirportBuses) {
         for (route in uiState.airportBusRoutes) {
-            val points = route.shape.sortedBy { it.sequence }
-                .filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }
-                .map { latLonToScreen(it.latitude, it.longitude, canvasWidth, canvasHeight, offsetX, offsetY, scale) }
-            if (points.size > 1) {
-                val path = Path().apply {
-                    moveTo(points.first().x, points.first().y)
-                    for (point in points.drop(1)) lineTo(point.x, point.y)
+            val stopsByDirection = route.stops.filter { it.latitude.isFinite() && it.longitude.isFinite() && it.latitude != 0.0 && it.longitude != 0.0 }
+                .groupBy { it.direction.orEmpty() }
+                .toSortedMap()
+                .values
+                .map { it.sortedBy { stop -> stop.sequence } }
+                .filter { it.size > 1 }
+            val segments = if (route.operator.equals("oasa", ignoreCase = true) && stopsByDirection.size > 1) {
+                stopsByDirection.map { stops -> stops.map { it.latitude to it.longitude } }
+            } else {
+                listOf(route.shape.sortedBy { it.sequence }.filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }.map { it.latitude to it.longitude })
+            }
+            for (segment in segments) {
+                val points = segment.map { (lat, lon) -> latLonToScreen(lat, lon, canvasWidth, canvasHeight, offsetX, offsetY, scale) }
+                if (points.size > 1) {
+                    val path = Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        for (point in points.drop(1)) lineTo(point.x, point.y)
+                    }
+                    drawPath(path, airportBusColor(route.color), style = Stroke(width = (3f * scale).coerceIn(1.5f, 9f), cap = StrokeCap.Round, join = StrokeJoin.Round))
                 }
-                drawPath(path, airportBusColor(route.color), style = Stroke(width = (3f * scale).coerceIn(1.5f, 9f), cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
             for (stop in route.stops) {
                 if (stop.latitude == 0.0 || stop.longitude == 0.0) continue

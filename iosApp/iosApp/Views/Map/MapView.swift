@@ -1378,14 +1378,26 @@ struct SyrmosMKMapView: UIViewRepresentable {
             mv.addOverlay(poly, level: .aboveLabels)
         }
         for route in busRoutes {
-            let points = (route.shape ?? []).sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }
-            let coords = points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-            guard coords.count > 1 else { continue }
-            let poly = SyrmosColoredPolyline(coordinates: coords, count: coords.count)
-            poly.color = UIColor(Color(hex: route.color) ?? .syrmosPrimary)
-            poly.weight = 4
-            poly.isBus = true
-            mv.addOverlay(poly, level: .aboveLabels)
+            let stops = (route.stops ?? []).filter { $0.latitude.isFinite && $0.longitude.isFinite && !($0.latitude == 0 && $0.longitude == 0) }
+            let directionalStops = Dictionary(grouping: stops, by: { $0.direction ?? "" })
+                .sorted { $0.key < $1.key }
+                .map { $0.value.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) } }
+                .filter { $0.count > 1 }
+            let segments: [[CLLocationCoordinate2D]]
+            if route.operatorId.lowercased() == "oasa" && directionalStops.count > 1 {
+                segments = directionalStops.map { $0.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
+            } else {
+                let points = (route.shape ?? []).sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }
+                let coords = points.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+                segments = coords.count > 1 ? [coords] : directionalStops.map { $0.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
+            }
+            for coords in segments where coords.count > 1 {
+                let poly = SyrmosColoredPolyline(coordinates: coords, count: coords.count)
+                poly.color = UIColor(Color(hex: route.color) ?? .syrmosPrimary)
+                poly.weight = 4
+                poly.isBus = true
+                mv.addOverlay(poly, level: .aboveLabels)
+            }
         }
 
         for station in stations {

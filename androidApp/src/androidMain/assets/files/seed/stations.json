@@ -2860,7 +2860,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_DIM",
@@ -2874,7 +2875,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_VEN",
@@ -2888,7 +2890,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_AGS",
@@ -2902,7 +2905,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_SYN",
@@ -2916,7 +2920,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_PAN",
@@ -2930,7 +2935,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_PAP",
@@ -2944,7 +2950,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_EFK",
@@ -2958,7 +2965,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_FLE",
@@ -2972,7 +2980,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_ANA",
@@ -2986,7 +2995,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_25M",
@@ -3000,7 +3010,8 @@
     ],
     "is_interchange": true,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_VOU",
@@ -3013,7 +3024,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM1_NEL",
@@ -3026,7 +3038,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM2_NOM",
@@ -3039,7 +3052,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM2_KAL",
@@ -3052,7 +3066,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM2_ARE",
@@ -3065,7 +3080,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM2_NKR",
@@ -3078,7 +3094,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "TM2_MIK",
@@ -3091,7 +3108,8 @@
     ],
     "is_interchange": false,
     "accessibility": true,
-    "zone": 1
+    "zone": 1,
+    "region": "thessaloniki"
   },
   {
     "id": "GR_ATH",

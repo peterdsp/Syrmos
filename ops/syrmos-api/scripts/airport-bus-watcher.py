@@ -225,10 +225,9 @@ class AirportBusWatcher:
                 """Publish route geometry with the atomic live snapshot.
 
                 OASA exposes ordered stop coordinates rather than a shape
-                endpoint.  The stop-derived polyline is therefore the
-                authoritative fallback and remains usable offline. OSETH
-                currently exposes the same verified airport/interchange
-                catalogue through the provider.
+                endpoint. Keep those stops grouped by direction and do not
+                publish one misleading polyline that connects the two
+                directions. OSETH publishes official GTFS shapes.
                 """
                 payload = route.to_dict()
                 stops = provider.fetch_stops(route.route_id)
@@ -243,11 +242,18 @@ class AirportBusWatcher:
                 valid_stops.sort(key=lambda s: (s.get("direction", ""), s.get("sequence", 0)))
                 payload["stops"] = valid_stops
                 official_shape = getattr(provider, "fetch_shape", lambda _route_id: [])(route.route_id)
-                payload["shape"] = official_shape or [
-                    {"latitude": s["latitude"], "longitude": s["longitude"], "sequence": s.get("sequence", 0)}
-                    for s in valid_stops
-                ]
-                payload["geometry_source"] = "oseth_gtfs_shapes" if official_shape else "ordered_operator_stops"
+                if official_shape:
+                    payload["shape"] = official_shape
+                    payload["geometry_source"] = "oseth_gtfs_shapes"
+                elif payload.get("operator") == "oasa":
+                    payload["shape"] = []
+                    payload["geometry_source"] = "ordered_operator_stops_by_direction"
+                else:
+                    payload["shape"] = [
+                        {"latitude": s["latitude"], "longitude": s["longitude"], "sequence": s.get("sequence", 0)}
+                        for s in valid_stops
+                    ]
+                    payload["geometry_source"] = "ordered_operator_stops"
                 return payload
 
             return {
