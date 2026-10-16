@@ -163,9 +163,9 @@ private fun DrawScope.drawFallbackMap(
         for (route in uiState.airportBusRoutes) {
             val stopsByDirection = route.stops.filter { it.latitude.isFinite() && it.longitude.isFinite() && it.latitude != 0.0 && it.longitude != 0.0 }
                 .groupBy { it.direction.orEmpty() }
-                .toSortedMap()
-                .values
-                .map { it.sortedBy { stop -> stop.sequence } }
+                .toList()
+                .sortedBy { (direction, _) -> direction }
+                .map { (_, stops) -> stops.sortedBy { stop -> stop.sequence } }
                 .filter { it.size > 1 }
             val segments = if (route.operator.equals("oasa", ignoreCase = true) && stopsByDirection.size > 1) {
                 stopsByDirection.map { stops -> stops.map { it.latitude to it.longitude } }
