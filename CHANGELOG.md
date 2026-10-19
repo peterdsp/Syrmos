@@ -2,13 +2,23 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 used **230**, beta.8 used **231**, beta.11 used 232, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-234 (beta.28 shipped 233, beta.29 shipped 234); beta.30 uses 235.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 used **230**, beta.8 used **231**, beta.11 used 232, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-235 (beta.28-30 shipped 233-235); beta.31 uses 236.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 3.0.0-beta.31 - 2026-10-20
+
+### Fixed
+- Journey planner no longer blends different cities at stations that merely
+  share a name. Athens and Thessaloniki both have a "Panepistimio", "Syntagma"
+  and "Omonia", and the planner was "changing lines" from an Athens metro onto
+  a Thessaloniki one at a station ~300 km away (so Piraeus to Nea Elvetia came
+  out as M3 to M2 to TM1 instead of the intercity train). Transfers now require
+  the two stops to be physically co-located. iOS, Android and web.
 
 ## 3.0.0-beta.30 - 2026-10-20
 
