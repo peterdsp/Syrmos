@@ -39,6 +39,9 @@ struct HomeView: View {
     @AppStorage("syrmos.selectedTab") private var selectedTab: SyrmosTab = .home
     /// Set from Settings -> Developer -> Preview severe-weather card.
     @AppStorage("syrmos.dev.forceEmergencyPreview") private var forceEmergencyPreview: Bool = false
+    /// The city the user picked in Settings. Weather follows this, not GPS, so a
+    /// Thessaloniki selection shows Thessaloniki weather even from Athens.
+    @AppStorage("syrmos.map.defaultRegion") private var defaultRegion: String = "athens"
 
     init() {
         // Phase C scene restoration: Home restores its nearby-station selection only.
@@ -136,12 +139,9 @@ struct HomeView: View {
             }
             .task {
                 locationService.requestIfNeeded()
-                // This first refresh is only a no-location fallback. Once
-                // Core Location delivers a fix, the onChange below refreshes
-                // the exact user position instead of leaving Athens cached.
-                if locationService.currentLocation == nil {
-                    await weather.refresh()
-                }
+                // Weather follows the user's selected region, not GPS. The
+                // onChange below re-fetches when they switch cities in Settings.
+                await weather.refresh(forRegion: defaultRegion)
                 await stasyService.fetchAnnouncements()
                 await railNewsService.fetchNews()
 
@@ -153,15 +153,8 @@ struct HomeView: View {
                 )
                 handleDeepLink(deepLinkRouter.pending, proxy: proxy)
             }
-            .onChange(of: locationService.currentLocation) { _, location in
-                guard let location else { return }
-                Task {
-                    await weather.refresh(
-                        latitude: location.coordinate.latitude,
-                        longitude: location.coordinate.longitude,
-                        placeName: nearestWeatherPlace(for: location)
-                    )
-                }
+            .onChange(of: defaultRegion) { _, region in
+                Task { await weather.refresh(forRegion: region) }
             }
             .sheet(item: $webViewURL) { url in
                 InAppWebView(url: url)
@@ -216,10 +209,6 @@ struct HomeView: View {
             .onChange(of: selectedNearbyId) { _, _ in persistRestoration() }
             }
         }
-    }
-
-    private func nearestWeatherPlace(for location: CLLocation) -> String {
-        locationService.nearbyStations.first?.station.displayName ?? "Your location"
     }
 
     private func handleDeepLink(

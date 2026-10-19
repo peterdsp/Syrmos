@@ -84,6 +84,24 @@ final class WeatherStore: ObservableObject {
 
     private init() {}
 
+    /// City-center weather coordinates for the user's selected region
+    /// (`syrmos.map.defaultRegion`). National and unknown fall back to Athens.
+    /// Mirrors `WeatherRepository.regionCoordinates` on the shared side.
+    static func regionCoordinate(_ region: String) -> (latitude: Double, longitude: Double, placeName: String) {
+        switch region.lowercased() {
+        case "thessaloniki": return (40.6403, 22.9444, "Thessaloniki")
+        case "patras": return (38.2466, 21.7346, "Patras")
+        default: return (athens.latitude, athens.longitude, "Athens")
+        }
+    }
+
+    /// Weather for the user's selected region rather than the GPS fix, so a
+    /// chosen city (e.g. Thessaloniki) wins over where the phone physically is.
+    func refresh(forRegion region: String) async {
+        let c = Self.regionCoordinate(region)
+        await refresh(latitude: c.latitude, longitude: c.longitude, placeName: c.placeName)
+    }
+
     /// Refreshes for the given coordinate (defaults to central Athens so a
     /// no-location launch still shows something). Throttled to once a minute.
     func refresh(latitude: Double = athens.latitude,

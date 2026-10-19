@@ -2,6 +2,7 @@ package com.syrmos.feature.home
 
 import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.common.LiveDataFreshness
+import com.syrmos.core.common.MapPreferences
 import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.RailNewsRepository
 import com.syrmos.core.data.sync.WeatherRepository
@@ -117,8 +118,16 @@ class HomeViewModel(
                 _uiState.update { it.copy(weather = snap) }
             }
         }
-        // Athens default so Web and no-location launches still show weather.
-        scope.launch { runCatching { weatherRepository.refresh() } }
+        // Weather follows the user's selected region (Settings > default region),
+        // not GPS: someone who picked Thessaloniki sees Thessaloniki weather even
+        // while in Athens. defaultRegion is a StateFlow, so this also covers the
+        // launch default (athens) and re-fetches whenever the choice changes.
+        scope.launch {
+            MapPreferences.defaultRegion.collect { region ->
+                val (lat, lon, place) = WeatherRepository.regionCoordinates(region)
+                runCatching { weatherRepository.refresh(lat, lon, placeName = place) }
+            }
+        }
     }
 
     /** Live only when the device has a network and a live fetch landed inside the window. */
@@ -260,8 +269,8 @@ class HomeViewModel(
             val location = UserLocation(latitude, longitude)
             val nearest = findNearestStation.invoke(location, limit = 3).first()
             _uiState.update { it.copy(nearestStations = nearest, isLoading = false) }
-            // Refresh weather for the user's actual location.
-            launch { runCatching { weatherRepository.refresh(latitude, longitude, placeName = "Here") } }
+            // Weather deliberately tracks the selected region (see observeWeather),
+            // not the GPS fix, so a chosen city wins over where the phone is.
 
             if (nearest.isNotEmpty()) {
                 // Every platform of the physical stop (an interchange is separate

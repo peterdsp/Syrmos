@@ -69,8 +69,9 @@ android {
         targetSdk = 36
         // 105 (rejected) and 106 (released 2026-07-16) are consumed and can
         // never be reused. Bump this before every release; Play refuses a code
-        // it has already seen, even from a discarded upload.
-        versionCode = 233
+        // it has already seen, even from a discarded upload. 233 shipped as
+        // v3.0.0-beta.28; beta.29 uses 234.
+        versionCode = 234
         versionName = "3.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

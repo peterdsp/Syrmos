@@ -146,6 +146,24 @@ class WeatherRepository(
     companion object {
         const val ATHENS_LAT = 37.9838
         const val ATHENS_LON = 23.7275
+        const val THESSALONIKI_LAT = 40.6403
+        const val THESSALONIKI_LON = 22.9444
+        const val PATRAS_LAT = 38.2466
+        const val PATRAS_LON = 21.7346
+
+        /**
+         * City-center weather coordinates for the user's selected region
+         * (MapPreferences.defaultRegion: "athens" | "thessaloniki" | "patras" |
+         * "national"). National and unknown values fall back to Athens. Returns
+         * (latitude, longitude, placeName) so weather follows the chosen city,
+         * which is the documented job of [com.syrmos.core.model.transit.Region].
+         */
+        fun regionCoordinates(region: String?): Triple<Double, Double, String> =
+            when (region?.lowercase()) {
+                "thessaloniki" -> Triple(THESSALONIKI_LAT, THESSALONIKI_LON, "Thessaloniki")
+                "patras" -> Triple(PATRAS_LAT, PATRAS_LON, "Patras")
+                else -> Triple(ATHENS_LAT, ATHENS_LON, "Athens")
+            }
     }
 
     /**
