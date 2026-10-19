@@ -120,6 +120,10 @@ enum AirportBusService {
         let latitude: Double
         let longitude: Double
         let sequence: Int?
+        // Present for Athens OASA routes whose road geometry is published per
+        // direction ("to_airport" / "from_airport"); nil for single-shape
+        // operators like OSETH. Clients group shape points by this.
+        let direction: String?
     }
 
     /// Normalized vehicle position

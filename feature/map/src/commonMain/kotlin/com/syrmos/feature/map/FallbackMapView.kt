@@ -161,17 +161,22 @@ private fun DrawScope.drawFallbackMap(
     // visually distinct from rail and render them on WASM as well as Android.
     if (uiState.showAirportBuses) {
         for (route in uiState.airportBusRoutes) {
+            val shapeByDirection = route.shape
+                .filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }
+                .groupBy { it.direction.orEmpty() }
+                .toList()
+                .sortedBy { (direction, _) -> direction }
+                .map { (_, pts) -> pts.sortedBy { it.sequence }.map { it.latitude to it.longitude } }
+                .filter { it.size > 1 }
             val stopsByDirection = route.stops.filter { it.latitude.isFinite() && it.longitude.isFinite() && it.latitude != 0.0 && it.longitude != 0.0 }
                 .groupBy { it.direction.orEmpty() }
                 .toList()
                 .sortedBy { (direction, _) -> direction }
-                .map { (_, stops) -> stops.sortedBy { stop -> stop.sequence } }
+                .map { (_, stops) -> stops.sortedBy { stop -> stop.sequence }.map { it.latitude to it.longitude } }
                 .filter { it.size > 1 }
-            val segments = if (route.operator.equals("oasa", ignoreCase = true) && stopsByDirection.size > 1) {
-                stopsByDirection.map { stops -> stops.map { it.latitude to it.longitude } }
-            } else {
-                listOf(route.shape.sortedBy { it.sequence }.filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }.map { it.latitude to it.longitude })
-            }
+            // Prefer published road geometry (OSETH GTFS, or Athens OSM per
+            // direction); connect ordered stops only when no shape exists.
+            val segments = if (shapeByDirection.isNotEmpty()) shapeByDirection else stopsByDirection
             for (segment in segments) {
                 val points = segment.map { (lat, lon) -> latLonToScreen(lat, lon, canvasWidth, canvasHeight, offsetX, offsetY, scale) }
                 if (points.size > 1) {

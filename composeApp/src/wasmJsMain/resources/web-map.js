@@ -1683,23 +1683,25 @@
     const airportBusRouteLayer = L.layerGroup().addTo(map);
     const airportBusRouteCacheKey = "syrmos.airport_bus_routes.v1";
     const validAirportPoint = (point) => point && Number.isFinite(Number(point.latitude)) && Number.isFinite(Number(point.longitude)) && Number(point.latitude) !== 0 && Number(point.longitude) !== 0;
-    const airportBusSegments = (route) => {
-        const stops = (Array.isArray(route.stops) ? route.stops : []).filter(validAirportPoint);
+    const airportPointsByDirection = (points) => {
         const byDirection = new Map();
-        for (const stop of stops) {
-            const key = String(stop.direction || "");
+        for (const point of (Array.isArray(points) ? points : []).filter(validAirportPoint)) {
+            const key = String(point.direction || "");
             if (!byDirection.has(key)) byDirection.set(key, []);
-            byDirection.get(key).push(stop);
+            byDirection.get(key).push(point);
         }
-        const directional = [...byDirection.entries()]
+        return [...byDirection.entries()]
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([, values]) => values.sort((a, b) => Number(a.sequence || 0) - Number(b.sequence || 0)).map((p) => [Number(p.latitude), Number(p.longitude)]))
             .filter((segment) => segment.length > 1);
-        if (String(route.operator || "").toLowerCase() === "oasa" && directional.length > 1) return directional;
-        const shape = (Array.isArray(route.shape) ? route.shape : []).filter(validAirportPoint)
-            .sort((a, b) => Number(a.sequence || 0) - Number(b.sequence || 0))
-            .map((p) => [Number(p.latitude), Number(p.longitude)]);
-        return shape.length > 1 ? [shape] : directional;
+    };
+    const airportBusSegments = (route) => {
+        // Prefer published road geometry (OSETH GTFS shape, or Athens OSM
+        // geometry tagged per direction). Fall back to connecting the ordered
+        // stops only when no shape is available.
+        const shapeSegments = airportPointsByDirection(route.shape);
+        if (shapeSegments.length) return shapeSegments;
+        return airportPointsByDirection(route.stops);
     };
     const drawAirportBusRoutes = (payload) => {
         airportBusRouteLayer.clearLayers();

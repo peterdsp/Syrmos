@@ -385,17 +385,22 @@ internal actual fun PlatformMapView(
         airportBusRouteOverlays.clear()
         if (uiState.showAirportBuses) {
             uiState.airportBusRoutes.forEach { route ->
+                val shapeByDirection = route.shape
+                    .filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }
+                    .groupBy { it.direction.orEmpty() }
+                    .toSortedMap()
+                    .values
+                    .map { pts -> pts.sortedBy { p -> p.sequence }.map { p -> GeoPoint(p.latitude, p.longitude) } }
+                    .filter { it.size > 1 }
                 val stopsByDirection = route.stops.filter { it.latitude.isFinite() && it.longitude.isFinite() && it.latitude != 0.0 && it.longitude != 0.0 }
                     .groupBy { it.direction.orEmpty() }
                     .toSortedMap()
                     .values
                     .map { it.sortedBy { stop -> stop.sequence }.map { stop -> GeoPoint(stop.latitude, stop.longitude) } }
                     .filter { it.size > 1 }
-                val segments = if (route.operator.equals("oasa", ignoreCase = true) && stopsByDirection.size > 1) {
-                    stopsByDirection
-                } else {
-                    listOf(route.shape.sortedBy { it.sequence }.map { GeoPoint(it.latitude, it.longitude) }.ifEmpty { stopsByDirection.flatten() })
-                }
+                // Prefer published road geometry (OSETH GTFS, or Athens OSM per
+                // direction); connect ordered stops only when no shape exists.
+                val segments = if (shapeByDirection.isNotEmpty()) shapeByDirection else stopsByDirection
                 segments.filter { it.size > 1 }.forEach { points ->
                     val line = Polyline().apply {
                         outlinePaint.color = parseHex(route.color.ifBlank { "#D97706" })

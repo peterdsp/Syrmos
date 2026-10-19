@@ -106,6 +106,10 @@ class AirportBusService(
         val latitude: Double = 0.0,
         val longitude: Double = 0.0,
         val sequence: Int = 0,
+        // Present for Athens OASA routes whose road geometry is published per
+        // direction ("to_airport" / "from_airport"); null for single-shape
+        // operators like OSETH. Clients group shape points by this.
+        val direction: String? = null,
     )
 
     /// Normalized route metadata

@@ -72,6 +72,67 @@ OUTPUT_DIR = Path(os.environ.get("AIRPORT_BUS_OUTPUT_DIR", DEFAULT_OUTPUT_DIR))
 # OASA Telematics user agent
 USER_AGENT = "syrmos-airport-bus-watcher/2.0 (+https://syrmos.peterdsp.dev)"
 
+# Pre-generated OSM road geometry for the Athens OASA airport express buses.
+# OASA's live API exposes only ordered stops, so this file (built by
+# scripts/fetch-osm-airport-bus-geometry.py) gives each route a real
+# road-following shape per direction. Thessaloniki keeps using OSETH GTFS
+# shapes; this only fills the OASA gap.
+AIRPORT_ROAD_SHAPES_FILE = _ROOT / "data" / "oasa-airport-shapes.json"
+
+
+def _load_airport_road_shapes() -> dict:
+    try:
+        data = json.loads(AIRPORT_ROAD_SHAPES_FILE.read_text(encoding="utf-8"))
+        routes = data.get("routes", {}) if isinstance(data, dict) else {}
+        return routes if isinstance(routes, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+AIRPORT_ROAD_SHAPES = _load_airport_road_shapes()
+
+
+def oasa_road_shape(route_id: str, stops: list[dict]) -> list[dict]:
+    """Direction-tagged shape points for an OASA airport route, or [] if no OSM
+    road geometry exists for it.
+
+    Each direction becomes its own run of points (sequence restarts per
+    direction, direction = "to_airport" / "from_airport") so the clients draw
+    one line per direction instead of connecting the two. A direction with OSM
+    road geometry follows the real roads; a direction OSM has not mapped (e.g.
+    X95 airport->Syntagma) falls back to that direction's ordered stops, so it
+    still draws instead of vanishing. Returns [] when the route has no OSM
+    geometry at all, leaving the clients' own stops fallback in charge.
+    """
+    osm = AIRPORT_ROAD_SHAPES.get(str(route_id).upper())
+    osm = osm if isinstance(osm, dict) else {}
+
+    stops_by_direction: dict[str, list[dict]] = {}
+    for s in stops:
+        stops_by_direction.setdefault(s.get("direction") or "", []).append(s)
+
+    directions = sorted(
+        set(osm.keys()) | {d for d in stops_by_direction if d in ("to_airport", "from_airport")}
+    )
+    points: list[dict] = []
+    for direction in directions:
+        coords = osm.get(direction) or []
+        if coords:
+            for seq, pair in enumerate(coords):
+                if not (isinstance(pair, (list, tuple)) and len(pair) == 2):
+                    continue
+                lat, lng = pair
+                points.append({"latitude": lat, "longitude": lng, "sequence": seq, "direction": direction})
+        else:
+            ordered = sorted(stops_by_direction.get(direction, []), key=lambda s: s.get("sequence", 0))
+            for seq, s in enumerate(ordered):
+                points.append({"latitude": s["latitude"], "longitude": s["longitude"], "sequence": seq, "direction": direction})
+
+    # Only publish a shape when at least one direction has real OSM roads;
+    # otherwise let the clients keep their existing directional-stops drawing.
+    has_osm_geometry = any(osm.get(d) for d in directions)
+    return points if has_osm_geometry else []
+
 
 class AirportBusWatcher:
     """Unified airport bus watcher with both new and legacy output."""
@@ -246,8 +307,13 @@ class AirportBusWatcher:
                     payload["shape"] = official_shape
                     payload["geometry_source"] = "oseth_gtfs_shapes"
                 elif payload.get("operator") == "oasa":
-                    payload["shape"] = []
-                    payload["geometry_source"] = "ordered_operator_stops_by_direction"
+                    road_shape = oasa_road_shape(route.route_id, valid_stops)
+                    if road_shape:
+                        payload["shape"] = road_shape
+                        payload["geometry_source"] = "osm_road_geometry"
+                    else:
+                        payload["shape"] = []
+                        payload["geometry_source"] = "ordered_operator_stops_by_direction"
                 else:
                     payload["shape"] = [
                         {"latitude": s["latitude"], "longitude": s["longitude"], "sequence": s.get("sequence", 0)}
