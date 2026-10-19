@@ -73,7 +73,22 @@
       }
     }
 
-    // Transfer edges between co-located stations (same folded name).
+    // Transfer edges between co-located stations: same folded name AND
+    // physically close. A shared name alone is wrong: "Panepistimio",
+    // "Syntagma" etc. exist in both Athens and Thessaloniki, so grouping by name
+    // alone lets Dijkstra "change lines" from an Athens metro to a Thessaloniki
+    // one at a station 500 km away instead of routing via the intercity train.
+    const MAX_TRANSFER_METERS = 500;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const latOf = (s) => (s && (s.lat != null ? s.lat : s.latitude));
+    const lngOf = (s) => (s && (s.lng != null ? s.lng : (s.lon != null ? s.lon : s.longitude)));
+    const distMeters = (a, b) => {
+      const la1 = latOf(a), lo1 = lngOf(a), la2 = latOf(b), lo2 = lngOf(b);
+      if (la1 == null || lo1 == null || la2 == null || lo2 == null) return Infinity;
+      const dLat = toRad(la2 - la1), dLng = toRad(lo2 - lo1);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(la1)) * Math.cos(toRad(la2)) * Math.sin(dLng / 2) ** 2;
+      return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    };
     const groups = new Map();
     for (const id of byId.keys()) {
       const key = nameKey(displayName(byId.get(id)));
@@ -84,6 +99,7 @@
       if (ids.length < 2) continue;
       for (let i = 0; i < ids.length; i++) {
         for (let j = i + 1; j < ids.length; j++) {
+          if (distMeters(byId.get(ids[i]), byId.get(ids[j])) > MAX_TRANSFER_METERS) continue;
           add(ids[i], ids[j], null, TRANSFER_MINUTES);
           add(ids[j], ids[i], null, TRANSFER_MINUTES);
         }

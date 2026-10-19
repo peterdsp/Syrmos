@@ -1,4 +1,5 @@
 import XCTest
+import CoreLocation
 @testable import Syrmos
 
 /// Integration: the point-to-point planner feeds the GO engine end to end on the
@@ -17,6 +18,43 @@ final class JourneyPlannerConnectTests: XCTestCase {
             if stops.count >= n { return (line.id, stops) }
         }
         return nil
+    }
+
+    /// Regression: the planner must never "transfer" between two stations that
+    /// merely share a name but are in different cities (Athens vs Thessaloniki
+    /// "Panepistimio", ~300 km apart). Piraeus -> Nea Elvetia used to route
+    /// M3 -> M2 -> TM1 by jumping cities at Panepistimio. Every real transfer is
+    /// between physically co-located stops, so assert that invariant directly.
+    func test_crossCityJourneyNeverTransfersBetweenFarSameNamedStations() throws {
+        var byId: [String: TransitStation] = [:]
+        for line in SyrmosData.operationalLines {
+            for station in SyrmosData.stations(for: line.id) { byId[station.id] = station }
+        }
+        // Athens Panepistimio and Thessaloniki Panepistimio share a name; confirm
+        // the fixture still has them far apart, else the test proves nothing.
+        if let athens = byId["M2_PAN"], let thess = byId["TM1_PAN"] {
+            let gap = CLLocation(latitude: athens.coordinate.latitude, longitude: athens.coordinate.longitude)
+                .distance(from: CLLocation(latitude: thess.coordinate.latitude, longitude: thess.coordinate.longitude))
+            XCTAssertGreaterThan(gap, 1000, "fixture precondition: the two Panepistimio are in different cities")
+        }
+
+        guard let plan = JourneyPlanner.planDetailed(from: "M1_PIR", to: "TM1_NEL", language: lang) else {
+            // No connecting route is acceptable: the bug was a WRONG route, not a
+            // missing one. A nil plan cannot contain a bad transfer.
+            return
+        }
+        guard plan.legs.count >= 2 else { return }
+        for i in 0..<(plan.legs.count - 1) {
+            let alightId = plan.legs[i].alightId
+            let boardId = plan.legs[i + 1].boardId
+            guard alightId != boardId, let a = byId[alightId], let b = byId[boardId] else { continue }
+            let metres = CLLocation(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude)
+                .distance(from: CLLocation(latitude: b.coordinate.latitude, longitude: b.coordinate.longitude))
+            XCTAssertLessThanOrEqual(
+                metres, 500,
+                "transfer \(alightId) -> \(boardId) spans \(Int(metres)) m: the planner stitched two cities together"
+            )
+        }
     }
 
     func test_planDetailed_singleLeg_guidesToArrived() throws {

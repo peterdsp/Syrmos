@@ -1,5 +1,6 @@
 package com.syrmos.core.domain.usecase
 
+import com.syrmos.core.common.extensions.distanceInMeters
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.model.planner.JourneyResult
@@ -69,11 +70,16 @@ class PlanJourneyUseCase(
         // id -> display name, so emitted segments carry real station names
         // instead of raw IDs.
         val stationNames = mutableMapOf<String, String>()
+        // id -> (lat, lon), so transfer edges can require real physical proximity.
+        val stationCoords = mutableMapOf<String, Pair<Double, Double>>()
 
         // Build edges from station ordering on each line
         for (line in allLines) {
             val stations = stationRepository.getStationsOnLine(line.id).first()
-            stations.forEach { stationNames[it.id] = it.name }
+            stations.forEach {
+                stationNames[it.id] = it.name
+                stationCoords[it.id] = it.latitude to it.longitude
+            }
             for (i in 0 until stations.size - 1) {
                 val a = stations[i]
                 val b = stations[i + 1]
@@ -101,7 +107,16 @@ class PlanJourneyUseCase(
         // name (mirrors web-planner.js buildGraph). Each line keeps its OWN
         // per-line station id even at an interchange, so without these edges the
         // graph is disconnected across lines and every cross-line journey returns
-        // null. The old loop here was a no-op (it added no edges at all).
+        // null.
+        //
+        // A shared name is necessary but NOT sufficient: "Panepistimio",
+        // "Syntagma", "Omonia" etc. exist in both Athens and Thessaloniki, so
+        // grouping by name alone fuses the two cities' metros into one graph and
+        // the planner "changes" from an Athens line to a Thessaloniki line at a
+        // station 500 km away (e.g. Piraeus to Nea Elvetia via M2 -> TM1 instead
+        // of the intercity train). Require the two stops to be physically within
+        // MAX_TRANSFER_METERS, which a real interchange is and a cross-city
+        // namesake never is.
         val idsByFoldedName = mutableMapOf<String, MutableList<String>>()
         for ((id, name) in stationNames) {
             idsByFoldedName.getOrPut(foldStationName(name)) { mutableListOf() }.add(id)
@@ -112,6 +127,13 @@ class PlanJourneyUseCase(
                 for (j in i + 1 until ids.size) {
                     val a = ids[i]
                     val b = ids[j]
+                    val ca = stationCoords[a]
+                    val cb = stationCoords[b]
+                    if (ca != null && cb != null &&
+                        distanceInMeters(ca.first, ca.second, cb.first, cb.second) > MAX_TRANSFER_METERS
+                    ) {
+                        continue
+                    }
                     graph.getOrPut(a) { mutableListOf() }
                         .add(Edge(b, TRANSFER_LINE_ID, "", TRANSFER_MINUTES, isTransfer = true))
                     graph.getOrPut(b) { mutableListOf() }
@@ -184,6 +206,14 @@ class PlanJourneyUseCase(
     companion object {
         /** Walking time estimate at an interchange (matches web TRANSFER_MINUTES). */
         const val TRANSFER_MINUTES = 3
+
+        /**
+         * Max metres between two same-named stops for them to count as one
+         * physical interchange. A real transfer is a few metres; a cross-city
+         * namesake (Athens vs Thessaloniki "Panepistimio") is hundreds of km, so
+         * this stops the planner stitching separate cities' networks together.
+         */
+        const val MAX_TRANSFER_METERS = 500
         /** Sentinel line id on a transfer edge; reconstructSegments skips it. */
         const val TRANSFER_LINE_ID = "__transfer__"
     }

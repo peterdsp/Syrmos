@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 /// Point-to-point routing across the bundled Athens rail network, the Swift
 /// port of the KMP `PlanJourneyUseCase` (Dijkstra over a station graph). Any
@@ -179,7 +180,14 @@ enum JourneyPlanner {
         }
 
         // Transfer edges between co-located stations (same physical place,
-        // different per-line ids).
+        // different per-line ids). A shared name is necessary but NOT sufficient:
+        // "Panepistimio", "Syntagma", "Omonia" etc. exist in both Athens and
+        // Thessaloniki, so grouping by name alone stitches the two cities' metros
+        // into one graph and the planner "changes" from an Athens line to a
+        // Thessaloniki line at a station 500 km away. Require the two stops to be
+        // physically within MAX_TRANSFER_METERS of each other, which a real
+        // interchange is (a few metres) and a cross-city namesake never is.
+        let byId = Dictionary(stations.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var groups: [String: [String]] = [:]
         for st in stations {
             groups[norm(st.name.isEmpty ? st.nameEl : st.name), default: []].append(st.id)
@@ -187,6 +195,10 @@ enum JourneyPlanner {
         for (_, ids) in groups where ids.count > 1 {
             for i in 0..<ids.count {
                 for j in (i + 1)..<ids.count {
+                    guard let a = byId[ids[i]], let b = byId[ids[j]] else { continue }
+                    let metres = CLLocation(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude)
+                        .distance(from: CLLocation(latitude: b.coordinate.latitude, longitude: b.coordinate.longitude))
+                    guard metres <= MAX_TRANSFER_METERS else { continue }
                     graph[ids[i], default: []].append(Edge(to: ids[j], lineId: nil, weight: TRANSFER_MINUTES))
                     graph[ids[j], default: []].append(Edge(to: ids[i], lineId: nil, weight: TRANSFER_MINUTES))
                 }
@@ -234,6 +246,11 @@ enum JourneyPlanner {
     // MARK: - Helpers
 
     private static let TRANSFER_MINUTES = 3
+    /// A real interchange between co-located stops is a few metres apart; a
+    /// same-named station in another city is hundreds of km away. 500 m keeps
+    /// genuine transfers (and generous street-level walks) while rejecting
+    /// cross-city namesakes.
+    private static let MAX_TRANSFER_METERS: CLLocationDistance = 500
 
     private static func travelTime(for type: TransitType) -> Int {
         switch type {
