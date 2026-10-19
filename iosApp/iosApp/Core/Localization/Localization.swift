@@ -226,6 +226,11 @@ enum LocalizedKey: CaseIterable {
     case onboardMapToolsBody
     case onboardPrivacyTitle
     case onboardPrivacyBody
+    case onboardFavoritesTitle
+    case onboardFavoritesBody
+    case onboardFavoritesNearby
+    case onboardFavoritesSearch
+    case onboardPrivacyFooter
     case onboardContinue
     case onboardGetStarted
     case onboardSkip
@@ -424,6 +429,26 @@ enum LocalizedKey: CaseIterable {
         case (.onboardSkip, .greek): return "Παράλειψη"
         case (.onboardSkip, .albanian): return "Anashkalo"
         case (.onboardSkip, .italian): return "Salta"
+        case (.onboardFavoritesTitle, .english): return "Your stations, first"
+        case (.onboardFavoritesTitle, .greek): return "Οι σταθμοί σου, πρώτοι"
+        case (.onboardFavoritesTitle, .albanian): return "Stacionet e tua, të parat"
+        case (.onboardFavoritesTitle, .italian): return "Le tue stazioni, prima"
+        case (.onboardFavoritesBody, .english): return "Star the stations you use most and Syrmos puts them on top. You can change these any time."
+        case (.onboardFavoritesBody, .greek): return "Βάλε αστέρι στους σταθμούς που χρησιμοποιείς πιο πολύ και το Syrmos τους βάζει πρώτους. Μπορείς να τους αλλάξεις όποτε θες."
+        case (.onboardFavoritesBody, .albanian): return "Vendos yll te stacionet që përdor më shumë dhe Syrmos i vë në krye. Mund t'i ndryshosh kurdo."
+        case (.onboardFavoritesBody, .italian): return "Aggiungi una stella alle stazioni che usi di più e Syrmos le mette in cima. Puoi cambiarle quando vuoi."
+        case (.onboardFavoritesNearby, .english): return "Near you"
+        case (.onboardFavoritesNearby, .greek): return "Κοντά σου"
+        case (.onboardFavoritesNearby, .albanian): return "Pranë teje"
+        case (.onboardFavoritesNearby, .italian): return "Vicino a te"
+        case (.onboardFavoritesSearch, .english): return "Search any station"
+        case (.onboardFavoritesSearch, .greek): return "Αναζήτηση σταθμού"
+        case (.onboardFavoritesSearch, .albanian): return "Kërko çdo stacion"
+        case (.onboardFavoritesSearch, .italian): return "Cerca una stazione"
+        case (.onboardPrivacyFooter, .english): return "No account. No telemetry. Your data stays on your phone."
+        case (.onboardPrivacyFooter, .greek): return "Χωρίς λογαριασμό. Χωρίς τηλεμετρία. Τα δεδομένα σου μένουν στο κινητό σου."
+        case (.onboardPrivacyFooter, .albanian): return "Pa llogari. Pa telemetri. Të dhënat e tua rrinë në telefonin tënd."
+        case (.onboardPrivacyFooter, .italian): return "Nessun account. Nessuna telemetria. I tuoi dati restano sul telefono."
         case (.nextTrain, .english): return "Next train"
         case (.nextTrain, .greek): return "Επόμενος συρμός"
         case (.nextTrain, .albanian): return "Treni i ardhshëm"
