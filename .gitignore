@@ -11,7 +11,8 @@ output/playwright/
 # IDE and editor
 .idea/
 .vscode/
-.claude/
+.claude/*
+!.claude/skills/
 *.iml
 
 # Local environment

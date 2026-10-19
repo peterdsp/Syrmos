@@ -1,0 +1,55 @@
+{
+  "skill_name": "syrmos-feature-loop",
+  "evals": [
+    {
+      "id": 0,
+      "name": "cross-platform-pure-transform",
+      "prompt": "In Syrmos, add a small feature: on departure cards, when the soonest departure is 1 minute away or less, show it as \"Now\" instead of \"1 min\" / \"0 min\". This is a display rule on the countdown. Implement it across the clients, write tests, and verify it. Tell me what you changed and how confident you are it works.",
+      "expected_output": "Edits iOS + Android/KMP + web (not one platform), ideally one mirrored pure rule; adds a unit test per affected client and runs them; states a verification tier per surface honestly; no AI trailers, no em-dash.",
+      "files": [],
+      "assertions": [
+        "Edits the iOS client (a file under iosApp/ changed)",
+        "Edits the Android/KMP client (a .kt file changed)",
+        "Edits the web client (a web-*.js file changed)",
+        "Touches all three clients, not just one platform",
+        "Adds at least one unit test covering the new rule",
+        "Actually ran a test/build command and reported its pass/fail result",
+        "Reports a verification tier per surface",
+        "No em-dash or en-dash anywhere in the produced diff or text",
+        "No AI attribution in any drafted commit or PR text"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "scoped-test-and-verify",
+      "prompt": "I just changed the journey ranking so RECOMMENDED (comfortable-first) is the default instead of fastest. Write tests that lock in that the default ranking is comfortable-first and run them, then tell me honestly whether it actually behaves that way, not just that it compiles.",
+      "expected_output": "Locates ranking logic, adds/updates a test asserting comfortable-first default, runs the correct test command, and reports a runtime-vs-CI tier honestly.",
+      "files": [],
+      "assertions": [
+        "Locates the journey-ranking logic and names the relevant file(s)",
+        "Adds or strengthens a test asserting the default ranking is comfortable-first / RECOMMENDED",
+        "Runs the test with a correct command (testDebugUnitTest / node --test / xcodebuild test)",
+        "Reports the actual pass/fail output of the test run",
+        "States an honest verification tier rather than claiming done on compile",
+        "Distinguishes comfortable-first/RECOMMENDED from fastest as the default"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "seed-plus-hygiene",
+      "prompt": "Add a new line-status value \"reduced_service\" to Syrmos (a line running on a cut-down timetable, drawn like operational but with a distinct banner). Wire it through the data model and the clients, and get it ready to commit and open a PR.",
+      "expected_output": "Adds the LineStatus value + LineMapper branch + fromRaw mapping + client render, handles the three-copy bundled seed and manifest rehash if touched, adds tests, and drafts a clean commit/PR with no AI attribution and no em-dash; mentions the deploy implication.",
+      "files": [],
+      "assertions": [
+        "Adds reduced_service to the LineStatus model/enum",
+        "Adds the matching branch in LineMapper when and a fromRaw mapping",
+        "Wires the new status render on the clients (not just the model)",
+        "Handles the bundled seed correctly if touched (three copies + manifest rehash) or correctly notes it is not needed",
+        "Adds tests and ran them",
+        "Drafted commit message has NO Co-Authored-By and NO 'Generated with' trailer",
+        "No em-dash or en-dash anywhere in the diff, commit, or PR text",
+        "Mentions the deploy implication (Pages rebuild for web seed / Pi for server)"
+      ]
+    }
+  ]
+}
