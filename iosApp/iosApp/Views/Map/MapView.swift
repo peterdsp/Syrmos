@@ -1322,6 +1322,48 @@ struct SyrmosMKMapView: UIViewRepresentable {
         return overlay
     }
 
+    /// A cheap fingerprint of the airport-bus geometry, so updateUIView only
+    /// rebuilds the lines and stops when the live snapshot actually changes
+    /// rather than on every unrelated update tick.
+    private var airportBusSignature: String {
+        busRoutes.map { "\($0.route_id):\($0.shape?.count ?? 0):\($0.stops?.count ?? 0)" }.joined(separator: "|")
+    }
+
+    /// (Re)builds the airport bus route lines and stop markers from the current
+    /// live snapshot. Idempotent: it removes the ones it added before, so it is
+    /// safe to call from both makeUIView and updateUIView.
+    private func applyAirportBusGeometry(to mv: MKMapView) {
+        let staleLines = mv.overlays.compactMap { $0 as? SyrmosColoredPolyline }.filter { $0.isAirportBus }
+        mv.removeOverlays(staleLines)
+        mv.removeAnnotations(mv.annotations.compactMap { $0 as? SyrmosBusStopAnnotation })
+
+        for route in busRoutes {
+            // Prefer published road geometry (OSETH GTFS shape, or Athens OSM
+            // geometry tagged per direction). Fall back to connecting the
+            // ordered stops only when no shape is available.
+            let shapePoints = (route.shape ?? []).filter { $0.latitude.isFinite && $0.longitude.isFinite && !($0.latitude == 0 && $0.longitude == 0) }
+            let shapeByDirection = Dictionary(grouping: shapePoints, by: { $0.direction ?? "" })
+                .sorted { $0.key < $1.key }
+                .map { $0.value.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
+                .filter { $0.count > 1 }
+            let stops = (route.stops ?? []).filter { $0.latitude.isFinite && $0.longitude.isFinite && !($0.latitude == 0 && $0.longitude == 0) }
+            let stopsByDirection = Dictionary(grouping: stops, by: { $0.direction ?? "" })
+                .sorted { $0.key < $1.key }
+                .map { $0.value.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
+                .filter { $0.count > 1 }
+            let segments: [[CLLocationCoordinate2D]] = shapeByDirection.isEmpty ? stopsByDirection : shapeByDirection
+            for coords in segments where coords.count > 1 {
+                let poly = SyrmosColoredPolyline(coordinates: coords, count: coords.count)
+                poly.color = UIColor(Color(hex: route.color) ?? .syrmosPrimary)
+                poly.weight = 4
+                poly.isBus = true
+                poly.isAirportBus = true
+                mv.addOverlay(poly, level: .aboveLabels)
+            }
+        }
+        for stop in busStops { mv.addAnnotation(SyrmosBusStopAnnotation(stop: stop)) }
+    }
+
     func makeUIView(context: Context) -> MKMapView {
         let mv = MKMapView()
         mv.delegate = context.coordinator
@@ -1377,34 +1419,16 @@ struct SyrmosMKMapView: UIViewRepresentable {
             poly.isBus = route.isBus
             mv.addOverlay(poly, level: .aboveLabels)
         }
-        for route in busRoutes {
-            // Prefer published road geometry (OSETH GTFS shape, or Athens OSM
-            // geometry tagged per direction). Fall back to connecting the
-            // ordered stops only when no shape is available.
-            let shapePoints = (route.shape ?? []).filter { $0.latitude.isFinite && $0.longitude.isFinite && !($0.latitude == 0 && $0.longitude == 0) }
-            let shapeByDirection = Dictionary(grouping: shapePoints, by: { $0.direction ?? "" })
-                .sorted { $0.key < $1.key }
-                .map { $0.value.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
-                .filter { $0.count > 1 }
-            let stops = (route.stops ?? []).filter { $0.latitude.isFinite && $0.longitude.isFinite && !($0.latitude == 0 && $0.longitude == 0) }
-            let stopsByDirection = Dictionary(grouping: stops, by: { $0.direction ?? "" })
-                .sorted { $0.key < $1.key }
-                .map { $0.value.sorted { ($0.sequence ?? 0) < ($1.sequence ?? 0) }.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
-                .filter { $0.count > 1 }
-            let segments: [[CLLocationCoordinate2D]] = shapeByDirection.isEmpty ? stopsByDirection : shapeByDirection
-            for coords in segments where coords.count > 1 {
-                let poly = SyrmosColoredPolyline(coordinates: coords, count: coords.count)
-                poly.color = UIColor(Color(hex: route.color) ?? .syrmosPrimary)
-                poly.weight = 4
-                poly.isBus = true
-                mv.addOverlay(poly, level: .aboveLabels)
-            }
-        }
-
         for station in stations {
             mv.addAnnotation(SyrmosStationAnnotation(station: station))
         }
-        for stop in busStops { mv.addAnnotation(SyrmosBusStopAnnotation(stop: stop)) }
+        // Airport bus lines and stop markers come from the async live snapshot,
+        // which is almost always still empty at makeUIView time (the
+        // /api/airport-buses poll lands a few seconds later). applyAirportBusGeometry
+        // runs again from updateUIView when that data arrives, so they appear
+        // instead of being drawn once against an empty snapshot and never again.
+        applyAirportBusGeometry(to: mv)
+        context.coordinator.lastAirportBusSignature = airportBusSignature
 
         // On-device audit: warn if any station the app renders falls outside the
         // Attica box (37.7-38.55 N, 22.65-24.15 E; A4 Kiato W to A3 Chalkida N).
@@ -1571,6 +1595,15 @@ struct SyrmosMKMapView: UIViewRepresentable {
             ann.coordinate = context.coordinator.snapToPolyline(coord: train.coordinate, lineId: train.lineId)
         }
 
+        // Airport bus route lines + stop markers: the live /api/airport-buses
+        // snapshot usually arrives after makeUIView, so rebuild them here when it
+        // changes. Without this the lines and stops never appear (only the live
+        // vehicle dots below, which already reconcile, would show).
+        if context.coordinator.lastAirportBusSignature != airportBusSignature {
+            context.coordinator.lastAirportBusSignature = airportBusSignature
+            applyAirportBusGeometry(to: mv)
+        }
+
         // Sync live airport buses. Same move-in-place reconcile as live trains,
         // but plotted at their true road coordinate (no rail-polyline snapping).
         let busLang = LocalizationManager.shared.language
@@ -1603,6 +1636,7 @@ struct SyrmosMKMapView: UIViewRepresentable {
         var lastRecenterPing: Int = -1
         var lastAutoRecenterPing: Int = -1
         var lastStationDisruptions: [String: String] = [:]
+        var lastAirportBusSignature: String = ""
         /// The active flat base-map tile overlay + its theme, so a light/dark
         /// flip can swap it without rebuilding the map.
         var baseTileOverlay: MKTileOverlay?
@@ -2195,6 +2229,10 @@ final class SyrmosColoredPolyline: MKPolyline {
     var weight: CGFloat = 4
     var dashed: Bool = false
     var isBus: Bool = false
+    /// Distinguishes the live airport-bus route lines (rebuilt from the async
+    /// snapshot) from the seed rail/rail-replacement lines, so updateUIView can
+    /// replace only the former without disturbing the metro/tram overlays.
+    var isAirportBus: Bool = false
 }
 
 final class SyrmosStationAnnotation: NSObject, MKAnnotation {
