@@ -507,6 +507,29 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(hasVisibleVariance(image), "Plan dark render should not be blank")
     }
 
+    // MARK: Mockup exports
+
+    @MainActor
+    func test_mockup_home_portrait_export() throws {
+        let image = render(MockupCaptureView(screen: "home"), size: duoInnerPortrait, dark: true)
+        try save(image, "syrmos-mockup-home-real.png")
+        XCTAssertTrue(hasVisibleVariance(image))
+    }
+
+    @MainActor
+    func test_mockup_map_landscape_export() throws {
+        let image = render(MockupCaptureView(screen: "map"), size: duoInnerLandscape, dark: true)
+        try save(image, "syrmos-mockup-map-real.png")
+        XCTAssertTrue(hasVisibleVariance(image))
+    }
+
+    @MainActor
+    func test_mockup_explore_portrait_export() throws {
+        let image = render(MockupCaptureView(screen: "explore"), size: duoInnerPortrait, dark: true)
+        try save(image, "syrmos-mockup-explore-real.png")
+        XCTAssertTrue(hasVisibleVariance(image))
+    }
+
     // MARK: Rendering + sampling
 
     @MainActor
