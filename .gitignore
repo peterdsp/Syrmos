@@ -13,6 +13,8 @@ output/playwright/
 .vscode/
 .claude/*
 !.claude/skills/
+!.claude/agents/
+!.claude/workflows/
 *.iml
 
 # Local environment
