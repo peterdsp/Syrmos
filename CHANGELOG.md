@@ -10,6 +10,15 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.40 - 2026-10-21
+
+### Fixed
+- Arrive-by and last-train no longer report "No journey arrives by that time"
+  for a route whose intercity leg has no bundled timetable (Piraeus to
+  Thessaloniki). The route is shown as an honest estimate with a note to check
+  Hellenic Train for exact departures; only a timetabled route that genuinely
+  cannot reach the deadline is reported as no journey. iOS, Android and web.
+
 ## 3.0.0-beta.39 - 2026-10-21
 
 ### Improved
