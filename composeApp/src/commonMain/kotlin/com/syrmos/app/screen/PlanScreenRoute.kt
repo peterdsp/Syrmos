@@ -584,8 +584,11 @@ class PlanScreenRoute : Screen {
                 ) { Text(t("Find routes", "Βρες διαδρομές", "Gjej rrugët", "Trova percorsi")) }
             }
 
-            // In a backward mode only options that actually scheduled are usable.
-            val usable = if (mode == "now") options else options.filter { it.departureInstant != null }
+            // In a backward mode only options that actually scheduled are usable,
+            // plus a route whose intercity leg has no timetable, which is kept as
+            // an honest estimate rather than hidden as "no journey".
+            val usable = if (mode == "now") options
+                else options.filter { it.departureInstant != null || it.estimatedNoTimetable }
             val facts = JourneyComparison.facts(usable.map { it.durationSeconds }, usable.map { it.transferCount })
             val selectedIndex = JourneySelection.index(selectedId, usable.map { it.id }) ?: 0
             val selectedOption = usable.getOrNull(selectedIndex)
@@ -632,6 +635,18 @@ class PlanScreenRoute : Screen {
                                     else t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio"),
                                 )
                             }
+                        }
+                        if (usable.any { it.estimatedNoTimetable }) {
+                            Text(
+                                t(
+                                    "Intercity times are not in the app yet, so this is an estimate. Check Hellenic Train for exact departures.",
+                                    "Οι ώρες των υπεραστικών δεν είναι ακόμη στην εφαρμογή, οπότε αυτή είναι εκτίμηση. Δες τα ακριβή δρομολόγια στην Hellenic Train.",
+                                    "Oraret ndërqytetëse nuk janë ende në aplikacion, prandaj kjo është një vlerësim. Shih oraret e sakta te Hellenic Train.",
+                                    "Gli orari intercity non sono ancora nell'app, quindi questa e una stima. Controlla Hellenic Train per le partenze esatte.",
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         usable.forEachIndexed { i, opt ->
                             OptionCard(

@@ -153,6 +153,12 @@ data class JourneyOption(
     val feasibility: Feasibility,
     /** "fastest" etc. only when that ranking is actually true; null otherwise. */
     val rankingBadge: String? = null,
+    /**
+     * Set in a backward (arrive-by / last-train) pass when a leg has no bundled
+     * timetable (the Athens-Thessaloniki intercity): the route is real but cannot
+     * be clocked, so it is shown as an estimate rather than hidden as "no journey".
+     */
+    val estimatedNoTimetable: Boolean = false,
 )
 
 /**

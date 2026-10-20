@@ -140,12 +140,18 @@ object SchedulePlanner {
 
         var deadline: Long = arriveByInstant?.epochSeconds ?: Long.MAX_VALUE
         var timedAll = true
+        // A leg with no departures at all (the intercity rail has no bundled
+        // timetable) means the route cannot be clocked, which is different from a
+        // timetabled route that cannot reach the deadline. The first is an estimate
+        // worth showing, the second a genuine "no journey".
+        var missingTimetable = false
         for (pos in rideIdx.indices.reversed()) {
             val i = rideIdx[pos]
             val leg = legs[i]
+            val list = leg.lineId?.let { timetable.departures[key2(it, leg.fromId)] } ?: emptyList()
+            if (list.isEmpty()) missingTimetable = true
             val travel = timetable.legSeconds[key3(leg.lineId ?: "", leg.fromId, leg.toId)]
             if (travel == null) { legs[i] = unscheduled(leg); timedAll = false; continue }
-            val list = leg.lineId?.let { timetable.departures[key2(it, leg.fromId)] } ?: emptyList()
             var best: Long? = null
             for (d in list) {
                 val e = d.epochSeconds
@@ -170,6 +176,7 @@ object SchedulePlanner {
             arrivalInstant = lastArr,
             durationSeconds = if (timedAll && firstDep != null && lastArr != null)
                 (lastArr.epochSeconds - firstDep.epochSeconds).toInt() else null,
+            estimatedNoTimetable = arriveByInstant != null && missingTimetable && !timedAll,
         )
     }
 

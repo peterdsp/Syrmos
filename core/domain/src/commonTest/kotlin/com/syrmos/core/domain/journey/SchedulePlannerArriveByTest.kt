@@ -76,6 +76,20 @@ class SchedulePlannerArriveByTest {
         )
         assertNull(out.departureInstant)
         assertEquals(TimingKind.UNKNOWN, out.legs.first().timingKind)
+        assertEquals(false, out.estimatedNoTimetable, "a timetabled but too-late route is a genuine no-journey")
+    }
+
+    @Test
+    fun arriveByWithNoTimetableIsAnEstimateNotNoJourney() {
+        // The Athens-Thessaloniki intercity has no bundled departures: the route
+        // is kept as an estimate (estimatedNoTimetable), not hidden as no journey.
+        val out = SchedulePlanner.assignScheduleArriveBy(
+            option(ride("r1", "IC1", "ATH", "THE")),
+            Instant.parse("2026-01-16T23:50:00+02:00"),
+            tt(emptyMap(), emptyMap()),
+        )
+        assertNull(out.departureInstant)
+        assertEquals(true, out.estimatedNoTimetable)
     }
 
     @Test
