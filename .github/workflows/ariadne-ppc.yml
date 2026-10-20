@@ -1,0 +1,72 @@
+name: Ariadne PPC
+
+# Dev-time Propose-Probe-Compose optimizer for Ariadne's LLM contract, run for
+# free on GitHub's runners via GitHub Models. It never writes docs/ariadne and
+# never commits; it uploads the candidate pack and summary as artifacts for a
+# human to review. See scripts/ariadne-ppc/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Number of golden tasks to use (keeps calls within the free tier)"
+        required: false
+        default: "12"
+  # Uncomment to also run on a schedule (free):
+  # schedule:
+  #   - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+
+concurrency:
+  group: ariadne-ppc-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  models: read          # free GitHub Models access via GITHUB_TOKEN
+
+jobs:
+  ppc:
+    name: Propose-Probe-Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scripts/ariadne-ppc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Offline self-tests (no model)
+        run: python3 tests/test_ppc.py
+
+      - name: Run PPC against GitHub Models
+        env:
+          ARIADNE_PPC_MODEL_CMD: python3 model_cmd/github_models_cmd.py
+          ARIADNE_PPC_OPENAI_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python3 -m ppc.run run --out runs/ppc-ci --limit "${{ inputs.limit || '12' }}"
+          echo "gate_exit=$?" >> "$GITHUB_OUTPUT"
+        id: ppc
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo '## Ariadne PPC result'
+            echo '```json'
+            cat runs/ppc-ci/summary.json 2>/dev/null || echo 'no summary produced'
+            echo '```'
+            echo 'A rejected gate is a normal outcome (no improvement found).'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload candidate pack and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ariadne-ppc-candidate
+          path: scripts/ariadne-ppc/runs/ppc-ci/
+          if-no-files-found: ignore
+          retention-days: 14
