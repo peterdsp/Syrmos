@@ -19,6 +19,11 @@ enum JourneyPlanAdapter {
         var leaveBy: Date? = nil
         /// True in a backward mode when nothing could be scheduled (no train).
         var noJourney: Bool = false
+        /// True when the route is real but a leg has no bundled timetable (the
+        /// Athens-Thessaloniki intercity), so arrive-by / last-train cannot pin
+        /// exact clocks. The route is still shown, as an honest estimate with a
+        /// "check the operator for exact times" note, not hidden as "no journey".
+        var estimatedNoTimetable: Bool = false
         /// The topology plan behind this option, kept so GO can be started (S05 -> S06).
         var detailed: JourneyPlanner.DetailedPlan? = nil
         /// The S05 timeline input (ride + synthesized transfer legs, with clocks).
@@ -162,6 +167,11 @@ enum JourneyPlanAdapter {
         var depByLeg = [TimeInterval?](repeating: nil, count: detailed.legs.count)
         var arrByLeg = [TimeInterval?](repeating: nil, count: detailed.legs.count)
         var timedAll = false
+        // A leg with no bundled departures at all (the intercity rail) means the
+        // route cannot be clocked, which is different from a timetabled route that
+        // simply cannot reach the deadline. The first is an estimate to show, the
+        // second is a genuine "no journey arrives by that time".
+        var missingTimetable = false
 
         if let departuresFor = departuresFor {
             let hops = { (leg: JourneyPlanner.DetailedLeg) in max(1, leg.stationIds.count - 1) }
@@ -185,7 +195,9 @@ enum JourneyPlanAdapter {
                 for i in stride(from: detailed.legs.count - 1, through: 0, by: -1) {
                     let leg = detailed.legs[i]
                     let travel = travelOf(leg)
-                    guard let dep = depsOf(leg).filter({ $0 + travel <= deadline }).max() else { timedAll = false; break }
+                    let deps = depsOf(leg)
+                    if deps.isEmpty { missingTimetable = true; timedAll = false; break }
+                    guard let dep = deps.filter({ $0 + travel <= deadline }).max() else { timedAll = false; break }
                     depByLeg[i] = dep; arrByLeg[i] = dep + travel
                     deadline = dep - transferMin
                 }
@@ -200,12 +212,17 @@ enum JourneyPlanAdapter {
 
         // Estimated (no timetable) or not-fully-timed: honest estimate, no clocks.
         if departuresFor == nil || !timedAll {
-            let noJourney = departuresFor != nil && !timedAll && mode != .now
+            // A route that has a timetable but cannot reach the deadline is a
+            // genuine "no journey". A route with no timetable at all (intercity)
+            // is NOT: show it as an estimate so the traveller still gets the plan.
+            let noJourney = departuresFor != nil && !timedAll && mode != .now && !missingTimetable
             return PlannedJourney(
                 lineChain: chain, transferCount: transfers,
                 durationSeconds: detailed.totalMinutes * 60,
                 feasibility: noJourney ? .unknown : (transfers == 0 ? .comfortable : .unknown),
-                leaveBy: nil, noJourney: noJourney, detailed: detailed, detailLegs: detailLegs)
+                leaveBy: nil, noJourney: noJourney,
+                estimatedNoTimetable: departuresFor != nil && missingTimetable && mode != .now,
+                detailed: detailed, detailLegs: detailLegs)
         }
 
         // Fully timed: worst transfer margin across consecutive rides.
@@ -454,7 +471,10 @@ struct PlanView: View {
 
     /// Usable alternatives: in a backward mode only options that actually scheduled.
     private var usableResults: [JourneyPlanAdapter.PlannedJourney] {
-        mode == .now ? results : results.filter { !$0.noJourney && $0.leaveBy != nil }
+        // Backward modes normally show only clocked results, but a route whose
+        // intercity leg has no timetable is kept as an estimate (it has no
+        // leaveBy) so the traveller still sees the plan instead of an empty list.
+        mode == .now ? results : results.filter { !$0.noJourney && ($0.leaveBy != nil || $0.estimatedNoTimetable) }
     }
 
     /// Shared comparison facts, index-aligned with `usableResults`.
@@ -531,6 +551,15 @@ struct PlanView: View {
                     : t("Save journey", "Αποθήκευση", "Ruaj udhëtimin", "Salva viaggio")) { saveCurrent() }
                     .buttonStyle(.bordered)
                     .disabled(alreadySaved)
+            }
+            if usable.contains(where: { $0.estimatedNoTimetable }) {
+                Text(t(
+                    "Intercity times are not in the app yet, so this is an estimate. Check Hellenic Train below for exact departures.",
+                    "Οι ώρες των υπεραστικών δεν είναι ακόμη στην εφαρμογή, οπότε αυτή είναι εκτίμηση. Δες τα ακριβή δρομολόγια στην Hellenic Train παρακάτω.",
+                    "Oraret ndërqytetëse nuk janë ende në aplikacion, prandaj kjo është një vlerësim. Shih oraret e sakta te Hellenic Train më poshtë.",
+                    "Gli orari intercity non sono ancora nell'app, quindi questa e una stima. Controlla Hellenic Train qui sotto per le partenze esatte."
+                ))
+                .font(.footnote).foregroundStyle(.secondary)
             }
             let facts = resultFacts
             let selectedID = selectedResult?.id

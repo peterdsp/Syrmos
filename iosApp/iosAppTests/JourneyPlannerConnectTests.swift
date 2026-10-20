@@ -72,6 +72,22 @@ final class JourneyPlannerConnectTests: XCTestCase {
         )
     }
 
+    /// Regression: Piraeus -> Thessaloniki rides the intercity, which has no
+    /// bundled timetable. Arrive-by must still return the route as an estimate
+    /// (estimatedNoTimetable) rather than reporting "no journey arrives by that
+    /// time", which wrongly implied no route exists.
+    func test_arriveBy_withNoIntercityTimetable_showsEstimateNotNoJourney() throws {
+        let target = Date(timeIntervalSince1970: SyrmosClock.now.timeIntervalSince1970 + 3 * 24 * 3600)
+        guard let p = JourneyPlanAdapter.plan(
+            from: "M1_PIR", to: "GR_THE", language: lang,
+            departuresFor: { _, _ in [] }, mode: .arriveBy, arriveBy: target
+        ) else {
+            throw XCTSkip("no Athens->Thessaloniki route in the test bundle")
+        }
+        XCTAssertFalse(p.noJourney, "a route whose intercity leg has no timetable is an estimate, not 'no journey'")
+        XCTAssertTrue(p.estimatedNoTimetable, "the no-timetable route should be flagged as an estimate")
+    }
+
     func test_planDetailed_singleLeg_guidesToArrived() throws {
         guard let (lineId, stops) = lineWithStops(4) else {
             throw XCTSkip("No operational line with >=4 stops in the test bundle")
