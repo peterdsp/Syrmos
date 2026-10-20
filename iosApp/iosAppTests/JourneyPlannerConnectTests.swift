@@ -57,6 +57,21 @@ final class JourneyPlannerConnectTests: XCTestCase {
         }
     }
 
+    /// Regression: the Athens -> Thessaloniki intercity (~500 km via IC1) must be
+    /// costed by distance, not a flat per-stop value, or the planner reports ~83
+    /// minutes for a ride that really takes several hours.
+    func test_intercityJourneyUsesRealisticTravelTime() throws {
+        // Piraeus -> Thessaloniki (GR_THE, the IC1 terminus) routes via the
+        // ~500 km Athens-Thessaloniki train; it cannot be ~83 min.
+        guard let plan = JourneyPlanner.plan(from: "M1_PIR", to: "GR_THE", language: lang) else {
+            throw XCTSkip("no Athens->Thessaloniki route in the test bundle")
+        }
+        XCTAssertGreaterThan(
+            plan.totalMinutes, 180,
+            "Piraeus -> Thessaloniki came out as \(plan.totalMinutes) min; the intercity leg is being costed like metro hops"
+        )
+    }
+
     func test_planDetailed_singleLeg_guidesToArrived() throws {
         guard let (lineId, stops) = lineWithStops(4) else {
             throw XCTSkip("No operational line with >=4 stops in the test bundle")

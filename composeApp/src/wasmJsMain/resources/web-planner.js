@@ -62,23 +62,6 @@
       graph.get(a).push({ to: b, lineId, weight });
     };
 
-    // Same-line edges between consecutive stops.
-    for (const line of lines || []) {
-      const w = travelTime(line.type);
-      const ordered = line.stations || [];
-      for (let i = 0; i < ordered.length - 1; i++) {
-        const a = ordered[i].id, b = ordered[i + 1].id;
-        add(a, b, line.id, w);
-        add(b, a, line.id, w);
-      }
-    }
-
-    // Transfer edges between co-located stations: same folded name AND
-    // physically close. A shared name alone is wrong: "Panepistimio",
-    // "Syntagma" etc. exist in both Athens and Thessaloniki, so grouping by name
-    // alone lets Dijkstra "change lines" from an Athens metro to a Thessaloniki
-    // one at a station 500 km away instead of routing via the intercity train.
-    const MAX_TRANSFER_METERS = 500;
     const toRad = (d) => (d * Math.PI) / 180;
     const latOf = (s) => (s && (s.lat != null ? s.lat : s.latitude));
     const lngOf = (s) => (s && (s.lng != null ? s.lng : (s.lon != null ? s.lon : s.longitude)));
@@ -89,6 +72,44 @@
       const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(la1)) * Math.cos(toRad(la2)) * Math.sin(dLng / 2) ** 2;
       return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
     };
+    // Ride time for one hop, from the stop-to-stop distance and a cruising speed
+    // (km/h, incl. dwell) per line type. National suburban is intercity rail
+    // (fast, long gaps); national bus is a long-distance coach. A flat per-stop
+    // value made the ~500 km Athens-Thessaloniki intercity cost like ten metro
+    // hops (~40 min) instead of its real ~5 hours.
+    const segMinutes = (line, a, b) => {
+      const km = distMeters(a, b) / 1000;
+      if (!isFinite(km)) return travelTime(line.type);
+      const national = String(line.region || '').toLowerCase() === 'national';
+      let speed;
+      switch (line.type) {
+        case 'metro': speed = 32; break;
+        case 'tram': speed = 18; break;
+        case 'scenic': speed = 25; break;
+        case 'suburban': speed = national ? 95 : 42; break;
+        case 'bus': speed = national ? 70 : 20; break;
+        default: speed = 40;
+      }
+      return Math.max(1, Math.round((km / speed) * 60));
+    };
+
+    // Same-line edges between consecutive stops, weighted by real ride time.
+    for (const line of lines || []) {
+      const ordered = line.stations || [];
+      for (let i = 0; i < ordered.length - 1; i++) {
+        const sa = ordered[i], sb = ordered[i + 1];
+        const w = segMinutes(line, sa, sb);
+        add(sa.id, sb.id, line.id, w);
+        add(sb.id, sa.id, line.id, w);
+      }
+    }
+
+    // Transfer edges between co-located stations: same folded name AND
+    // physically close. A shared name alone is wrong: "Panepistimio",
+    // "Syntagma" etc. exist in both Athens and Thessaloniki, so grouping by name
+    // alone lets Dijkstra "change lines" from an Athens metro to a Thessaloniki
+    // one at a station 500 km away instead of routing via the intercity train.
+    const MAX_TRANSFER_METERS = 500;
     const groups = new Map();
     for (const id of byId.keys()) {
       const key = nameKey(displayName(byId.get(id)));

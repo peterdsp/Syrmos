@@ -290,6 +290,18 @@ struct PlanView: View {
     @State private var planned = false
     @State private var mode: JourneyPlanAdapter.Mode = .now
     @State private var arriveByTime = SyrmosClock.now
+
+    /// Hellenic Train's own ticket site, the link the rest of the app already
+    /// uses (Fares, Station detail) for buying suburban and intercity tickets.
+    private let hellenicTrainTicketURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")!
+
+    /// True when the journey rides a Hellenic Train service (suburban or the
+    /// Athens-Thessaloniki intercity, both `.suburban` in the seed). Metro and
+    /// tram use the OASA integrated ticket, not Hellenic Train, so they stay off.
+    private func usesRailTicket(_ p: JourneyPlanAdapter.PlannedJourney) -> Bool {
+        let railLineIds = Set(SyrmosData.lines.filter { $0.type == .suburban }.map { $0.id })
+        return p.lineChain.contains { railLineIds.contains($0) }
+    }
     // Phase R: rider accessibility preference. When on, each route discloses its
     // step-free confidence honestly (unknown until per-station data is plumbed).
     @State private var stepFree = false
@@ -373,9 +385,13 @@ struct PlanView: View {
         .pickerStyle(.segmented)
 
         if mode == .arriveBy {
+            // Day + time, so a user can plan an intercity trip for a future date,
+            // not just a time later today.
             DatePicker(
                 t("Arrive by", "Άφιξη έως", "Mbërri deri", "Arriva entro"),
-                selection: $arriveByTime, displayedComponents: .hourAndMinute
+                selection: $arriveByTime,
+                in: SyrmosClock.now...,
+                displayedComponents: [.date, .hourAndMinute]
             )
         }
 
@@ -1045,6 +1061,26 @@ struct PlanView: View {
                 : t("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso."))
                 .font(.footnote).foregroundStyle(.secondary)
             if stepFree { stepFreeDisclosure(p) }
+            if usesRailTicket(p) {
+                Link(destination: hellenicTrainTicketURL) {
+                    Label(
+                        t("Buy train ticket (Hellenic Train)", "Αγορά εισιτηρίου (Hellenic Train)", "Bli biletë treni (Hellenic Train)", "Acquista biglietto (Hellenic Train)"),
+                        systemImage: "ticket"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.bordered)
+                .tint(.syrmosPrimary)
+                Text(t(
+                    "Tickets are bought on Hellenic Train. Syrmos only provides the link and collects no payment data.",
+                    "Τα εισιτήρια αγοράζονται στην Hellenic Train. Το Syrmos δίνει μόνο τον σύνδεσμο και δεν συλλέγει δεδομένα πληρωμής.",
+                    "Biletat blihen te Hellenic Train. Syrmos jep vetëm lidhjen dhe nuk mbledh të dhëna pagese.",
+                    "I biglietti si acquistano su Hellenic Train. Syrmos fornisce solo il link e non raccoglie dati di pagamento."
+                ))
+                .font(.caption2).foregroundStyle(.secondary)
+            }
             Button { startPlan = p } label: {
                 Text(t("Start journey", "Ξεκίνα τη διαδρομή", "Nis udhëtimin", "Avvia il viaggio"))
                     .frame(maxWidth: .infinity)

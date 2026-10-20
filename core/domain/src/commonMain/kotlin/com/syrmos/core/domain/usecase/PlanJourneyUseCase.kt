@@ -7,7 +7,9 @@ import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.planner.JourneySegment
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
+import com.syrmos.core.model.transit.Region
 import com.syrmos.core.model.transit.Station
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -83,7 +85,7 @@ class PlanJourneyUseCase(
             for (i in 0 until stations.size - 1) {
                 val a = stations[i]
                 val b = stations[i + 1]
-                val travelTime = estimateTravelTime(line.type.name)
+                val travelTime = segmentMinutes(line, a, b)
                 val edge = Edge(
                     toStationId = b.id,
                     lineId = line.id,
@@ -196,11 +198,23 @@ class PlanJourneyUseCase(
         )
     }
 
-    private fun estimateTravelTime(lineType: String): Int = when (lineType.lowercase()) {
-        "metro" -> 2 // avg 2 min between metro stations
-        "tram" -> 3  // avg 3 min between tram stops
-        "suburban" -> 4 // avg 4 min between suburban stations
-        else -> 3
+    /// Ride time for one hop, from the stop-to-stop distance and a cruising
+    /// speed (km/h, including dwell) per line type. National-region suburban is
+    /// intercity rail (fast, long gaps between stops); national-region bus is a
+    /// long-distance coach. A flat per-stop value made the Athens-Thessaloniki
+    /// intercity (~500 km) cost like ten metro hops instead of its real ~5 hours.
+    private fun segmentMinutes(line: Line, a: Station, b: Station): Int {
+        val km = distanceInMeters(a.latitude, a.longitude, b.latitude, b.longitude) / 1000.0
+        val national = line.region == Region.NATIONAL
+        val speedKmh = when (line.type.name.lowercase()) {
+            "metro" -> 32.0
+            "tram" -> 18.0
+            "scenic" -> 25.0
+            "suburban" -> if (national) 95.0 else 42.0
+            "bus" -> if (national) 70.0 else 20.0
+            else -> 40.0
+        }
+        return maxOf(1, (km / speedKmh * 60.0).roundToInt())
     }
 
     companion object {

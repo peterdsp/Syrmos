@@ -167,15 +167,19 @@ enum JourneyPlanner {
     private static func buildGraph(_ lines: [TransitLine], stations: [TransitStation]) -> [String: [Edge]] {
         var graph: [String: [Edge]] = [:]
 
-        // Same-line edges between consecutive stations.
+        // Same-line edges between consecutive stations. The weight is the real
+        // ride time derived from the distance between the two stops and the
+        // line's cruising speed, NOT a flat per-stop value: otherwise the
+        // Athens->Thessaloniki intercity (500 km, ~10 stops) is costed like ten
+        // metro hops (~40 min) instead of its true ~5 hours.
         for line in lines {
-            let weight = travelTime(for: line.type)
             let ordered = SyrmosData.stations(for: line.id)
             for i in 0..<max(0, ordered.count - 1) {
-                let a = ordered[i].id
-                let b = ordered[i + 1].id
-                graph[a, default: []].append(Edge(to: b, lineId: line.id, weight: weight))
-                graph[b, default: []].append(Edge(to: a, lineId: line.id, weight: weight))
+                let a = ordered[i]
+                let b = ordered[i + 1]
+                let weight = segmentMinutes(line: line, a: a, b: b)
+                graph[a.id, default: []].append(Edge(to: b.id, lineId: line.id, weight: weight))
+                graph[b.id, default: []].append(Edge(to: a.id, lineId: line.id, weight: weight))
             }
         }
 
@@ -252,15 +256,25 @@ enum JourneyPlanner {
     /// cross-city namesakes.
     private static let MAX_TRANSFER_METERS: CLLocationDistance = 500
 
-    private static func travelTime(for type: TransitType) -> Int {
-        switch type {
-        case .metro: return 2
-        case .tram: return 3
-        case .suburban: return 4
-        case .bus: return 4
-        case .scenic: return 5
+    /// Ride time for one hop, from the stop-to-stop distance and a cruising
+    /// speed (km/h, including dwell) per line type. National-region suburban is
+    /// intercity rail (fast, long gaps); national-region bus is a long-distance
+    /// coach. Everything else is in-city.
+    private static func segmentMinutes(line: TransitLine, a: TransitStation, b: TransitStation) -> Int {
+        let metres = CLLocation(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude)
+            .distance(from: CLLocation(latitude: b.coordinate.latitude, longitude: b.coordinate.longitude))
+        let speedKmh: Double
+        switch line.type {
+        case .metro: speedKmh = 32
+        case .tram: speedKmh = 18
+        case .scenic: speedKmh = 25
+        case .suburban: speedKmh = line.region == .national ? 95 : 42
+        case .bus: speedKmh = line.region == .national ? 70 : 20
         }
+        let minutes = (metres / 1000.0) / speedKmh * 60.0
+        return max(1, Int(minutes.rounded()))
     }
+
 
     private static func allStations() -> [TransitStation] {
         var seen = Set<String>()
