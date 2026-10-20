@@ -10,7 +10,7 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
-## 3.0.0-beta.38 - 2026-10-20
+## 3.0.0-beta.39 - 2026-10-21
 
 ### Improved
 - iPhone Duo and foldables: a paired screen no longer reserves an empty half.
