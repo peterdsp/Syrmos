@@ -119,6 +119,9 @@ struct TimetablesView: View {
     @State private var flightTime = TimetablesView.defaultFlightTime
     @State private var nowTick = SyrmosClock.now
     @StateObject private var calendarStore = AirportCalendarStore()
+    /// Live STASY / OSETH service announcements, so the airport hub can surface
+    /// the alerts that actually affect its routes instead of a static placeholder.
+    @StateObject private var stasyService = STASYService()
 
     init() {
         // Phase B scene restoration: seed the day-plan selection from the last
@@ -152,6 +155,21 @@ struct TimetablesView: View {
     }
 
     private var hub: AirportHub { AirportHub.hub(selectedCity) }
+
+    /// Live service alerts intersected with the selected hub's airport routes.
+    private var airportAlerts: [STASYAnnouncement] {
+        AirportServiceAlerts.matches(
+            announcements: stasyService.announcements,
+            lineIds: hub.alertLineIds,
+            stationIds: hub.alertStationIds
+        )
+    }
+
+    /// Whether a feed actually loaded. Only then can the card honestly say "no
+    /// airport alert"; with no feed at all it keeps the check-the-operator note.
+    private var hasAlertFeed: Bool {
+        !stasyService.announcements.isEmpty || stasyService.lastUpdated != nil
+    }
 
     private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
@@ -205,6 +223,9 @@ struct TimetablesView: View {
             .onAppear {
                 reload()
                 Task { await calendarStore.refresh() }
+            }
+            .task {
+                await stasyService.fetchAnnouncements()
             }
             .onReceive(refreshTimer) { _ in
                 nowTick = SyrmosClock.now
@@ -316,7 +337,7 @@ struct TimetablesView: View {
             )
         }
 
-        AirportServiceAlertCard(language: loc.language)
+        AirportServiceAlertCard(language: loc.language, alerts: airportAlerts, hasFeed: hasAlertFeed)
     }
 
     private func reload() {
@@ -1303,32 +1324,77 @@ private struct AirportMetroLegsCard: View {
 
 private struct AirportServiceAlertCard: View {
     let language: AppLanguage
+    /// Live alerts already intersected with the hub's airport routes.
+    let alerts: [STASYAnnouncement]
+    /// Whether a feed loaded at all. With no feed the card cannot honestly claim
+    /// a clear status, so it keeps the check-the-operator note.
+    let hasFeed: Bool
+
+    private var tint: Color {
+        if alerts.contains(where: { $0.severity.lowercased() == "closure" }) { return SyrmosTokens.disruption }
+        if alerts.isEmpty { return SyrmosTokens.live }
+        return SyrmosTokens.warning
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(SyrmosTokens.disruption)
+                .foregroundStyle(tint)
                 .frame(width: 40, height: 40)
-                .background(SyrmosTokens.disruption.opacity(0.11), in: Circle())
+                .background(tint.opacity(0.11), in: Circle())
             VStack(alignment: .leading, spacing: 4) {
-                Text(airportText(language, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio"))
+                Text(headline)
                     .font(.subheadline.weight(.semibold))
-                Text(airportText(
-                    language,
-                    "Check official operator notices before leaving. Syrmos does not infer a clear status when no alert feed is available.",
-                    "Ελέγξτε τις επίσημες ανακοινώσεις πριν φύγετε. Το Syrmos δεν συμπεραίνει ότι όλα λειτουργούν κανονικά όταν δεν υπάρχει ροή ειδοποιήσεων.",
-                    "Kontrollo njoftimet zyrtare para nisjes. Syrmos nuk supozon se gjithçka është në rregull kur nuk ka burim njoftimesh.",
-                    "Controlla gli avvisi ufficiali prima di partire. Syrmos non presume che tutto sia regolare quando non è disponibile un feed di avvisi."
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                if alerts.isEmpty {
+                    Text(clearText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ForEach(alerts.prefix(3)) { alert in
+                        Text(alert.displayTitle(language: language))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(SyrmosTokens.disruption.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(SyrmosTokens.disruption.opacity(0.16)))
+        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(tint.opacity(0.16)))
+    }
+
+    private var icon: String {
+        alerts.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+    }
+
+    private var headline: String {
+        if alerts.isEmpty {
+            return airportText(language, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio")
+        }
+        return airportText(language, "Airport service alerts", "Ειδοποιήσεις υπηρεσίας αεροδρομίου", "Njoftime shërbimi për aeroportin", "Avvisi di servizio aeroporto")
+    }
+
+    private var clearText: String {
+        if hasFeed {
+            return airportText(
+                language,
+                "No service alert affects the airport routes right now, based on the live operator feed.",
+                "Καμία ειδοποίηση δεν επηρεάζει τις διαδρομές του αεροδρομίου αυτή τη στιγμή, με βάση τη ζωντανή ροή.",
+                "Asnjë njoftim nuk prek linjat e aeroportit tani, bazuar në burimin e drejtpërdrejtë.",
+                "Nessun avviso interessa le tratte dell'aeroporto in questo momento, in base al feed in tempo reale."
+            )
+        }
+        return airportText(
+            language,
+            "Check official operator notices before leaving. Syrmos does not infer a clear status when no alert feed is available.",
+            "Ελέγξτε τις επίσημες ανακοινώσεις πριν φύγετε. Το Syrmos δεν συμπεραίνει ότι όλα λειτουργούν κανονικά όταν δεν υπάρχει ροή ειδοποιήσεων.",
+            "Kontrollo njoftimet zyrtare para nisjes. Syrmos nuk supozon se gjithçka është në rregull kur nuk ka burim njoftimesh.",
+            "Controlla gli avvisi ufficiali prima di partire. Syrmos non presume che tutto sia regolare quando non è disponibile un feed di avvisi."
+        )
     }
 }
 

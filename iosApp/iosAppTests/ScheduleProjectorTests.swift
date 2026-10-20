@@ -215,4 +215,80 @@ final class AirportHubTests: XCTestCase {
         // An unmapped language uses the English default.
         XCTAssertEqual(hub.cityName.text(.english), "Thessaloniki")
     }
+
+    func testAthensHubCarriesAirportAlertKeys() {
+        let hub = AirportHub.hub(.athens)
+        XCTAssertTrue(hub.alertLineIds.contains("M3"))
+        XCTAssertTrue(hub.alertLineIds.contains("M3_AIR"))
+        XCTAssertTrue(hub.alertLineIds.contains("X95"))
+        XCTAssertTrue(hub.alertStationIds.contains("M3_AER"))
+    }
+}
+
+final class AirportServiceAlertsTests: XCTestCase {
+
+    func testMatchesTheLiveM3RailWorksAlert() {
+        let hub = AirportHub.hub(.athens)
+        let m3 = alert(id: "stasy-homepage-alert", severity: "warning", lines: ["M3"], stations: ["M3_ETH", "M3_HOL", "M3_NOM"])
+        let result = AirportServiceAlerts.matches(announcements: [m3], lineIds: hub.alertLineIds, stationIds: hub.alertStationIds)
+        XCTAssertEqual(result.map(\.id), ["stasy-homepage-alert"])
+    }
+
+    func testIgnoresNonAirportAndNonServiceAlerts() {
+        let hub = AirportHub.hub(.athens)
+        let bus = alert(id: "oseth-38", severity: "info", lines: ["38"])
+        let general = alert(id: "news", severity: "info", lines: ["M3"], category: .general)
+        let result = AirportServiceAlerts.matches(announcements: [bus, general], lineIds: hub.alertLineIds, stationIds: hub.alertStationIds)
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testOrdersBySeverityHighestFirstStable() {
+        let hub = AirportHub.hub(.athens)
+        let a = alert(id: "a", severity: "info", lines: ["M3"])
+        let b = alert(id: "b", severity: "closure", lines: ["A1"])
+        let c = alert(id: "c", severity: "warning", lines: ["X95"])
+        let d = alert(id: "d", severity: "info", lines: ["A2"])
+        let result = AirportServiceAlerts.matches(announcements: [a, b, c, d], lineIds: hub.alertLineIds, stationIds: hub.alertStationIds)
+        XCTAssertEqual(result.map(\.id), ["b", "c", "a", "d"])
+    }
+
+    func testMatchesCaseInsensitivelyOnLineId() {
+        let hub = AirportHub.hub(.athens)
+        let lower = alert(id: "lower", severity: "warning", lines: ["m3"])
+        let result = AirportServiceAlerts.matches(announcements: [lower], lineIds: hub.alertLineIds, stationIds: hub.alertStationIds)
+        XCTAssertEqual(result.map(\.id), ["lower"])
+    }
+
+    func testThessalonikiHubMatchesOwnCodesNotAthensM3() {
+        let hub = AirportHub.hub(.thessaloniki)
+        let athensM3 = alert(id: "m3", severity: "warning", lines: ["M3"], stations: ["M3_AER"])
+        let shuttle = alert(id: "x3", severity: "warning", lines: ["X3"])
+        let interchange = alert(id: "mik", severity: "warning", lines: [], stations: ["TM2_MIK"])
+        let result = AirportServiceAlerts.matches(announcements: [athensM3, shuttle, interchange], lineIds: hub.alertLineIds, stationIds: hub.alertStationIds)
+        XCTAssertEqual(Set(result.map(\.id)), ["x3", "mik"])
+    }
+
+    private func alert(
+        id: String,
+        severity: String,
+        lines: [String] = [],
+        stations: [String] = [],
+        category: AnnouncementCategory = .serviceAlert
+    ) -> STASYAnnouncement {
+        STASYAnnouncement(
+            id: id,
+            title: "Alert",
+            titleEn: "Alert",
+            titleSq: "",
+            date: "",
+            summary: "",
+            summaryEn: "",
+            summarySq: "",
+            url: nil,
+            category: category,
+            affectedLines: lines,
+            affectedStationIds: stations,
+            severity: severity
+        )
+    }
 }

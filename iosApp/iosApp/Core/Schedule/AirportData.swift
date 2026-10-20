@@ -171,6 +171,14 @@ struct AirportHub: Identifiable {
     let directRailLineIds: [String]
     let connections: [AirportConnection]
     let metroLegs: [AirportMetroLeg]
+    /// Line ids a live service alert must mention to count as airport-relevant
+    /// for this hub (rail plus the express/shuttle bus codes). The M3 / M3_AIR
+    /// split is handled by listing both. Matched case-insensitively.
+    let alertLineIds: Set<String>
+    /// Station ids a live service alert must mention to count as airport-relevant
+    /// for this hub (the airport-side rail terminals and the metro interchanges
+    /// that feed a shuttle).
+    let alertStationIds: Set<String>
     var id: String { city.rawValue }
     var hasDirectRail: Bool { !airportStationId.isEmpty }
 
@@ -206,7 +214,9 @@ struct AirportHub: Identifiable {
         airportStationId: "M3_AER",
         directRailLineIds: ["M3", "M3_AIR", "A1", "A2"],
         connections: [],
-        metroLegs: []
+        metroLegs: [],
+        alertLineIds: ["M3", "M3_AIR", "A1", "A2", "X93", "X95", "X96", "X97"],
+        alertStationIds: ["M3_AER", "A1_AIR"]
     )
 
     static let thessaloniki = AirportHub(
@@ -321,6 +331,8 @@ struct AirportHub: Identifiable {
                 stationName: AirportL10n(en: "Nea Elvetia", el: "Νέα Ελβετία", al: "Nea Elvetia", it: "Nea Elvetia"),
                 towards: AirportL10n(en: "2X shuttle to the terminal", el: "Λεωφορείο 2Χ στον τερματικό", al: "Autobusi 2X te terminali", it: "Navetta 2X al terminal")
             ),
-        ]
+        ],
+        alertLineIds: ["TM1", "TM2", "X3", "2X", "1X", "1N", "79"],
+        alertStationIds: ["THS_AIR", "TM2_MIK", "TM1_NEL"]
     )
 }

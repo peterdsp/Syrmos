@@ -74,8 +74,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.data.sync.AirportServiceAlerts
+import com.syrmos.core.data.sync.AnnouncementsRepository
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import com.syrmos.core.data.sync.StationOffsetsRepository
+import com.syrmos.core.network.STASYAnnouncement
 import com.syrmos.core.designsystem.component.SourceConfidenceChip
 import com.syrmos.core.designsystem.theme.tokens.SyrmosColorTokens
 import com.syrmos.core.model.schedule.SourceConfidence
@@ -110,8 +113,10 @@ fun AirportHubScreen(
     val sync = koinInject<ScheduleSyncRepository>()
     val offsetsRepo = koinInject<StationOffsetsRepository>()
     val airportBusService = koinInject<AirportBusService>()
+    val announcementsRepo = koinInject<AnnouncementsRepository>()
     val bundles by sync.lineBundles.collectAsState()
     val offsets by offsetsRepo.offsets.collectAsState()
+    val feed by announcementsRepo.feed.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val zone = remember { TimeZone.of("Europe/Athens") }
 
@@ -138,7 +143,17 @@ fun AirportHubScreen(
     LaunchedEffect(Unit) {
         sync.hydrateFromBundleIfNeeded()
         offsetsRepo.hydrateFromBundleIfNeeded()
+        // Surface the live service alerts that affect this airport's routes.
+        announcementsRepo.hydrateFromBundleIfNeeded()
+        announcementsRepo.refresh()
     }
+
+    // Live service alerts intersected with the selected hub's airport routes.
+    val airportAlerts = remember(feed.announcements, selectedCity) {
+        AirportServiceAlerts.matches(feed.announcements, hub.alertLineIds, hub.alertStationIds)
+    }
+    // Only a loaded feed lets the card honestly say "no airport alert".
+    val hasAlertFeed = feed.status != null || feed.announcements.isNotEmpty()
 
     // Live airport express-bus ETAs (Athens, today only - "in 5 min" would be
     // misleading for a future day). Refreshed every 15s while the tab is shown;
@@ -252,7 +267,7 @@ fun AirportHubScreen(
             )
             AirportMetroLegs(hub, lang, dayOffset, metroLegDepartures, now.time.hour * 60 + now.time.minute, onOpenStation)
         }
-        AirportAlert(lang)
+        AirportAlert(lang, airportAlerts, hasAlertFeed)
     }
 
     // Foldables and tablets (six-posture prompt, section 6, Departures): the
@@ -951,20 +966,44 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
 }
 
 @Composable
-private fun AirportAlert(lang: AppLanguage) {
+private fun AirportAlert(lang: AppLanguage, alerts: List<STASYAnnouncement>, hasFeed: Boolean) {
+    val isClosure = alerts.any { it.severity.equals("closure", ignoreCase = true) }
+    val tint = when {
+        isClosure -> SyrmosColorTokens.disruption
+        alerts.isEmpty() -> SyrmosColorTokens.live
+        else -> SyrmosColorTokens.warning
+    }
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(SyrmosColorTokens.disruption.copy(alpha = 0.06f)).border(1.dp, SyrmosColorTokens.disruption.copy(alpha = 0.16f), RoundedCornerShape(18.dp)).padding(14.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(tint.copy(alpha = 0.06f)).border(1.dp, tint.copy(alpha = 0.16f), RoundedCornerShape(18.dp)).padding(14.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(Icons.Filled.Warning, null, tint = SyrmosColorTokens.disruption)
+        Icon(if (alerts.isEmpty()) Icons.Filled.CheckCircle else Icons.Filled.Warning, null, tint = tint)
         Spacer(Modifier.width(12.dp))
-        Column {
-            Text(airportText(lang, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                airportText(lang, "Check official operator notices before leaving. Syrmos does not infer a clear status when no alert feed is available.", "Ελέγξτε τις επίσημες ανακοινώσεις πριν φύγετε. Το Syrmos δεν συμπεραίνει ότι όλα λειτουργούν κανονικά όταν δεν υπάρχει ροή ειδοποιήσεων.", "Kontrollo njoftimet zyrtare para nisjes. Syrmos nuk supozon se gjithçka është në rregull kur nuk ka burim njoftimesh.", "Controlla gli avvisi ufficiali prima di partire. Syrmos non presume che tutto sia regolare quando non è disponibile un feed di avvisi."),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            val headline = if (alerts.isEmpty()) {
+                airportText(lang, "Service alerts", "Ειδοποιήσεις υπηρεσίας", "Njoftime shërbimi", "Avvisi di servizio")
+            } else {
+                airportText(lang, "Airport service alerts", "Ειδοποιήσεις υπηρεσίας αεροδρομίου", "Njoftime shërbimi për aeroportin", "Avvisi di servizio aeroporto")
+            }
+            Text(headline, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            if (alerts.isEmpty()) {
+                val clearText = if (hasFeed) {
+                    airportText(lang, "No service alert affects the airport routes right now, based on the live operator feed.", "Καμία ειδοποίηση δεν επηρεάζει τις διαδρομές του αεροδρομίου αυτή τη στιγμή, με βάση τη ζωντανή ροή.", "Asnjë njoftim nuk prek linjat e aeroportit tani, bazuar në burimin e drejtpërdrejtë.", "Nessun avviso interessa le tratte dell'aeroporto in questo momento, in base al feed in tempo reale.")
+                } else {
+                    airportText(lang, "Check official operator notices before leaving. Syrmos does not infer a clear status when no alert feed is available.", "Ελέγξτε τις επίσημες ανακοινώσεις πριν φύγετε. Το Syrmos δεν συμπεραίνει ότι όλα λειτουργούν κανονικά όταν δεν υπάρχει ροή ειδοποιήσεων.", "Kontrollo njoftimet zyrtare para nisjes. Syrmos nuk supozon se gjithçka është në rregull kur nuk ka burim njoftimesh.", "Controlla gli avvisi ufficiali prima di partire. Syrmos non presume che tutto sia regolare quando non è disponibile un feed di avvisi.")
+                }
+                Text(clearText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                alerts.take(3).forEach { alert ->
+                    Text(
+                        alert.localizedTitle(lang),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
@@ -1019,6 +1058,13 @@ private data class AirportHubData(
     val hasDirectRail: Boolean,
     val connections: List<AirportConnectionData>,
     val metroLegs: List<AirportMetroLegData>,
+    // Line ids a live service alert must mention to count as airport-relevant for
+    // this hub (rail plus the express/shuttle bus codes). The M3 / M3_AIR split
+    // is handled by listing both. Matched case-insensitively.
+    val alertLineIds: Set<String>,
+    // Station ids a live service alert must mention to count as airport-relevant
+    // (the airport-side rail terminals and the metro interchanges feeding a shuttle).
+    val alertStationIds: Set<String>,
 )
 
 private fun airportHub(city: AirportCity): AirportHubData = when (city) {
@@ -1044,6 +1090,8 @@ private fun airportHub(city: AirportCity): AirportHubData = when (city) {
         hasDirectRail = true,
         connections = emptyList(),
         metroLegs = emptyList(),
+        alertLineIds = setOf("M3", "M3_AIR", "A1", "A2", "X93", "X95", "X96", "X97"),
+        alertStationIds = setOf("M3_AER", "A1_AIR"),
     )
     AirportCity.THESSALONIKI -> AirportHubData(
         city = city,
@@ -1133,6 +1181,8 @@ private fun airportHub(city: AirportCity): AirportHubData = when (city) {
                 towards = AirportL10n("2X shuttle to the terminal", "Λεωφορείο 2Χ στον τερματικό", "Autobusi 2X te terminali", "Navetta 2X al terminal"),
             ),
         ),
+        alertLineIds = setOf("TM1", "TM2", "X3", "2X", "1X", "1N", "79"),
+        alertStationIds = setOf("THS_AIR", "TM2_MIK", "TM1_NEL"),
     )
 }
 
