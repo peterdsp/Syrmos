@@ -2,13 +2,27 @@
 
 User-facing and architectural changes to Syrmos. Keep this file up to date with every release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 used **230**, beta.8 used **231**, beta.11 used 232, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-237 (beta.28-32 shipped 233-237); beta.33 uses 238.
+Current production: **iOS 2.0.0** (App Store, build 138), **Android 2.0.0** (Play, versionCode 223), **Web** (rolling). **3.0.0 beta train:** iOS marketing version **3.0.0** (build auto-stamped by CI), Android versionName **3.0.0**; beta.1 used versionCode 224, beta.2 used 225, beta.3 used 226, beta.4 used 227, beta.5 used 228, beta.6 used 229, beta.7 used **230**, beta.8 used **231**, beta.11 used 232, distributed to TestFlight + Play internal. Burned Android version codes never reusable: 105, 106, 109-138, and 200-238 (beta.28-33 shipped 233-238); beta.34 uses 239.
 
 Tag-driven CI ships iOS + Android + web automatically on a `v*` tag. See [docs/ops/RELEASE.md](docs/ops/RELEASE.md).
 
 The long-range product roadmap by version (1.1 through 2.0, with quarterly targets) lives in [docs/CASE_STUDY.md, Appendix K](docs/CASE_STUDY.md#appendix-k--product-roadmap). Detailed historical context for each shipped change lives in the same file's Revision Log. This changelog summarises the version-to-feature mapping.
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
+
+## 3.0.0-beta.34 - 2026-10-20
+
+### Fixed
+- Journey planner intercity travel times (re-cut of beta.33, which was held by a
+  CI guardrail). Only national-region lines (the Athens-Thessaloniki intercity
+  and long-distance coaches) are costed by real distance; in-city metro, tram
+  and local suburban keep their flat per-stop cost, so in-city route choices are
+  unchanged. Athens-Thessaloniki now reports its real ~5 hours, not ~83 minutes.
+
+### Added
+- "Arrive by" now lets you pick a day and a time, not just a time.
+- The planned route shows a "Buy train ticket (Hellenic Train)" link when the
+  journey rides a suburban or intercity rail line.
 
 ## 3.0.0-beta.33 - 2026-10-20
 
