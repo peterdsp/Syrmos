@@ -76,6 +76,7 @@ final class DuoSnapshotTests: XCTestCase {
     func test_duoInner_emptyCompanionCollapsesToSingleColumn() throws {
         let probe = SyrmosArrangement(
             companionHasContent: false,
+            collapsesWideWhenCompanionEmpty: true,
             task: .home,
             primary: { Color.red },
             companion: { Color.blue },
@@ -95,6 +96,7 @@ final class DuoSnapshotTests: XCTestCase {
     func test_duoInner_filledCompanionStillPairs() throws {
         let probe = SyrmosArrangement(
             companionHasContent: true,
+            collapsesWideWhenCompanionEmpty: true,
             task: .home,
             primary: { Color.red },
             companion: { Color.blue },

@@ -86,6 +86,7 @@ struct HomeView: View {
             // The context pane is offered only when it actually has content.
             SyrmosArrangement(
                 companionHasContent: companionHasContent,
+                collapsesWideWhenCompanionEmpty: true,
                 task: .home,
                 primary: {
                     // Task pane: the answer (next train for every direction, or

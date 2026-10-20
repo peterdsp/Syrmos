@@ -1360,6 +1360,13 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     /// region of a stacked pair; when false a stacked result renders the single
     /// column instead.
     var companionHasContent: Bool = true
+    /// Whether an empty companion should also collapse a SIDE-BY-SIDE pair (not
+    /// only a stacked one). Off by default: Plan and Lines offer a calm invitation
+    /// card as their companion placeholder, which is worth a column beside the
+    /// task. Home turns this on because its context pane (alerts, nearby, live)
+    /// renders nothing at all when there is no data, so a wide split would leave a
+    /// genuinely dead half rather than an invitation.
+    var collapsesWideWhenCompanionEmpty: Bool = false
     /// The task driving the workspace; selects the preferred axis on a tall,
     /// medium-width window and whether a companion is offered at all.
     var task: SyrmosWorkspaceTask = .plan
@@ -1387,14 +1394,13 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
         switch ws.arrangement {
         case .single:
             singleColumn(ws, size: size)
-        // An empty companion never earns a pane. When the secondary content is
-        // absent (no journey selected, no live context on Home), a paired
-        // arrangement would leave a dead half beside the task on the Duo inner
-        // display, so both axes collapse to the readable single column instead,
-        // the same as the policy's own single decision. The collapsed column is
-        // sized from the WHOLE window (not the paired task pane, which is only a
-        // half), so the task fills a readable column, not a squeezed one.
-        case .sideBySide where !companionHasContent:
+        // A side-by-side pair collapses for an empty companion only when the
+        // screen asks for it (Home, whose context pane renders nothing without
+        // data). Plan and Lines keep their invitation card beside the task, which
+        // is their intended placeholder. The collapsed column is sized from the
+        // WHOLE window (not the paired task pane, which is only a half), so the
+        // task fills a readable column, not a squeezed one.
+        case .sideBySide where !companionHasContent && collapsesWideWhenCompanionEmpty:
             collapsedColumn(size: size)
         case .sideBySide:
             paired(ws, size: size, axis: .horizontal)
