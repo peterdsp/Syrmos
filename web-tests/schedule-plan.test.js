@@ -43,6 +43,21 @@ for (const c of fixture.cases) {
   });
 }
 
+test('arrive-by keeps a no-timetable route as an estimate', () => {
+  // A ride leg with no departures in the timetable (the Athens-Thessaloniki
+  // intercity) must not be dropped in arrive-by: it is returned as an
+  // unknown-timing estimate, flagged so the UI shows it instead of "no journey".
+  const option = { legs: [{ kind: 'ride', lineId: 'IC1', fromId: 'GR_ATH', toId: 'GR_THE' }] };
+  const out = SchedulePlan.assignScheduleArriveBy(
+    option,
+    { arriveByInstant: '2026-10-21T23:50:00.000Z' },
+    { departures: {}, legSeconds: {} },
+  );
+  assert.equal(out.timingKind, 'unknown', 'no timetable -> unknown timing');
+  assert.equal(out.estimatedNoTimetable, true, 'flagged as a no-timetable estimate');
+  assert.equal(out.departureInstant, null, 'no scheduled clocks');
+});
+
 test('the input option is not mutated', () => {
   const c = fixture.cases.find((x) => x.id === 'tight_transfer');
   const before = JSON.stringify(c.option);

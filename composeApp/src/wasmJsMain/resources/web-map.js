@@ -5974,9 +5974,11 @@
                 }
 
                 const byId = new Map(stations.map((s) => [s.id, s]));
-                // In a backward mode only options that actually scheduled are usable.
+                // In a backward mode only options that actually scheduled are
+                // usable, plus a route whose intercity leg has no timetable, which
+                // is kept as an honest estimate rather than hidden as "no journey".
                 let opts = (planned && planned.options) ? planned.options : [];
-                if (planMode !== "now") opts = opts.filter((o) => o.departureInstant);
+                if (planMode !== "now") opts = opts.filter((o) => o.departureInstant || o.estimatedNoTimetable);
 
                 if (!opts.length) {
                     const empty = document.createElement("div");
@@ -6014,6 +6016,18 @@
                     saveBtnRef = saveBtn;
                 }
                 resultsEl.appendChild(summary);
+
+                if (opts.some((o) => o.estimatedNoTimetable)) {
+                    const note = document.createElement("div");
+                    note.className = "plan-results__note";
+                    note.textContent = T(
+                        "Intercity times are not in the app yet, so this is an estimate. Check Hellenic Train for exact departures.",
+                        "Οι ώρες των υπεραστικών δεν είναι ακόμη στην εφαρμογή, οπότε αυτή είναι εκτίμηση. Δες τα ακριβή δρομολόγια στην Hellenic Train.",
+                        "Oraret ndërqytetëse nuk janë ende në aplikacion, prandaj kjo është një vlerësim. Shih oraret e sakta te Hellenic Train.",
+                        "Gli orari intercity non sono ancora nell'app, quindi questa e una stima. Controlla Hellenic Train per le partenze esatte."
+                    );
+                    resultsEl.appendChild(note);
+                }
 
                 // S04 -> S05 -> S06: selecting an option shows its DETAIL (summary +
                 // timeline + source + Start journey); Start then mounts the GO panel.

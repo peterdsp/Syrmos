@@ -139,9 +139,16 @@
 
     let deadline = (o.arriveByInstant != null) ? epoch(o.arriveByInstant) : Infinity;
     let timedAll = true;
+    // A leg with no departures at all (the intercity rail has no bundled
+    // timetable) means the route cannot be clocked, which is different from a
+    // timetabled route that simply cannot reach the deadline. The first is an
+    // estimate worth showing, the second a genuine "no journey".
+    let missingTimetable = false;
     for (let pos = rideIdx.length - 1; pos >= 0; pos--) {
       const leg = legs[rideIdx[pos]];
       const travel = (tt.legSeconds || {})[key3(leg.lineId, leg.fromId, leg.toId)];
+      const list = (tt.departures || {})[key2(leg.lineId, leg.fromId)] || [];
+      if (list.length === 0) missingTimetable = true;
       if (deadline == null || !Number.isFinite(travel)) { markUnknown(leg); timedAll = false; continue; }
       const dep = latestDeparture(tt, leg.lineId, leg.fromId, travel, deadline);
       if (dep == null) { markUnknown(leg); timedAll = false; continue; }
@@ -160,6 +167,9 @@
     out.arrivalInstant = lastArr == null ? null : iso(lastArr);
     out.durationSeconds = (timedAll && firstDep != null && lastArr != null) ? (lastArr - firstDep) : null;
     out.timingKind = timedAll ? 'scheduled' : 'unknown';
+    // Kept so the UI shows a no-timetable route as an estimate rather than
+    // hiding it as "no journey arrives by that time".
+    out.estimatedNoTimetable = (o.arriveByInstant != null) && missingTimetable && !timedAll;
     return out;
   }
 
