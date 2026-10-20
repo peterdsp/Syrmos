@@ -1386,29 +1386,35 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
     @ViewBuilder private func content(for ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         switch ws.arrangement {
         case .single:
-            // The policy's single column is a READABLE column (outer insets and a
-            // content width from the shared breakpoint), so a wide window that
-            // cannot pair still reads as a centred column, not a full-width one.
-            // Compact widths keep the full width (the views own their 16 pt
-            // gutters); only a wider window is centred to the readable column.
-            combined()
-                .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
-                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
-                .frame(maxWidth: .infinity)
-                .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
+            singleColumn(ws, size: size)
+        // An empty companion never earns a pane. When the secondary content is
+        // absent (no journey selected, no live context on Home), a paired
+        // arrangement would leave a dead half beside the task on the Duo inner
+        // display, so both axes collapse to the readable single column instead,
+        // the same as the policy's own single decision.
+        case .sideBySide where !companionHasContent:
+            singleColumn(ws, size: size)
         case .sideBySide:
             paired(ws, size: size, axis: .horizontal)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)
         case .stacked where !companionHasContent:
-            combined()
-                .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
-                       ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
-                .frame(maxWidth: .infinity)
-                .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
+            singleColumn(ws, size: size)
         case .stacked:
             paired(ws, size: size, axis: .vertical)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .vertical)
         }
+    }
+
+    /// The readable single column (outer insets and a content width from the
+    /// shared breakpoint), so a wide window that does not pair still reads as a
+    /// centred column, not a full-width one. Compact widths keep the full width
+    /// (the views own their 16 pt gutters); only a wider window is centred.
+    @ViewBuilder private func singleColumn(_ ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
+        combined()
+            .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
+                   ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
+            .frame(maxWidth: .infinity)
+            .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
     }
 
     @ViewBuilder private func paired(_ ws: SyrmosAdaptiveWorkspace, size: CGSize, axis: Axis) -> some View {

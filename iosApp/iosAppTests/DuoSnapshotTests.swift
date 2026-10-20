@@ -67,6 +67,44 @@ final class DuoSnapshotTests: XCTestCase {
         XCTAssertTrue(grid.contains(where: isBlue), "unfolded inner display should show the blue companion")
     }
 
+    /// An empty companion earns no pane. A `.home` arrangement whose context
+    /// pane has nothing to show collapses to the single focused column on the
+    /// unfolded inner display instead of leaving a dead half beside the answer.
+    /// The probe's `combined` column is green, so a collapsed arrangement reads
+    /// green, never the red task half or the blue companion half.
+    @MainActor
+    func test_duoInner_emptyCompanionCollapsesToSingleColumn() throws {
+        let probe = SyrmosArrangement(
+            companionHasContent: false,
+            task: .home,
+            primary: { Color.red },
+            companion: { Color.blue },
+            combined: { Color.green }
+        )
+        let image = render(probe, size: duoInnerLandscape)
+        try save(image, "arrangement-duo-empty-companion.png")
+        let grid = sampleGrid(image)
+        XCTAssertTrue(grid.contains(where: isGreen), "collapsed arrangement shows the single (combined) column")
+        XCTAssertFalse(grid.contains(where: isRed), "no task half is drawn when the companion is empty")
+        XCTAssertFalse(grid.contains(where: isBlue), "no companion half is drawn when the companion is empty")
+    }
+
+    /// The counterpart: when the companion DOES have content, `.home` still pairs
+    /// side by side on the unfolded inner display (red task, blue companion).
+    @MainActor
+    func test_duoInner_filledCompanionStillPairs() throws {
+        let probe = SyrmosArrangement(
+            companionHasContent: true,
+            task: .home,
+            primary: { Color.red },
+            companion: { Color.blue },
+            combined: { Color.green }
+        )
+        let grid = sampleGrid(render(probe, size: duoInnerLandscape))
+        XCTAssertTrue(grid.contains(where: isRed), "task pane present when the companion has content")
+        XCTAssertTrue(grid.contains(where: isBlue), "companion pane present when it has content")
+    }
+
     /// A GO probe on the tall inner display stacks: the blue companion (map)
     /// fills the upper band and the red task pane the lower part, so the hands
     /// are on the controls (P5 Tall canvas, six-posture prompt section 5).

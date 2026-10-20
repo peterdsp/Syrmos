@@ -64,13 +64,28 @@ struct HomeView: View {
         )
     }
 
+    /// Whether the companion pane (alerts and news, nearby stations, live
+    /// trains) actually has something to show. When it does not, the Duo inner
+    /// display must not reserve a dead half beside the answer: the arrangement
+    /// collapses to the single focused column instead (see SyrmosArrangement).
+    private var companionHasContent: Bool {
+        let hasInsights = !stasyService.announcements.isEmpty
+            || !railNewsService.news.isEmpty
+            || stasyService.serviceStatus != nil
+        let hasNearby = locationService.hasPermission && !locationService.nearbyStations.isEmpty
+        let hasLiveTrains = liveTrainService.trains.contains { !$0.origin.isEmpty && !$0.destination.isEmpty }
+        return hasInsights || hasNearby || hasLiveTrains
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ScrollViewReader { proxy in
             // Foldables and tablets (master plan, Home contract): the direction
             // board is the task, the network context reads alongside. One
             // policy decides (SyrmosArrangement); a phone keeps the single column.
+            // The context pane is offered only when it actually has content.
             SyrmosArrangement(
+                companionHasContent: companionHasContent,
                 task: .home,
                 primary: {
                     // Task pane: the answer (next train for every direction, or
