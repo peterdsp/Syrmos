@@ -198,22 +198,26 @@ class PlanJourneyUseCase(
         )
     }
 
-    /// Ride time for one hop, from the stop-to-stop distance and a cruising
-    /// speed (km/h, including dwell) per line type. National-region suburban is
-    /// intercity rail (fast, long gaps between stops); national-region bus is a
-    /// long-distance coach. A flat per-stop value made the Athens-Thessaloniki
-    /// intercity (~500 km) cost like ten metro hops instead of its real ~5 hours.
+    /// Ride time for one hop. In-city lines (metro/tram/local suburban) keep a
+    /// flat per-stop value: their stops are close and evenly spaced, and this
+    /// preserves the long-standing route choices. National-region lines are the
+    /// intercity rail and long-distance coaches, whose stops are tens of km
+    /// apart, so those are costed by real distance / cruising speed. A flat
+    /// per-stop value made the ~500 km Athens-Thessaloniki train cost like ten
+    /// metro hops (~40 min) instead of its true ~5 hours.
     private fun segmentMinutes(line: Line, a: Station, b: Station): Int {
-        val km = distanceInMeters(a.latitude, a.longitude, b.latitude, b.longitude) / 1000.0
-        val national = line.region == Region.NATIONAL
-        val speedKmh = when (line.type.name.lowercase()) {
-            "metro" -> 32.0
-            "tram" -> 18.0
-            "scenic" -> 25.0
-            "suburban" -> if (national) 95.0 else 42.0
-            "bus" -> if (national) 70.0 else 20.0
-            else -> 40.0
+        if (line.region != Region.NATIONAL) {
+            return when (line.type.name.lowercase()) {
+                "metro" -> 2
+                "tram" -> 3
+                "suburban" -> 4
+                "bus" -> 4
+                "scenic" -> 5
+                else -> 3
+            }
         }
+        val km = distanceInMeters(a.latitude, a.longitude, b.latitude, b.longitude) / 1000.0
+        val speedKmh = if (line.type.name.lowercase() == "bus") 70.0 else 95.0
         return maxOf(1, (km / speedKmh * 60.0).roundToInt())
     }
 

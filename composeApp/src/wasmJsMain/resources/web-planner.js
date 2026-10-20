@@ -72,24 +72,18 @@
       const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(la1)) * Math.cos(toRad(la2)) * Math.sin(dLng / 2) ** 2;
       return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
     };
-    // Ride time for one hop, from the stop-to-stop distance and a cruising speed
-    // (km/h, incl. dwell) per line type. National suburban is intercity rail
-    // (fast, long gaps); national bus is a long-distance coach. A flat per-stop
-    // value made the ~500 km Athens-Thessaloniki intercity cost like ten metro
-    // hops (~40 min) instead of its real ~5 hours.
+    // Ride time for one hop. In-city lines (metro/tram/local suburban) keep the
+    // flat per-stop value (close, evenly-spaced stops; preserves route choices).
+    // National-region lines are intercity rail / long-distance coaches whose
+    // stops are tens of km apart, so those are costed by real distance / speed.
+    // A flat per-stop value made the ~500 km Athens-Thessaloniki intercity cost
+    // like ten metro hops (~40 min) instead of its real ~5 hours.
     const segMinutes = (line, a, b) => {
+      const national = String(line.region || '').toLowerCase() === 'national';
+      if (!national) return travelTime(line.type);
       const km = distMeters(a, b) / 1000;
       if (!isFinite(km)) return travelTime(line.type);
-      const national = String(line.region || '').toLowerCase() === 'national';
-      let speed;
-      switch (line.type) {
-        case 'metro': speed = 32; break;
-        case 'tram': speed = 18; break;
-        case 'scenic': speed = 25; break;
-        case 'suburban': speed = national ? 95 : 42; break;
-        case 'bus': speed = national ? 70 : 20; break;
-        default: speed = 40;
-      }
+      const speed = line.type === 'bus' ? 70 : 95;
       return Math.max(1, Math.round((km / speed) * 60));
     };
 

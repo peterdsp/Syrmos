@@ -256,23 +256,27 @@ enum JourneyPlanner {
     /// cross-city namesakes.
     private static let MAX_TRANSFER_METERS: CLLocationDistance = 500
 
-    /// Ride time for one hop, from the stop-to-stop distance and a cruising
-    /// speed (km/h, including dwell) per line type. National-region suburban is
-    /// intercity rail (fast, long gaps); national-region bus is a long-distance
-    /// coach. Everything else is in-city.
+    /// Ride time for one hop. In-city lines (metro/tram/local suburban) keep a
+    /// flat per-stop value: their stops are close and evenly spaced, and this
+    /// preserves the long-standing route choices. National-region lines are the
+    /// intercity rail and long-distance coaches, whose stops are tens of km
+    /// apart, so those are costed by real distance / cruising speed. A flat
+    /// per-stop value made the ~500 km Athens-Thessaloniki train (IC1) cost like
+    /// ten metro hops (~40 min) instead of its true ~5 hours.
     private static func segmentMinutes(line: TransitLine, a: TransitStation, b: TransitStation) -> Int {
+        guard line.region == .national else {
+            switch line.type {
+            case .metro: return 2
+            case .tram: return 3
+            case .suburban: return 4
+            case .bus: return 4
+            case .scenic: return 5
+            }
+        }
         let metres = CLLocation(latitude: a.coordinate.latitude, longitude: a.coordinate.longitude)
             .distance(from: CLLocation(latitude: b.coordinate.latitude, longitude: b.coordinate.longitude))
-        let speedKmh: Double
-        switch line.type {
-        case .metro: speedKmh = 32
-        case .tram: speedKmh = 18
-        case .scenic: speedKmh = 25
-        case .suburban: speedKmh = line.region == .national ? 95 : 42
-        case .bus: speedKmh = line.region == .national ? 70 : 20
-        }
-        let minutes = (metres / 1000.0) / speedKmh * 60.0
-        return max(1, Int(minutes.rounded()))
+        let speedKmh: Double = line.type == .bus ? 70 : 95
+        return max(1, Int(((metres / 1000.0) / speedKmh * 60.0).rounded()))
     }
 
 
