@@ -1391,28 +1391,41 @@ struct SyrmosArrangement<Primary: View, Companion: View, Combined: View>: View {
         // absent (no journey selected, no live context on Home), a paired
         // arrangement would leave a dead half beside the task on the Duo inner
         // display, so both axes collapse to the readable single column instead,
-        // the same as the policy's own single decision.
+        // the same as the policy's own single decision. The collapsed column is
+        // sized from the WHOLE window (not the paired task pane, which is only a
+        // half), so the task fills a readable column, not a squeezed one.
         case .sideBySide where !companionHasContent:
-            singleColumn(ws, size: size)
+            collapsedColumn(size: size)
         case .sideBySide:
             paired(ws, size: size, axis: .horizontal)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .horizontal)
         case .stacked where !companionHasContent:
-            singleColumn(ws, size: size)
+            collapsedColumn(size: size)
         case .stacked:
             paired(ws, size: size, axis: .vertical)
                 .environment(\.syrmosIsPaired, true).environment(\.syrmosArrangementAxis, .vertical)
         }
     }
 
-    /// The readable single column (outer insets and a content width from the
-    /// shared breakpoint), so a wide window that does not pair still reads as a
-    /// centred column, not a full-width one. Compact widths keep the full width
-    /// (the views own their 16 pt gutters); only a wider window is centred.
+    /// The readable single column for the policy's own `.single` decision: the
+    /// task pane's width is already the readable column, so a wide window that
+    /// does not pair reads as a centred column, not a full-width one.
     @ViewBuilder private func singleColumn(_ ws: SyrmosAdaptiveWorkspace, size: CGSize) -> some View {
         combined()
             .frame(maxWidth: fullBleed ? .infinity : (Int(size.width) >= SyrmosAdaptiveWorkspacePolicy.mediumMinWidth
                    ? CGFloat(ws.pane(.task)?.rect.width ?? Int(size.width)) : .infinity))
+            .frame(maxWidth: .infinity)
+            .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
+    }
+
+    /// The single column shown when a paired arrangement collapses for want of
+    /// companion content. The paired task pane is only half the window, so the
+    /// readable width is taken from the whole window via the shared content
+    /// breakpoint, giving a full readable column centred in the display.
+    @ViewBuilder private func collapsedColumn(size: CGSize) -> some View {
+        let readable = SyrmosContentBreakpoint.resolve(width: Int(size.width), height: Int(size.height)).contentWidth
+        combined()
+            .frame(maxWidth: fullBleed ? .infinity : CGFloat(readable))
             .frame(maxWidth: .infinity)
             .environment(\.syrmosIsPaired, false).environment(\.syrmosArrangementAxis, nil)
     }
