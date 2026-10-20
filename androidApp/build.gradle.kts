@@ -70,8 +70,8 @@ android {
         // 105 (rejected) and 106 (released 2026-07-16) are consumed and can
         // never be reused. Bump this before every release; Play refuses a code
         // it has already seen, even from a discarded upload. 233 shipped as
-        // v3.0.0-beta.28, 234 as beta.29, 235 as beta.30, 236 as beta.31, 237 as beta.32, 238 as beta.33, 239 as beta.34, 240 as beta.35, 241 as beta.36; beta.37 uses 242.
-        versionCode = 242
+        // v3.0.0-beta.28, 234 as beta.29, 235 as beta.30, 236 as beta.31, 237 as beta.32, 238 as beta.33, 239 as beta.34, 240 as beta.35, 241 as beta.36, 242 as beta.37; beta.38 uses 243.
+        versionCode = 243
         versionName = "3.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
