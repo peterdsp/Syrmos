@@ -10,6 +10,14 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.45 - 2026-10-22
+
+### Fixed
+- Android arrive-by / last-train now scan the whole remaining service day, so a
+  late or next-day arrive-by (or a last connection after a long tail) is found.
+- Android rejects nonsensical arrive-by times like 99:99.
+- Android GO map no longer rebuilds its route every frame (CPU/battery drain).
+
 ## 3.0.0-beta.44 - 2026-10-22
 
 ### Fixed
