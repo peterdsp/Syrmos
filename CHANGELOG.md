@@ -10,6 +10,17 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.44 - 2026-10-22
+
+### Fixed
+- Android Schedule and Airport Hub now tick the clock, so departure lists update
+  as time passes instead of freezing on "Now" (and the date no longer sticks
+  after midnight).
+- Android keeps the chosen day/line/station (Schedule) and day/route/flight
+  (Airport) across a rotation or fold.
+- Android map labels frequency-estimated station departures as "estimated"
+  instead of presenting them as the published timetable.
+
 ## 3.0.0-beta.43 - 2026-10-22
 
 ### Fixed
