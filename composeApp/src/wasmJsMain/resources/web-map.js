@@ -3166,6 +3166,13 @@
                 if (lastSimulatedTrains.length) {
                     renderSimulatedTrainsOnMap(lastSimulatedTrains);
                 }
+                // Show must restore the REAL GPS trains too, not only the airport
+                // buses and simulated trains. The hide branch cleared liveTrainLayer,
+                // so without this the live suburban markers stayed gone until the
+                // next 10s poll.
+                if (lastLiveTrains && lastLiveTrains.length) {
+                    renderLiveTrains(lastLiveTrains);
+                }
             }
         });
     }
