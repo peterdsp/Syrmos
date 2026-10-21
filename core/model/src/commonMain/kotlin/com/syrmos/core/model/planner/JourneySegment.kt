@@ -1,5 +1,7 @@
 package com.syrmos.core.model.planner
 
+import com.syrmos.core.model.transit.Direction
+
 data class JourneySegment(
     val lineId: String,
     val lineName: String,
@@ -10,6 +12,13 @@ data class JourneySegment(
     val stationCount: Int,
     val estimatedMinutes: Int,
     val isTransfer: Boolean = false,
+    /**
+     * The direction of travel on this line, derived from the line's canonical
+     * station order (OUTBOUND = toward the natural last station). Null when the
+     * planner could not resolve it. Lets a schedule-grounded consumer pick
+     * departures heading the right way instead of merging both directions.
+     */
+    val direction: Direction? = null,
     /**
      * Every station the ride really calls at, in order, from [fromStationId] to
      * [toStationId] inclusive. Empty means unknown (a caller that built the

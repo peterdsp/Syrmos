@@ -112,8 +112,14 @@ class PlanByArrivalUseCase(
         leg: JourneySegment,
         boardBy: Int,
     ): Pair<Int, UpcomingDeparture>? {
+        // Only departures heading the leg's way. The old code merged OUTBOUND and
+        // INBOUND and could pick a wrong-direction train that merely left late
+        // enough, so "board the 21:04, you'll be at Piraeus by 21:30" could name a
+        // train running the opposite direction. The planner now resolves the leg's
+        // direction; fall back to both only when it could not.
+        val directions = leg.direction?.let { listOf(it) } ?: Direction.entries.toList()
         val candidates = buildList {
-            for (dir in Direction.entries) {
+            for (dir in directions) {
                 val list = runCatching {
                     getNextDepartures.invoke(
                         stationId = leg.fromStationId,

@@ -1,5 +1,6 @@
 package com.syrmos.core.domain.usecase
 
+import com.syrmos.core.model.transit.Direction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -176,5 +177,22 @@ class PlanJourneyReconstructionTest {
         val segments = reconstructSegments(path, fromStationId = "A", toStationId = "Z", stationNames = names)
         assertEquals("Alpha", segments.single().fromStationName)
         assertEquals("Z", segments.single().toStationName, "unknown id falls back to the raw id, never crashes")
+    }
+    @Test
+    fun segmentCarriesTravelDirectionFromLineOrder() {
+        // Line 1 ordered A,B,C,D. A->D travels OUTBOUND (forward along the order);
+        // D->A travels INBOUND. This lets a schedule-grounded consumer pick
+        // departures heading the right way instead of merging both directions.
+        val order = mapOf("1" to listOf("A", "B", "C", "D"))
+        val fwd = reconstructSegments(
+            listOf("B" to edge("B", "1"), "C" to edge("C", "1"), "D" to edge("D", "1")),
+            fromStationId = "A", toStationId = "D", stationNames = names, lineOrder = order,
+        ).single()
+        assertEquals(Direction.OUTBOUND, fwd.direction)
+        val rev = reconstructSegments(
+            listOf("C" to edge("C", "1"), "B" to edge("B", "1"), "A" to edge("A", "1")),
+            fromStationId = "D", toStationId = "A", stationNames = names, lineOrder = order,
+        ).single()
+        assertEquals(Direction.INBOUND, rev.direction)
     }
 }

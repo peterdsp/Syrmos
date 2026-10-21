@@ -5,6 +5,7 @@ import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.model.planner.JourneyResult
 import com.syrmos.core.model.planner.JourneySegment
+import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.transit.Line
 import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.Region
@@ -74,10 +75,14 @@ class PlanJourneyUseCase(
         val stationNames = mutableMapOf<String, String>()
         // id -> (lat, lon), so transfer edges can require real physical proximity.
         val stationCoords = mutableMapOf<String, Pair<Double, Double>>()
+        // lineId -> ordered station ids (OUTBOUND = natural order), so each emitted
+        // segment can carry its travel direction for schedule-grounded consumers.
+        val lineOrder = mutableMapOf<String, List<String>>()
 
         // Build edges from station ordering on each line
         for (line in allLines) {
             val stations = stationRepository.getStationsOnLine(line.id).first()
+            lineOrder[line.id] = stations.map { it.id }
             stations.forEach {
                 stationNames[it.id] = it.name
                 stationCoords[it.id] = it.latitude to it.longitude
@@ -186,7 +191,7 @@ class PlanJourneyUseCase(
             node = prev
         }
 
-        val segments = reconstructSegments(path, fromStationId, toStationId, stationNames)
+        val segments = reconstructSegments(path, fromStationId, toStationId, stationNames, lineOrder)
 
         val totalMinutes = distances[toStationId] ?: 0
         val transferCount = (segments.size - 1).coerceAtLeast(0)
@@ -285,6 +290,7 @@ internal fun reconstructSegments(
     fromStationId: String,
     toStationId: String,
     stationNames: Map<String, String>,
+    lineOrder: Map<String, List<String>> = emptyMap(),
 ): List<JourneySegment> {
     val segments = mutableListOf<JourneySegment>()
     fun nameOf(id: String): String = stationNames[id] ?: id
@@ -297,6 +303,17 @@ internal fun reconstructSegments(
     // Every station the running leg calls at, start inclusive. Kept alongside
     // segmentStationCount so a ride carries its real stop sequence, not just ends.
     val segmentStops = mutableListOf<String>()
+
+    // Travel direction of a leg from the line's canonical station order: OUTBOUND
+    // when the alight is further along than the board, INBOUND otherwise. Null if
+    // either endpoint is off the line's order.
+    val directionFor: (String?, String, String) -> Direction? = fn@{ lineId, fromId, toId ->
+        val order = lineId?.let { lineOrder[it] } ?: return@fn null
+        val i0 = order.indexOf(fromId)
+        val i1 = order.indexOf(toId)
+        if (i0 < 0 || i1 < 0 || i0 == i1) null
+        else if (i1 > i0) Direction.OUTBOUND else Direction.INBOUND
+    }
 
     for ((stationId, edge) in path) {
         if (edge == null) { prevStationId = stationId; continue }
@@ -317,6 +334,7 @@ internal fun reconstructSegments(
                         estimatedMinutes = segmentMinutes,
                         isTransfer = false,
                         orderedStopIds = segmentStops.toList(),
+                        direction = directionFor(currentLineId, segmentStartStation, prevStationId),
                     )
                 )
                 currentLineId = null
@@ -353,6 +371,7 @@ internal fun reconstructSegments(
                         estimatedMinutes = segmentMinutes,
                         isTransfer = false,
                         orderedStopIds = segmentStops.toList(),
+                        direction = directionFor(currentLineId, segmentStartStation, prevStationId),
                     )
                 )
                 currentLineId = edge.lineId
@@ -388,6 +407,7 @@ internal fun reconstructSegments(
                 orderedStopIds = segmentStops.toList().let {
                     if (it.lastOrNull() == toStationId) it else it + toStationId
                 },
+                direction = directionFor(currentLineId, segmentStartStation, toStationId),
             )
         )
     }

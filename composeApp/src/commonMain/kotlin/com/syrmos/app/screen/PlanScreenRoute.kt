@@ -1324,9 +1324,11 @@ private fun buildTimetable(
     for (seg in result.segments) {
         val lineIds = if (seg.lineId == "M3") listOf("M3", "M3_AIR") else listOf(seg.lineId)
         val list = depMap.getOrPut(seg.lineId + "|" + seg.fromStationId) { ArrayList() }
-        for (dir in listOf(Direction.OUTBOUND, Direction.INBOUND)) {
-            // Forward needs ~20; backward (arrive-by / last train) needs the whole
-            // remaining service day so it can find the true latest catchable train.
+        // Only the leg's travel direction: merging OUTBOUND and INBOUND let a
+        // wrong-direction train be timed as this leg and marked SCHEDULED. The
+        // planner now resolves the direction; fall back to both when it could not.
+        val directions = seg.direction?.let { listOf(it) } ?: listOf(Direction.OUTBOUND, Direction.INBOUND)
+        for (dir in directions) {
             val ups = runCatching { departures.invoke(lineIds, dir, horizon, seg.fromStationId) }.getOrElse { emptyList() }
             for (u in ups) {
                 if (u.lineId == seg.lineId || (seg.lineId == "M3" && u.lineId == "M3_AIR")) {
