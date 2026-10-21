@@ -98,7 +98,10 @@ fun ScheduleScreen() {
     val lineRepo = koinInject<LineRepositoryImpl>()
     val stationRepo = koinInject<StationRepositoryImpl>()
     val bundles by sync.lineBundles.collectAsState()
-    offsetsRepo.offsets.collectAsState()
+    // Capture the offsets state (the result was discarded) so a later hydration
+    // recomposes the screen and the departures below are keyed on it; otherwise
+    // every station showed the origin-terminal times until the user interacted.
+    val offsets by offsetsRepo.offsets.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -138,7 +141,7 @@ fun ScheduleScreen() {
         Clock.System.now().toLocalDateTime(zone)
     }
 
-    val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now) {
+    val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now, offsets) {
         if (selectedStationId.isEmpty() || selectedLineId.isEmpty()) emptyList()
         else DepartureProjection.compute(
             bundles = bundles,

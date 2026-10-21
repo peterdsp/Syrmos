@@ -34,6 +34,7 @@ import com.syrmos.core.network.SyrmosLivePositionsService
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -127,9 +128,16 @@ class MapViewModel(
     private val announcementsRepository: AnnouncementsRepository,
     private val lineGeometryRepository: LineGeometryRepositoryImpl,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+    // A DB error or an empty flow in a launched job on the Main dispatcher would
+    // otherwise reach the thread's uncaught handler and crash the app, and leave
+    // isLoading stuck true (endless spinner). Catch it, log it, and drop loading.
+    private val errorHandler = CoroutineExceptionHandler { _, e ->
+        println("MapViewModel coroutine error: ${e.message}")
+        _uiState.update { it.copy(isLoading = false) }
+    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + errorHandler)
     private var livePositionsSnapshot: LivePositionsSnapshot? = null
     private var departureRefreshJob: Job? = null
 
@@ -363,11 +371,19 @@ class MapViewModel(
                     // both operators; filtering to OASA made Thessaloniki
                     // silently disappear from the map.
                     val snapshot = airportBusService.fetchUnified()
-                    val vehicles = AirportBusVehicles.parseUnified(snapshot)
-                    val routes = snapshot?.operators?.values?.flatMap { it.routes }.orEmpty()
-                    val arrivals = snapshot?.operators?.values?.flatMap { it.arrivals }.orEmpty()
-                    _uiState.update { it.copy(busVehicles = vehicles, airportBusRoutes = routes, airportBusArrivals = arrivals) }
-                    failures = 0
+                    if (snapshot == null) {
+                        // fetchUnified catches its own errors and returns null, so a
+                        // null here is a failed fetch. Keep the last good data on
+                        // screen and back off instead of wiping it to empty lists
+                        // (which also left failures at 0, so backoff never engaged).
+                        failures++
+                    } else {
+                        val vehicles = AirportBusVehicles.parseUnified(snapshot)
+                        val routes = snapshot.operators?.values?.flatMap { it.routes }.orEmpty()
+                        val arrivals = snapshot.operators?.values?.flatMap { it.arrivals }.orEmpty()
+                        _uiState.update { it.copy(busVehicles = vehicles, airportBusRoutes = routes, airportBusArrivals = arrivals) }
+                        failures = 0
+                    }
                 } catch (e: Exception) {
                     // Keep the last vehicles on screen and back off (don't clobber
                     // good data with an empty list on a transient failure).
