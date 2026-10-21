@@ -7091,8 +7091,30 @@
                         : `${nm} is served by: ${list}.`, sourceConf: "offline" };
                 }
                 case "stopsBetween": {
-                    // The web has no JS stop-counting planner, so delegate to the
-                    // route directions like a trip. Native computes the exact count.
+                    // Count stops with the real JS planner (planDetailed returns the
+                    // ordered stops per leg), answered in-app, instead of punting to
+                    // Google Maps as before.
+                    const from = intent.from ? stationMap.get(intent.from) : null;
+                    const to = intent.to ? stationMap.get(intent.to) : null;
+                    if (!from || !to) return { text: t("ariadne_no_station") };
+                    try {
+                        const route = (window.SyrmosPlanner && window.SyrmosPlanner.planDetailed)
+                            ? window.SyrmosPlanner.planDetailed(stations, lines, from.id, to.id, currentLang) : null;
+                        if (route && route.legs && route.legs.length) {
+                            let hops = 0;
+                            for (const leg of route.legs) hops += Math.max(0, (leg.stops || []).length - 1);
+                            const changes = route.legs.length - 1;
+                            const fromName = stationName(from.id), toName = stationName(to.id);
+                            const text = currentLang === "el"
+                                ? `${hops} ${hops === 1 ? "στάση" : "στάσεις"} από ${fromName} ως ${toName}${changes ? `, ${changes} ${changes === 1 ? "αλλαγή" : "αλλαγές"}` : ""}.`
+                                : currentLang === "sq"
+                                ? `${hops} ${hops === 1 ? "ndalesë" : "ndalesa"} nga ${fromName} te ${toName}${changes ? `, ${changes} ${changes === 1 ? "ndërrim" : "ndërrime"}` : ""}.`
+                                : currentLang === "it"
+                                ? `${hops} ${hops === 1 ? "fermata" : "fermate"} da ${fromName} a ${toName}${changes ? `, ${changes} ${changes === 1 ? "cambio" : "cambi"}` : ""}.`
+                                : `${hops} ${hops === 1 ? "stop" : "stops"} from ${fromName} to ${toName}${changes ? `, ${changes} ${changes === 1 ? "change" : "changes"}` : ""}.`;
+                            return { text, sourceConf: "offline" };
+                        }
+                    } catch (_) { /* fall through */ }
                     if (intent.from && intent.to) return respond({ kind: "plan", from: intent.from, to: intent.to, lowExposure: false });
                     return { text: t("ariadne_no_station") };
                 }
