@@ -58,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -120,10 +121,12 @@ fun AirportHubScreen(
     val lang by LocalizationManager.language.collectAsState()
     val zone = remember { TimeZone.of("Europe/Athens") }
 
-    var dayOffset by remember { mutableIntStateOf(0) }
+    // rememberSaveable, so a rotation or fold keeps the chosen day/route/flight
+    // instead of snapping back to today/M3.
+    var dayOffset by rememberSaveable { mutableIntStateOf(0) }
     var selectedCity by remember { mutableStateOf(AirportCity.ATHENS) }
-    var selectedRoute by remember { mutableStateOf("M3") }
-    var flightMinutes by remember { mutableIntStateOf(18 * 60 + 40) }
+    var selectedRoute by rememberSaveable { mutableStateOf("M3") }
+    var flightMinutes by rememberSaveable { mutableIntStateOf(18 * 60 + 40) }
     val hub = remember(selectedCity) { airportHub(selectedCity) }
 
     val selectedTrip = remember(calendarTrips, dayOffset) {
@@ -177,8 +180,16 @@ fun AirportHubScreen(
         }
     }
 
-    val now = Clock.System.now().toLocalDateTime(zone)
-    val airportDepartures = remember(bundles, offsets, dayOffset, now.date) {
+    // A ticking clock so the board re-filters as time passes (there was no ticker,
+    // so departures froze on "Now" and the date was stale after midnight).
+    var now by remember { mutableStateOf(Clock.System.now().toLocalDateTime(zone)) }
+    LaunchedEffect(zone) {
+        while (true) {
+            now = Clock.System.now().toLocalDateTime(zone)
+            delay(30_000)
+        }
+    }
+    val airportDepartures = remember(bundles, offsets, dayOffset, now) {
         DepartureProjection.compute(
             bundles = bundles,
             offsets = offsetsRepo,

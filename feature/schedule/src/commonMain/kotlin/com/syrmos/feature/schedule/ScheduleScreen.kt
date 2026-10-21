@@ -49,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +76,7 @@ import com.syrmos.core.model.transit.Station
 import com.syrmos.core.network.SyrmosSchedulesService
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -115,9 +117,11 @@ fun ScheduleScreen() {
         allLines = lines.filter { it.isOperational }
     }
 
-    var dayOffset by remember { mutableStateOf(0) }
-    var selectedLineId by remember { mutableStateOf("M3") }
-    var selectedStationId by remember { mutableStateOf("") }
+    // rememberSaveable, so a rotation or fold keeps the chosen day/line/station
+    // instead of snapping back to today/M3/first (PlanScreen already does this).
+    var dayOffset by rememberSaveable { mutableStateOf(0) }
+    var selectedLineId by rememberSaveable { mutableStateOf("M3") }
+    var selectedStationId by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(allLines) {
         if (allLines.isNotEmpty() && allLines.none { it.id == selectedLineId }) {
@@ -137,8 +141,14 @@ fun ScheduleScreen() {
 
     val selectedLine = allLines.firstOrNull { it.id == selectedLineId }
     val zone = remember { TimeZone.of("Europe/Athens") }
-    val now: LocalDateTime = remember(dayOffset, bundles) {
-        Clock.System.now().toLocalDateTime(zone)
+    // A ticking clock, not a one-shot remember: without it the filtered list
+    // froze on "Now" and kept yesterday's date after midnight.
+    var now: LocalDateTime by remember { mutableStateOf(Clock.System.now().toLocalDateTime(zone)) }
+    LaunchedEffect(zone) {
+        while (true) {
+            now = Clock.System.now().toLocalDateTime(zone)
+            delay(30_000)
+        }
     }
 
     val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now, offsets) {
