@@ -835,6 +835,11 @@ internal object DepartureProjection {
         for (lid in lineIds) {
             val bundle = bundles[lid] ?: continue
 
+            // An explicit trip timetable is authoritative; the headway bands are a
+            // fallback for lines that ship none. Running BOTH (as before) for a
+            // line like A1 that has 162 trips AND 4 bands interleaved real
+            // timetable times with invented headway-grid times, both tagged
+            // SCHEDULED. Use bands only when there are no trips.
             if (bundle.trips.isNotEmpty()) {
                 emitFromTrips(
                     bundle = bundle,
@@ -844,17 +849,17 @@ internal object DepartureProjection {
                     lineIdOut = lineId,
                     out = results,
                 )
+            } else {
+                emitFromBands(
+                    bundle = bundle,
+                    dt = dt,
+                    nowMinutes = nowMinutes,
+                    stationId = stationId,
+                    offsets = offsets,
+                    lineIdOut = lineId,
+                    out = results,
+                )
             }
-
-            emitFromBands(
-                bundle = bundle,
-                dt = dt,
-                nowMinutes = nowMinutes,
-                stationId = stationId,
-                offsets = offsets,
-                lineIdOut = lineId,
-                out = results,
-            )
         }
 
         return results.sortedBy { it.timeMinutes }

@@ -10,7 +10,11 @@ import kotlinx.serialization.json.Json
 class AirportBusService(
     private val httpClient: HttpClient,
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    // coerceInputValues: the server occasionally sends an explicit null for a
+    // non-null field that has a default (e.g. "color": null, "heading": null).
+    // Without coercion kotlinx throws and runCatching swallows it, dropping ALL
+    // live bus data to the "24/7" fallback. Coerce such nulls to their defaults.
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     private val baseUrl = "https://api-syrmos.peterdsp.dev"
 
