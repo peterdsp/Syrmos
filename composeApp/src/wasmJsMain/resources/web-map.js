@@ -2765,6 +2765,11 @@
             fetchApiDepartures(station),
             isAirport ? fetchAirportBuses() : Promise.resolve(null),
         ]);
+        // Selecting station A then B fires two renders; if A's fetch resolves
+        // last it must NOT overwrite B's sheet with A's departures. The write
+        // targets the shared #stationDepartures node, so bail when the selection
+        // moved on while this fetch was in flight.
+        if (selectedStationId !== station.id) return;
         // The sheet shows the SAME station complex the Home board shows, so a
         // row tapped on the card opens the destination it named. The board
         // reconciles per service, so one published railway response can no
@@ -3601,9 +3606,16 @@
                     </div>
                 `;
             }).join("");
-            const existing = liveTrainList.innerHTML;
-            if (!existing.includes('data-live-suburban')) {
-                liveTrainList.innerHTML = existing + suburbanHtml;
+            // Refresh the suburban block in place. The old guard only appended
+            // once (`!includes('data-live-suburban')`), so after the first paint
+            // the rows and their "updated Ns ago" chip never refreshed and aged
+            // positions kept showing as current live data. Wrapping the block in
+            // its own node lets us replace it every tick. Guard the element too:
+            // it is nullable (see the listener guard where it is read).
+            if (liveTrainList) {
+                const prior = liveTrainList.querySelector("#liveSuburbanBlock");
+                if (prior) prior.remove();
+                liveTrainList.insertAdjacentHTML("beforeend", `<div id="liveSuburbanBlock">${suburbanHtml}</div>`);
             }
         }
 
@@ -6949,10 +6961,15 @@
                             try {
                                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,weather_code&timezone=auto`;
                                 const r = await fetch(url);
+                                if (!r.ok) throw new Error("weather http " + r.status);
                                 const data = await r.json();
                                 const c = data.current || {};
+                                // A 200 with an error body (or a missing field) must not
+                                // render "NaN°C": treat a non-finite reading as a failure
+                                // and fall through to the honest error reply below.
+                                if (!Number.isFinite(c.temperature_2m)) throw new Error("weather no reading");
                                 const temp = Math.round(c.temperature_2m);
-                                const feels = Math.round(c.apparent_temperature);
+                                const feels = Number.isFinite(c.apparent_temperature) ? Math.round(c.apparent_temperature) : temp;
                                 const cond = weatherCodeLabel(c.weather_code, currentLang);
                                 const reply = currentLang === "el"
                                     ? `${name} τώρα: ${temp}°C, ${cond}. Αίσθηση ${feels}°C.`
