@@ -736,6 +736,9 @@ struct HomeView: View {
                 due: due,
                 now: now,
                 lang: loc.language,
+                // Only flash "LIVE" when the freshness store says the signal is
+                // actually live; a schedule-predicted countdown shows "PREDICTED".
+                isLive: freshnessStore.freshness == .live,
                 onStop: { tracking.stop() }
             )
             .onChange(of: remaining) { _, _ in tracking.refresh(now: now) }

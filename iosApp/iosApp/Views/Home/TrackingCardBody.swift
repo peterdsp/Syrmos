@@ -18,6 +18,10 @@ struct TrackingCardBody: View {
     let due: Bool
     let now: TimeInterval
     let lang: AppLanguage
+    /// Whether the countdown comes from a real-time signal. When false the target
+    /// is a schedule prediction, so the card must not flash a live "LIVE" badge
+    /// (the Home OfflinePill already says "predicted" for the same data).
+    var isLive: Bool = true
     let onStop: () -> Void
 
     // The moment the card first sees this tracked departure. Anchors the
@@ -34,10 +38,10 @@ struct TrackingCardBody: View {
 
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
-                LivePulseDot(color: accent)
+                LivePulseDot(color: isLive ? accent : .secondary)
                 Text(liveLabel)
                     .font(.caption).fontWeight(.bold)
-                    .foregroundStyle(accent)
+                    .foregroundStyle(isLive ? accent : .secondary)
                 Spacer(minLength: 8)
                 Text(arrivingLabel)
                     .font(.subheadline).fontWeight(.semibold)
@@ -121,6 +125,14 @@ struct TrackingCardBody: View {
     }
 
     private var liveLabel: String {
+        if !isLive {
+            switch lang {
+            case .greek: return "ΕΚΤΙΜΗΣΗ"
+            case .albanian: return "PARASHIKIM"
+            case .italian: return "STIMA"
+            case .english: return "PREDICTED"
+            }
+        }
         switch lang {
         case .greek: return "ΖΩΝΤΑΝΑ"
         case .albanian: return "LIVE"

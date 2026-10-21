@@ -89,8 +89,11 @@ private func cr(_ a: Double, _ b: Double, _ c: Double, _ d: Double, _ t: Double)
 
 enum PreloadedData {
     static let stations: [MapStationNode] = SyrmosData.mapStations
+    // uniquingKeysWith, not uniqueKeysWithValues: the latter fatalErrors on any
+    // duplicate station id in the seed, trapping at first access on startup. Keep
+    // the first node for a duplicate id rather than crash the whole map.
     static let stationsById: [String: MapStationNode] = Dictionary(
-        uniqueKeysWithValues: stations.map { ($0.id, $0) }
+        stations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }
     )
     static let routeLines: [RouteLine] = SyrmosData.lines.compactMap { line in
         // Prefer OSM-derived geometry from the bundled shapes.json so the
@@ -1536,8 +1539,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
         // Sync simulated + live trains. Build a desired set and reconcile
         // against existing annotations so we move existing markers rather
         // than tearing them down each tick (smooth motion, less GPU churn).
-        let wantSim = Dictionary(uniqueKeysWithValues: simulatedTrains.map { ($0.id, $0) })
-        let wantLive = Dictionary(uniqueKeysWithValues: liveTrains.map { ($0.id, $0) })
+        // uniquingKeysWith: two active trains on the same line+direction whose
+        // projected origin-minute rounds to the same id produce a duplicate key;
+        // uniqueKeysWithValues would fatalError and trap updateUIView. The bus
+        // path below already dedupes this way, so match it.
+        let wantSim = Dictionary(simulatedTrains.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let wantLive = Dictionary(liveTrains.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let existing = mv.annotations.compactMap { $0 as? SyrmosTrainAnnotation }
         var seenSim: Set<String> = []
         var seenLive: Set<String> = []

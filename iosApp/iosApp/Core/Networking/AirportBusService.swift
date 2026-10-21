@@ -358,9 +358,13 @@ enum AirportBusService {
             var alertsForOp: [ServiceAlert] = []
             var routesForOp: [UnifiedRoute] = opData.routes
 
-            // Process arrivals
+            // Process arrivals. The airport-stop ETA is for buses HEADING TO the
+            // airport, which the UI labels "toward the airport"; a "from_airport"
+            // arrival (a bus leaving the airport) must not be folded in and then
+            // shown as airport-bound. An unknown/absent direction is kept.
             for arrival in opData.arrivals {
                 let line = arrival.line_id
+                if arrival.direction == "from_airport" { continue }
                 if let minutes = arrival.estimated_minutes, minutes >= 0 {
                     etasByLine[line, default: []].append(minutes)
                 }
@@ -454,6 +458,9 @@ enum AirportBusService {
         // Process arrivals
         for arrival in payload.arrivals {
             let line = arrival.line_id
+            // Airport-bound arrivals only (see reduceUnified): a from_airport bus
+            // must not be shown as "toward the airport".
+            if arrival.direction == "from_airport" { continue }
             if let minutes = arrival.estimated_minutes, minutes >= 0 {
                 etasByLine[line, default: []].append(minutes)
             }
