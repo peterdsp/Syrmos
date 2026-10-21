@@ -2385,17 +2385,17 @@ struct AirportBusVehicleDetailSheet: View {
                     } else {
                         Label(vehicle.lineId, systemImage: "bus.fill").font(.title2.bold())
                     }
-                    LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction") {
+                    LabeledContent(language == .greek ? "Κατεύθυνση" : language == .albanian ? "Drejtimi" : language == .italian ? "Direzione" : "Direction") {
                         Text(SyrmosBusAnnotation.directionText(vehicle.toAirport, lang: language))
                     }
                     if let nextStop {
-                        LabeledContent(language == .greek ? "Επόμενη στάση" : "Next stop") {
+                        LabeledContent(language == .greek ? "Επόμενη στάση" : language == .albanian ? "Ndalesa tjetër" : language == .italian ? "Prossima fermata" : "Next stop") {
                             Text(nextStop.stop_name)
                         }
                     }
                     if !orderedStops.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(language == .greek ? "Στάσεις διαδρομής" : "Route stops")
+                            Text(language == .greek ? "Στάσεις διαδρομής" : language == .albanian ? "Ndalesat e rrugës" : language == .italian ? "Fermate del percorso" : "Route stops")
                                 .font(.headline)
                             ForEach(orderedStops) { stop in
                                 HStack(spacing: 10) {
@@ -2411,6 +2411,10 @@ struct AirportBusVehicleDetailSheet: View {
                     }
                     Text(language == .greek
                          ? "Οι ώρες εμφανίζονται ανά στάση όταν παρέχονται από τον πάροχο. Η πραγματική κυκλοφορία μπορεί να προκαλέσει μικρή διαφορά λίγων λεπτών."
+                         : language == .albanian
+                         ? "Oraret shfaqen për çdo ndalesë kur jepen nga operatori. Trafiku real mund të shkaktojë një ndryshim të vogël prej disa minutash."
+                         : language == .italian
+                         ? "Gli orari sono mostrati per fermata quando forniti dall'operatore. Il traffico reale puo' causare una piccola differenza di pochi minuti."
                          : "Times are shown per stop when supplied by the operator. Real traffic can cause a small difference of a few minutes.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
