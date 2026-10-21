@@ -686,7 +686,10 @@ private fun StationSheetCard(
                 val departures = uiState.selectedStationDepartures.take(4)
                 Column {
                     Text(
-                        text = vehicleText(lang, "NEXT DEPARTURES", "ΕΠΟΜΕΝΕΣ ΑΝΑΧΩΡΗΣΕΙΣ", "NISJET E ARDHSHME", "PROSSIME PARTENZE"),
+                        // These are headway estimates (now + n x frequency), not the
+                        // published timetable, so label them as such: the app's
+                        // honest-data rule means an estimate must never read as fact.
+                        text = vehicleText(lang, "ESTIMATED DEPARTURES", "ΕΚΤΙΜ. ΑΝΑΧΩΡΗΣΕΙΣ", "NISJE TE VLERESUARA", "PARTENZE STIMATE"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
