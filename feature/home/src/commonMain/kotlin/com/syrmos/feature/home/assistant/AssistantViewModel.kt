@@ -1011,11 +1011,28 @@ class AssistantViewModel(
         val station = resolveStation(intent.stationId, intent.lineId) ?: return botMessage(clarify(MissingSlot.STATION))
         val lineId = intent.lineId ?: station.lineIds.firstOrNull()
             ?: return botMessage(clarify(MissingSlot.STATION))
-        val last = getLastTrain.latestEitherDirection(station.id, normalizeLine(lineId))
-            ?: return botMessage(t("Service is over for tonight at ${stationName(station)}.",
-                "Τα δρομολόγια για απόψε τελείωσαν στον ${stationName(station)}.",
-                "Shërbimi për sonte ka mbaruar te ${stationName(station)}.",
-                it = "Il servizio per stasera e' terminato a ${stationName(station)}."))
+        val normLine = normalizeLine(lineId)
+        val last = getLastTrain.latestEitherDirection(station.id, normLine)
+        if (last == null) {
+            // A null last train means EITHER service has ended tonight OR it runs
+            // overnight (past midnight), where there is no meaningful "last train".
+            // Only the first is "service over"; for overnight service, trains are
+            // still running, so saying "service is over" at 21:00 is false.
+            val overnight = bandProjector.isOvernightServiceToday(
+                if (normLine == "M3") listOf("M3", "M3_AIR") else listOf(normLine)
+            )
+            return if (overnight) {
+                botMessage(t("Trains run through the night at ${stationName(station)} tonight, so there is no last train.",
+                    "Απόψε τα δρομολόγια συνεχίζονται όλη τη νύχτα στον ${stationName(station)}, οπότε δεν υπάρχει τελευταίο.",
+                    "Sonte trenat qarkullojnë gjithë natën te ${stationName(station)}, prandaj s'ka tren të fundit.",
+                    it = "Stanotte i treni circolano tutta la notte a ${stationName(station)}, quindi non c'e' un ultimo treno."))
+            } else {
+                botMessage(t("Service is over for tonight at ${stationName(station)}.",
+                    "Τα δρομολόγια για απόψε τελείωσαν στον ${stationName(station)}.",
+                    "Shërbimi për sonte ka mbaruar te ${stationName(station)}.",
+                    it = "Il servizio per stasera e' terminato a ${stationName(station)}."))
+            }
+        }
         return AssistantMessage(
             id = nextId++,
             fromUser = false,
