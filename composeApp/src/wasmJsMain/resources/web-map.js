@@ -6852,7 +6852,15 @@
                     if (!from || !to) return { text: window.SyrmosAriadne.outOfScope(currentLang) };
                     const now = athensNow();
                     const nowMin = now.getHours() * 60 + now.getMinutes();
-                    const roughDuration = 25;
+                    // Real route duration from the planner (distance-based, so the
+                    // intercity is costed correctly) plus the first-leg line and
+                    // the direction it heads. The old flat 25-min estimate for
+                    // EVERY trip told riders to board the 17:35 for a ~5h intercity
+                    // and ignored direction; this grounds both in the real route.
+                    const heading = (window.SyrmosPlanner && window.SyrmosPlanner.firstLegHeading)
+                        ? window.SyrmosPlanner.firstLegHeading(stations, lines, from.id, to.id, currentLang)
+                        : null;
+                    const roughDuration = (heading && heading.totalMinutes != null) ? heading.totalMinutes : 25;
                     const targetMin = intent.arriveByMinutes != null
                         ? intent.arriveByMinutes
                         : (intent.inMinutesFromNow != null ? nowMin + intent.inMinutesFromNow : null);
@@ -6875,10 +6883,19 @@
                         try {
                             const deps = buildStationDepartures(boardNode) || [];
                             const boardBy = effective - roughDuration;
-                            // Pick the latest scheduled departure at the
-                            // boarding station whose time is <= boardBy.
+                            const fold = (s) => (window.SyrmosPlanner && window.SyrmosPlanner._nameKey)
+                                ? window.SyrmosPlanner._nameKey(s) : String(s || "").toLowerCase();
+                            const termKey = heading && heading.terminalName ? fold(heading.terminalName) : null;
+                            // Latest departure at or before boardBy, on the planned
+                            // first-leg line and heading toward the destination (so
+                            // it is not an opposite-direction train that happens to
+                            // leave late enough).
                             let best = null;
                             for (const d of deps) {
+                                if (heading) {
+                                    if (d.lineId !== heading.lineId) continue;
+                                    if (termKey && fold(d.destination || d.direction || "") !== termKey) continue;
+                                }
                                 const t = d.time || "";
                                 const m = /^(\d{1,2}):(\d{2})$/.exec(t);
                                 if (!m) continue;
@@ -6889,7 +6906,7 @@
                             }
                             if (best) {
                                 leaveByExact = clockOf(best.mins);
-                                leaveLegLine = best.dep.line?.id || (best.dep.line || {}).id || "";
+                                leaveLegLine = best.dep.lineId || best.dep.line?.id || (best.dep.line || {}).id || "";
                             }
                         } catch (_) { /* fall through to estimate */ }
                     }
@@ -7205,19 +7222,32 @@
                     const boardNodeId = from ? (rawIdToNodeId.get(from.id) || nodeIdFor(from.id)) : null;
                     const boardNode = boardNodeId ? stationNodeMap.get(boardNodeId) : null;
                     let nextDep = null;
-                    if (boardNode && typeof buildStationDepartures === "function") {
+                    if (boardNode && from && typeof buildStationDepartures === "function") {
                         try {
-                            const deps = buildStationDepartures(boardNode) || [];
-                            // deps carry minutesAway (always >= 0 and already
-                            // midnight-correct); the soonest upcoming train is
-                            // just the smallest. Re-parsing the wrapped HH:MM and
-                            // comparing to a wall-clock "now" broke after midnight
-                            // (a 00:10 train has mins=10, never > a 23:xx now) and
-                            // silently skipped suburban rows.
-                            for (const d of deps) {
-                                if (d.minutesAway == null) continue;
-                                if (nextDep == null || d.minutesAway < nextDep.mins) {
-                                    nextDep = { time: d.time || "", mins: d.minutesAway };
+                            // Only a departure that actually HEADS toward the
+                            // destination counts. The old code took the globally
+                            // soonest departure in ANY direction and asserted it
+                            // ran "towards {destination}", which recommended the
+                            // opposite-way train. Consult the planner for the
+                            // first-leg line and the terminal it heads toward,
+                            // then take the soonest departure on that line in that
+                            // direction (a board group's `destination` is exactly
+                            // that terminal). No route -> no fabricated answer.
+                            const heading = (window.SyrmosPlanner && window.SyrmosPlanner.firstLegHeading)
+                                ? window.SyrmosPlanner.firstLegHeading(stations, lines, from.id, to.id, currentLang)
+                                : null;
+                            if (heading) {
+                                const deps = buildStationDepartures(boardNode) || [];
+                                const fold = (s) => (window.SyrmosPlanner && window.SyrmosPlanner._nameKey)
+                                    ? window.SyrmosPlanner._nameKey(s) : String(s || "").toLowerCase();
+                                const termKey = heading.terminalName ? fold(heading.terminalName) : null;
+                                for (const d of deps) {
+                                    if (d.minutesAway == null) continue;
+                                    if (d.lineId !== heading.lineId) continue;
+                                    if (termKey && fold(d.destination || d.direction || "") !== termKey) continue;
+                                    if (nextDep == null || d.minutesAway < nextDep.mins) {
+                                        nextDep = { time: d.time || "", mins: d.minutesAway };
+                                    }
                                 }
                             }
                         } catch (_) {}

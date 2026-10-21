@@ -84,3 +84,23 @@ test('every planned stop id resolves to a real station', () => {
   assert.ok(j);
   for (const leg of j.legs) for (const s of leg.stops) assert.ok(ids.has(s.id), `unknown stop ${s.id}`);
 });
+
+test('firstLegHeading resolves the boarding line and a directed terminal', () => {
+  const m1 = lineById('M1'), m2 = lineById('M2');
+  const from = m1.stations[0].id;
+  const to = m2.stations[m2.stations.length - 1].id;
+  const h = Planner.firstLegHeading(stations, lines, from, to);
+  assert.ok(h && h.lineId, 'a cross-line route yields a boarding line');
+  if (h.terminalId) {
+    const boardLine = lineById(h.lineId);
+    const ends = [boardLine.stations[0].id, boardLine.stations[boardLine.stations.length - 1].id];
+    assert.ok(ends.includes(h.terminalId), 'the heading terminal is an end of the boarding line');
+  }
+  // No route to self, and the terminal is named (so departures can match by direction).
+  assert.equal(Planner.firstLegHeading(stations, lines, from, from), null, 'no route to self');
+});
+
+test('planDetailed exposes a positive totalMinutes', () => {
+  const j = Planner.planDetailed(stations, lines, lineById('M1').stations[0].id, lineById('M2').stations.slice(-1)[0].id);
+  assert.ok(j && typeof j.totalMinutes === 'number' && j.totalMinutes > 0, 'route carries a positive duration');
+});

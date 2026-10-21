@@ -203,8 +203,45 @@
     flush();
 
     if (!legs.length) return null;
-    return { legs };
+    // `total` is the Dijkstra cost in minutes (distance-based per-hop ride time
+    // plus transfer penalties), so it captures the real intercity duration that a
+    // flat per-stop estimate would get badly wrong.
+    return { legs, totalMinutes: result.total };
   }
 
-  return { planDetailed, _nameKey: nameKey, _travelTime: travelTime };
+  // The first leg's line and the terminal it heads TOWARD, so a caller can pick
+  // the correctly-directed next departure at the origin instead of the soonest
+  // train in any direction (which may run the opposite way). Derived from the
+  // planned route's first two stops against the line's ordered stations. Returns
+  // null when there is no route. `terminalName` matches a board group's
+  // `destination`, so departures can be filtered by line + direction.
+  function firstLegHeading(stations, lines, fromId, toId, language) {
+    const route = planDetailed(stations, lines, fromId, toId, language);
+    if (!route || !route.legs || !route.legs.length) return null;
+    const leg = route.legs[0];
+    const stops = leg.stops || [];
+    const out = {
+      lineId: leg.lineId,
+      towards: leg.towards || (stops.length ? stops[stops.length - 1].name : null),
+      terminalId: null,
+      terminalName: null,
+      legCount: route.legs.length,
+      totalMinutes: route.totalMinutes != null ? route.totalMinutes : null,
+    };
+    const line = (lines || []).find((l) => l.id === leg.lineId);
+    const ordered = (line && line.stations) || [];
+    if (ordered.length && stops.length >= 2) {
+      const ord = ordered.map((s) => s.id);
+      const i0 = ord.indexOf(stops[0].id);
+      const i1 = ord.indexOf(stops[1].id);
+      if (i0 >= 0 && i1 >= 0 && i0 !== i1) {
+        const term = i1 > i0 ? ordered[ordered.length - 1] : ordered[0];
+        out.terminalId = term ? term.id : null;
+        out.terminalName = term ? (term.name || term.name_el || term.nameEl || term.id) : null;
+      }
+    }
+    return out;
+  }
+
+  return { planDetailed, firstLegHeading, _nameKey: nameKey, _travelTime: travelTime };
 });
