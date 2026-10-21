@@ -244,7 +244,12 @@ class PlanScreenRoute : Screen {
             scope.launch {
                 val serviceDate = Clock.System.now().toLocalDateTime(TimeZone.of("Europe/Athens")).date
                 val now = Clock.System.now()
-                val horizon = if (mode == "now") 8 else 60
+                // Backward modes (arrive-by / last train) must scan the whole
+                // remaining service day to find the true latest catchable train;
+                // 60 was too short (arrive-by a late or next-day time, or a last
+                // connection after a long tail, fell outside the window). 400
+                // matches GetLastTrainUseCase's full-day lookahead.
+                val horizon = if (mode == "now") 8 else 400
                 // Phase R disruption exclusion: suspended (CLOSURE) lines are banned
                 // so no candidate rides closed track. Map normalized suspended ids
                 // back to real Line ids for the planner's exact-id ban.
@@ -1345,7 +1350,12 @@ private fun buildTimetable(
 /** Parse an "HH:MM" Athens clock into the next occurrence as an absolute instant. */
 private fun parseArriveBy(text: String, now: kotlinx.datetime.Instant): kotlinx.datetime.Instant? {
     val m = Regex("""^\s*(\d{1,2}):(\d{2})\s*$""").find(text) ?: return null
-    val target = m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
+    val hh = m.groupValues[1].toInt()
+    val mm = m.groupValues[2].toInt()
+    // Reject out-of-range clocks ("99:99", "25:00") rather than planning for a
+    // nonsensical time; the regex alone accepted them.
+    if (hh > 23 || mm > 59) return null
+    val target = hh * 60 + mm
     val zone = TimeZone.of("Europe/Athens")
     val nowLocal = now.toLocalDateTime(zone).time
     val nowMin = nowLocal.hour * 60 + nowLocal.minute
