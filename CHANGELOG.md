@@ -10,6 +10,17 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.43 - 2026-10-22
+
+### Fixed
+- Android planner and assistant no longer time a leg on a train running the wrong
+  direction: the planner resolves each leg's travel direction and arrive-by /
+  last-train only consider departures heading the right way.
+- Android map stability: a thrown background job no longer crashes the app, and a
+  single failed airport-bus fetch no longer wipes all buses/routes.
+- Android schedule station times now update when offsets hydrate (were stuck on
+  the origin-terminal times until the user interacted).
+
 ## 3.0.0-beta.42 - 2026-10-22
 
 ### Fixed
