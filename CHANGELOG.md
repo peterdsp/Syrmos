@@ -10,6 +10,16 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.42 - 2026-10-22
+
+### Fixed
+- Android: one explicit null in the live airport-bus JSON no longer drops all
+  live bus data to the fallback (null fields now coerce to their defaults).
+- Android: the schedule board no longer interleaves a line's real timetable with
+  invented headway-grid times (A1); the explicit trip timetable is authoritative.
+- Android assistant: no longer says "Service is over for tonight" during
+  overnight (past-midnight) service when trains are still running.
+
 ## 3.0.0-beta.41 - 2026-10-22
 
 ### Fixed
