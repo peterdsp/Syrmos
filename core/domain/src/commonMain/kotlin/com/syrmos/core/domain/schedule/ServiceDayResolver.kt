@@ -1,8 +1,11 @@
 package com.syrmos.core.domain.schedule
 
 import com.syrmos.core.model.schedule.DayType
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 /**
  * The single source of truth for Greek public-transport service days.
@@ -23,13 +26,42 @@ object ServiceDayResolver {
      */
     fun holidayDayType(date: LocalDate): String? {
         val mmdd = "${pad(date.monthNumber)}-${pad(date.dayOfMonth)}"
-        return when (mmdd) {
-            "01-01", "05-01", "10-28", "12-25", "12-26" -> "sun"
+        val fixed = when (mmdd) {
+            // 03-25 (Independence Day) was missing, so it ran weekday service.
+            "01-01", "03-25", "05-01", "10-28", "12-25", "12-26" -> "sun"
             "08-15" -> "aug_15"
             "12-24", "12-31" -> "dec_24_31"
             "01-02", "01-06", "11-17" -> "sat"
             else -> null
         }
+        if (fixed != null) return fixed
+        // Movable Orthodox holidays, all Sunday service. These were absent, so on
+        // Clean Monday / Good Friday / Easter Monday (always a weekday) the app
+        // ran weekday service instead of the Sunday service that actually runs.
+        val easter = orthodoxEaster(date.year)
+        val movable = setOf(
+            easter.minus(48, DateTimeUnit.DAY), // Clean Monday
+            easter.minus(2, DateTimeUnit.DAY),  // Good Friday
+            easter,                             // Easter Sunday
+            easter.plus(1, DateTimeUnit.DAY),   // Easter Monday
+            easter.plus(50, DateTimeUnit.DAY),  // Whit (Pentecost) Monday
+        )
+        return if (date in movable) "sun" else null
+    }
+
+    /**
+     * Orthodox Easter (Gregorian calendar) via the Meeus Julian algorithm plus
+     * the 13-day Julian-to-Gregorian offset valid for 1900-2099.
+     */
+    fun orthodoxEaster(year: Int): LocalDate {
+        val a = year % 4
+        val b = year % 7
+        val c = year % 19
+        val d = (19 * c + 15) % 30
+        val e = (2 * a + 4 * b - d + 34) % 7
+        val month = (d + e + 114) / 31
+        val day = ((d + e + 114) % 31) + 1
+        return LocalDate(year, month, day).plus(13, DateTimeUnit.DAY)
     }
 
     /**

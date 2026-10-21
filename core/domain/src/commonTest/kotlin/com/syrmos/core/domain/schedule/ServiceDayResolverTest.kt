@@ -50,4 +50,33 @@ class ServiceDayResolverTest {
         assertEquals(DayType.SATURDAY, ServiceDayResolver.baseDayType(LocalDate(2026, 1, 10)))
         assertEquals(DayType.SUNDAY, ServiceDayResolver.baseDayType(LocalDate(2026, 1, 11)))
     }
+
+    @Test
+    fun independenceDayRunsSundayService() {
+        // 2026-03-25 is a Wednesday; it was missing from the table and ran weekday.
+        assertEquals("sun", ServiceDayResolver.holidayDayType(LocalDate(2026, 3, 25)))
+        assertEquals(DayType.SUNDAY, ServiceDayResolver.baseDayType(LocalDate(2026, 3, 25)))
+    }
+
+    @Test
+    fun orthodoxEaster2026IsApril12() {
+        assertEquals(LocalDate(2026, 4, 12), ServiceDayResolver.orthodoxEaster(2026))
+    }
+
+    @Test
+    fun movableOrthodoxHolidaysRunSundayService() {
+        // 2026 Orthodox Easter = Apr 12. Clean Monday Feb 23, Good Friday Apr 10,
+        // Easter Monday Apr 13, Whit Monday Jun 1 are all weekdays that must run
+        // Sunday service, not weekday.
+        for (d in listOf(
+            LocalDate(2026, 2, 23), LocalDate(2026, 4, 10),
+            LocalDate(2026, 4, 13), LocalDate(2026, 6, 1),
+        )) {
+            assertEquals("sun", ServiceDayResolver.holidayDayType(d), "holiday $d")
+            assertEquals(DayType.SUNDAY, ServiceDayResolver.baseDayType(d), "service $d")
+        }
+        // A nearby ordinary Tuesday stays weekday.
+        assertNull(ServiceDayResolver.holidayDayType(LocalDate(2026, 4, 7)))
+        assertEquals(DayType.WEEKDAY, ServiceDayResolver.baseDayType(LocalDate(2026, 4, 7)))
+    }
 }

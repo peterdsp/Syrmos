@@ -186,6 +186,10 @@ object AirportBusEtas {
         for (opData in operatorsToProcess) {
             for (arrival in opData.arrivals) {
                 if (arrival.line_id.isBlank()) continue
+                // Airport-bound arrivals only: the ETA is labelled "to the airport
+                // stop", so a from_airport bus must not be folded in and shown as
+                // airport-bound. An unknown/absent direction is kept.
+                if (arrival.direction == "from_airport") continue
                 arrival.estimated_minutes?.takeIf { it >= 0 }?.let { minutes ->
                     byLine.getOrPut(arrival.line_id) { mutableListOf() }.add(minutes)
                 }
