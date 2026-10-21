@@ -10,6 +10,20 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.41 - 2026-10-22
+
+### Fixed
+- iOS crashes: the map could trap on a duplicate key (station lookup at startup,
+  and the live/simulated train reconcile) via Dictionary(uniqueKeysWithValues:);
+  both now keep the first value instead of crashing.
+- Airport-bus ETAs no longer count buses leaving the airport as "toward the
+  airport" (iOS and Android): from_airport arrivals are excluded.
+- iOS Home tracking card no longer flashes "LIVE" on a schedule-predicted
+  countdown; it shows "PREDICTED" when the signal is not live.
+- Greek service-day calendar now includes Independence Day (25 March) and the
+  movable Orthodox holidays (Clean Monday, Good Friday, Easter, Whit Monday), so
+  those days run Sunday service everywhere instead of weekday service.
+
 ## 3.0.0-beta.40 - 2026-10-21
 
 ### Fixed
