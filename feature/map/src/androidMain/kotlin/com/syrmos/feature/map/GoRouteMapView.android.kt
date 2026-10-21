@@ -52,7 +52,11 @@ actual fun GoRouteMapView(
     val context = LocalContext.current
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val legOverlays = remember { mutableListOf<Polyline>() }
-    var currentMarker by remember { mutableStateOf<Marker?>(null) }
+    // A plain holder, NOT Compose state: the `update` block both reads and writes
+    // the current marker, and a snapshot-state write from `update` re-invalidates
+    // the AndroidView, rebuilding it every frame (the camera avoided this the same
+    // way, see the note below). An array is not snapshot-observed.
+    val markerHolder = remember { arrayOfNulls<Marker>(1) }
     // Camera bookkeeping outside Compose state: writing state from `update`
     // would recompose in a loop, and the map is the only reader.
     // The camera survives an activity recreation (fold, rotation): centre and
@@ -125,8 +129,8 @@ actual fun GoRouteMapView(
                 mv.overlays.add(0, polyline)
             }
 
-            currentMarker?.let { mv.overlays.remove(it) }
-            currentMarker = current?.let { c ->
+            markerHolder[0]?.let { mv.overlays.remove(it) }
+            markerHolder[0] = current?.let { c ->
                 Marker(mv).apply {
                     position = GeoPoint(c.lat, c.lng)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
