@@ -58,17 +58,21 @@
         'train', 'trains', 'metro', 'tram', 'station', 'departure', 'departures',
         'τρεν', 'μετρο', 'τραμ', 'σταθμ', 'δρομολογ', 'αναχωρη', 'συρμ', 'προαστιακ',
         'tren', 'stacion', 'nisje',
+        'treno', 'treni', 'stazione', 'stazioni', 'partenza', 'partenze', 'metropolitana',
     ];
     const DEPARTURE_WORDS = [
         'next', 'departure', 'departures', 'when', 'trains', 'leave', 'leaving', 'schedule',
         'arrivals', 'arriving', 'next one', 'how soon', 'timetable',
         'επομεν', 'αναχωρη', 'ποτε', 'δρομολογ', 'φευγει', 'τρεν', 'ερχεται', 'ερχονται', 'ωραριο', 'επομενο',
         'ardhsh', 'kur', 'nisje', 'tren', 'trena', 'vjen', 'orari', 'ardhja',
+        'prossimo', 'prossima', 'quando', 'parte', 'partono', 'partenza', 'partenze',
+        'arrivo', 'arrivi', 'orario', 'tra quanto',
     ];
     const LAST_TRAIN_PHRASES = [
         'last train', 'last metro', 'last one', 'leave by', 'final train', 'last departure',
         'τελευται', 'τελευταιο τρεν', 'τελευταιοσ', 'τελευταιο δρομολογιο',
         'treni i fundit', 'fundit', 'i fundit', 'tren i fundit', 'nisja e fundit',
+        'ultimo treno', 'ultima corsa', 'ultimo metro', 'ultima partenza', 'ultimo', 'l ultimo',
     ];
     // First / earliest service of the day. Mirror of LAST_TRAIN_PHRASES.
     const FIRST_TRAIN_PHRASES = [
@@ -79,9 +83,11 @@
         'εναρξη δρομολογιων', 'πρωτο μετρο', 'πρωτη αναχωρηση',
         'treni i pare', 'nisja e pare', 'tren i pare', 'kur fillon', 'kur fillojne',
         'sherbimi i pare', 'metroja e pare',
+        'primo treno', 'prima corsa', 'primo metro', 'prima partenza', 'quando inizia',
+        'quando comincia', 'inizio del servizio',
     ];
     // Bare "first / earliest" position tokens. Count only with a station or line.
-    const FIRST_TOKENS = ['first', 'earliest', 'πρωτ', 'i pare', 'e pare', 'me heret'];
+    const FIRST_TOKENS = ['first', 'earliest', 'πρωτ', 'i pare', 'e pare', 'me heret', 'primo', 'prima'];
     // Step-free / wheelchair / lift accessibility cues.
     const ACCESSIBILITY_WORDS = [
         'accessible', 'accessibility', 'wheelchair', 'step free', 'step-free', 'stepfree',
@@ -89,6 +95,8 @@
         'προσβασιμ', 'προσβαση αμεα', 'για αμεα', 'αναπηρικ', 'αμαξιδι', 'ασανσερ', 'αναβατοριο', 'αναπηρια',
         'i aksesueshem', 'aksesueshem', 'aksesi', 'karrige me rrota', 'ashensor',
         'per personat me aftesi',
+        'accessibile', 'accessibilita', 'sedia a rotelle', 'senza gradini', 'ascensore',
+        'disabili', 'accesso disabili',
     ];
     // "which line(s) serve X" — list the lines at a station.
     const WHICH_LINES_WORDS = [
@@ -96,6 +104,7 @@
         'lines serve', 'lines serving', 'lines at', 'lines through', 'lines that stop', 'served by',
         'ποια γραμμη', 'ποιες γραμμες', 'τι γραμμη', 'τι γραμμες', 'ποιες γραμμ', 'γραμμες περνανε',
         'cila linje', 'cilat linja', 'cilat linje', 'linjat qe', 'cila metro',
+        'quale linea', 'quali linee', 'che linea', 'che linee', 'linee che', 'servita da',
     ];
     // "how many stops / how far from A to B" — stop count.
     const STOPS_BETWEEN_WORDS = [
@@ -103,6 +112,7 @@
         'how many stops away', 'stops away', 'stops between', 'stations between', 'how far apart',
         'ποσες στασεις', 'ποσοι σταθμοι', 'ποσους σταθμους', 'ποσες σταθμοι', 'ποσα στοπ',
         'sa stacione', 'sa ndalesa', 'sa stacione ka', 'sa ndalesa ka',
+        'quante fermate', 'quante stazioni', 'numero di fermate', 'fermate tra', 'stazioni tra',
     ];
     // "and back" / "return" / "the other way" — reverse the last route.
     const REVERSE_PHRASES = [
@@ -113,6 +123,8 @@
         'αναποδη διαδρομη', 'για επιστροφη',
         'kthimi', 'kthimin', 'e kunderta', 'rruga e kthimit', 'anasjelltas',
         'kthimi mbrapa', 'kthej mbrapsht', 'dhe kthimi',
+        'ritorno', 'andata e ritorno', 'al contrario', 'tornare', 'viaggio di ritorno',
+        'senso opposto', 'e ritorno', 'tornare indietro',
     ];
     const PLAN_PHRASES = [
         'how do i get', 'how to get', 'get to', 'get me to', 'route',
@@ -123,40 +135,49 @@
         'πωσ θα παω', 'καλυτεροσ τροπος', 'πιο γρηγορα', 'θελω να παω', 'πωσ μπορω να παω',
         'si shkoj', 'si te shkoj', 'rruga', 'udhetim', 'a mund te shkoj', 'a arrij',
         'si te vij', 'rruga me e mire', 'rruga me e shpejte', 'dua te shkoj', 'si mund te shkoj',
+        'come arrivo', 'come arrivare', 'come andare', 'come vado', 'andare a', 'portami a',
+        'miglior modo', 'modo piu veloce', 'voglio andare', 'devo andare', 'come faccio ad arrivare',
+        'come posso arrivare', 'percorso per',
     ];
     const TO_MARKERS = [
-        ' to ', ' for ', '->', '→', ' προσ ', ' για ', ' te ', ' per ', ' ne ',
+        ' to ', ' for ', '->', '→', ' προσ ', ' για ', ' te ', ' per ', ' ne ', ' verso ',
     ];
     const FIND_WORDS = [
         'where is', 'find', 'locate', 'nearest', 'near me', 'closest',
         'που ειναι', 'βρεσ', 'κοντιν', 'κοντα μου', 'πλησιεστερ',
         'ku eshte', 'gjej', 'me afert', 'afer meje',
+        'dove si trova', 'dove e', 'trova', 'piu vicino', 'piu vicina', 'vicino a me',
     ];
     const LINE_WORDS = [
         'line', 'about', 'tell me about',
         'γραμμη', 'σχετικα',
         'linja', 'rreth',
+        'linea', 'riguardo', 'parlami di',
     ];
     const FARE_WORDS = [
         'fare', 'fares', 'ticket', 'tickets', 'how much', 'price', 'cost', 'cheap',
         'εισιτηρι', 'ποσο κανει', 'ποσο κοστιζει', 'τιμη', 'κοστοσ',
         'bilete', 'sa kushton', 'kushton', 'cmim', 'cmimi',
+        'biglietto', 'biglietti', 'tariffa', 'tariffe', 'quanto costa', 'prezzo', 'costo',
     ];
     const FAVORITE_WORDS = [
         'favorite', 'favourite', 'save this', 'bookmark', 'add to favorites', 'pin',
         'αγαπημεν', 'αποθηκευσ', 'σημειωσε',
         'i preferuar', 'te preferuarat', 'ruaj',
+        'preferito', 'preferiti', 'salva', 'aggiungi ai preferiti', 'segnalibro',
     ];
-    const AIRPORT_WORDS = ['airport', 'αεροδρομιο', 'aeroport'];
+    const AIRPORT_WORDS = ['airport', 'αεροδρομιο', 'aeroport', 'aeroporto'];
     const ALERT_WORDS = [
         'alert', 'alerts', 'status', 'disruption', 'delay', 'delays', 'problem', 'closed', 'closure',
         'ειδοποι', 'κατασταση', 'καθυστερη', 'προβλημα', 'κλειστ', 'διακοπη',
         'njoftim', 'vonese', 'problem', 'mbyll',
+        'avviso', 'avvisi', 'stato', 'interruzione', 'ritardo', 'ritardi', 'problema', 'chiuso', 'chiusura',
     ];
     const MAP_WORDS = [
         'map', 'show on map', 'on the map',
         'χαρτη', 'στον χαρτη',
         'harta', 'ne harte',
+        'mappa', 'sulla mappa', 'mostra sulla mappa',
     ];
     const HELP_PHRASES = [
         'what can you do', 'help', 'how do you work', 'what do you do',
@@ -169,19 +190,23 @@
         'τι ειναι η αριαδνη', 'ποια εισαι', 'γεια', 'γεια σου', 'γεια σασ', 'καλημερα',
         'si funksionon', 'ndihme', 'cfare mund', 'kush je', 'cfare je',
         'cfare eshte ariadne', 'kush eshte ariadne', 'pershendetje', 'tung', 'ckemi', 'ckemi',
+        'cosa puoi fare', 'aiuto', 'come funzioni', 'chi sei', 'cosa sei', 'chi e ariadne',
+        'ciao', 'salve', 'buongiorno', 'buonasera',
     ];
     const WEATHER_WORDS = [
         'rain', 'raining', 'rainy', 'weather', 'storm', 'wet',
         'βροχη', 'βρεχει', 'καιρο', 'κακοκαιρ',
         'shi', 'moti', 'stuhi',
+        'pioggia', 'piove', 'meteo', 'tempo', 'temporale', 'maltempo',
     ];
     const TIME_PHRASES = [
         'how long', 'how many minutes', 'how many hours', 'how long does it take',
         'how long to get', 'how much time', 'minutes away', 'how far',
         'ποση ωρα', 'ποσα λεπτα', 'ποσες ωρες', 'ποσο θελει', 'ποση ωρα κανει',
         'sa gjate', 'sa minuta', 'sa ore', 'sa larg', 'sa kohe',
+        'quanto tempo', 'quanti minuti', 'quante ore', 'quanto ci vuole', 'quanto dista',
     ];
-    const STATION_NOUN_WORDS = ['station', 'σταθμ', 'stacion'];
+    const STATION_NOUN_WORDS = ['station', 'σταθμ', 'stacion', 'stazione'];
     const WRONG_TRAIN_PHRASES = [
         'wrong train', 'wrong line', 'wrong metro', 'wrong tram', 'wrong direction',
         'took the wrong', 'on the wrong', 'going the wrong way', 'wrong way',
@@ -189,6 +214,8 @@
         'πηρα λαθοσ', 'παω λαθοσ',
         'tren i gabuar', 'linja e gabuar', 'drejtim i gabuar', 'gabim treni',
         'mora gabim', 'shkoj gabim',
+        'treno sbagliato', 'linea sbagliata', 'direzione sbagliata', 'senso sbagliato',
+        'ho preso il treno sbagliato', 'vado nella direzione sbagliata',
     ];
     const MISSED_STOP_PHRASES = [
         'missed my stop', 'missed my station', 'missed the stop', 'went past',
@@ -197,17 +224,20 @@
         'εχασα τη στασ', 'περασα τον σταθμο',
         'humba stacionin', 'kalova stacionin', 'shkova me larg', 'humba ndalesën',
         'e kalova', 'shkova tej',
+        'ho perso la fermata', 'ho perso la stazione', 'sono andato oltre', 'ho oltrepassato',
+        'troppo lontano', 'oltre la mia fermata',
     ];
     const CAN_I_STILL_MAKE_IT_PHRASES = [
         'can i still make it', 'can i make it', 'will i make it', 'am i going to make it',
         'do i have time', 'is there still time', 'can i catch',
         'προλαβαινω', 'θα προλαβω', 'εχω χρονο', 'θα το πιασω',
         'a do ta arrij', 'a kam kohe', 'a e kap', 'a do ta kap', 'a arrij ne kohe',
+        'faccio in tempo', 'ce la faccio', 'riesco a prenderlo', 'ho tempo', 'c e ancora tempo',
     ];
-    const TOMORROW_WORDS = ['tomorrow', 'αυριο', 'neser'];
-    const WEEKEND_WORDS = ['weekend', 'σαββατοκυριακο', 'fundjave'];
-    const SATURDAY_WORDS = ['saturday', 'σαββατο', 'te shtune', 'shtune'];
-    const SUNDAY_WORDS = ['sunday', 'κυριακη', 'te diel', 'diel'];
+    const TOMORROW_WORDS = ['tomorrow', 'αυριο', 'neser', 'domani'];
+    const WEEKEND_WORDS = ['weekend', 'σαββατοκυριακο', 'fundjave', 'fine settimana'];
+    const SATURDAY_WORDS = ['saturday', 'σαββατο', 'te shtune', 'shtune', 'sabato'];
+    const SUNDAY_WORDS = ['sunday', 'κυριακη', 'te diel', 'diel', 'domenica'];
 
     // Single-word vocabulary tokens the fuzzy station matcher must never try
     // to "correct" into a station name (so "trains" stays a departures cue and
