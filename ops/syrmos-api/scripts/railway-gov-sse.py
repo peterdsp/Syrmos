@@ -30,6 +30,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -291,10 +292,17 @@ def stream_loop() -> None:
                             now = time.monotonic()
                             if CHECK_STREAMS and (now - last_stream_check) > 120:
                                 stream_cache.clear()
-                                for t in trains:
-                                    tid = t.get("trainId", "")
-                                    if tid and tid not in stream_cache:
-                                        stream_cache[tid] = check_live_stream(tid)
+                                tids = [tid for tid in (t.get("trainId", "") for t in trains) if tid]
+                                # Probe the per-train live streams concurrently:
+                                # each is a blocking HTTP call (5s timeout), and
+                                # probing them serially blocked the SSE read loop
+                                # for ~5s * N trains, stalling /api/trains. A small
+                                # worker pool caps the stall while staying gentle
+                                # on the upstream.
+                                if tids:
+                                    with ThreadPoolExecutor(max_workers=8) as pool:
+                                        for tid, info in zip(tids, pool.map(check_live_stream, tids)):
+                                            stream_cache[tid] = info
                                 last_stream_check = now
 
                             for t in trains:
