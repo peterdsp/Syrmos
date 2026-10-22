@@ -135,6 +135,10 @@ private fun DrawScope.drawFallbackMap(
     textMeasurer: TextMeasurer,
 ) {
     for (line in uiState.lines) {
+        // Skip the crude two-point Thessaloniki airport shuttles (X3 / 2X): they
+        // draw as ugly straight lines to the airport and are superseded by the real
+        // OSETH routes drawn from live airport-bus data.
+        if (line.id == "X3" || line.id == "2X") continue
         // Draw the SAME shared effectiveGeometry the vehicles ride (buses on their
         // stops, rail/tram on the OSM shape, shapeless lines splined upstream), so
         // the drawn route and the moving vehicles agree on iOS and Wasm exactly as

@@ -96,6 +96,11 @@ enum PreloadedData {
         stations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }
     )
     static let routeLines: [RouteLine] = SyrmosData.lines.compactMap { line in
+        // The Thessaloniki airport shuttles X3 / 2X are seeded as crude two-point
+        // lines (airport <-> a metro terminus), which draw as ugly straight lines
+        // across the map. The real OSETH routes now arrive with full shapes and
+        // are drawn live by applyAirportBusGeometry, so skip the static stubs.
+        if line.id == "X3" || line.id == "2X" { return nil }
         // Prefer OSM-derived geometry from the bundled shapes.json so the
         // polyline follows the actual rail/tram track (T7 Piraeus loop, M3
         // airport branch, A4 Megara curve). Falls back to a Catmull–Rom

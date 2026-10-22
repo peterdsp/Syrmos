@@ -1613,6 +1613,10 @@
     }
 
     for (const line of lines) {
+        // Skip the crude two-point Thessaloniki airport shuttles (X3 / 2X): they
+        // draw as ugly straight lines from a metro terminus to the airport and are
+        // superseded by the real OSETH routes drawn from live airport-bus data.
+        if (line.id === "X3" || line.id === "2X") continue;
         const ld = lineDisplayById.get(line.id);
         const feat = geoCache.get(line.id);
         // Track that is built but not open (under construction OR temporarily
