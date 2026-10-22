@@ -2050,6 +2050,9 @@
     // Albanian locales rendered as "1.315 min" — thousands-separator
     // confusion that started this whole thread).
     function formatMinutesAway(minutesAway) {
+        // A malformed/empty API row can leave minutesAway non-finite; blank the
+        // relative text so the card shows its clock time instead of "NaNh NaNmin".
+        if (!Number.isFinite(minutesAway)) return "";
         if (minutesAway <= 0) return t("now");
         if (minutesAway === 1) return "1 min";
         if (minutesAway < 60) return `${minutesAway} min`;
@@ -2660,7 +2663,7 @@
     // construction: minutesAway is OASA's real ETA to the airport stop.
     function toBusDeparture(row) {
         return {
-            line: { id: row.line, name: row.line, color: "#D97706" },
+            line: { id: row.line, name: row.line, color: row.color || "#D97706" },
             direction: row.destination,
             destination: row.destination,
             minutesAway: row.minutesAway,
@@ -2877,7 +2880,7 @@
             // truthful — the pill just signals "this train touches the
             // Airport leg."
             const airportPill = group.serviceType === "airport"
-                ? `<span class="departure-card__pill departure-card__pill--airport">Airport</span>`
+                ? `<span class="departure-card__pill departure-card__pill--airport">${t("airport")}</span>`
                 : "";
             // Dominant relative minutes with the secondary clock time beneath;
             // the soonest gets the --next accent. Absolute times stay so a rider
@@ -2904,11 +2907,12 @@
             // both) plus the "+N more" overflow, so nothing the eye sees is lost
             // to assistive tech.
             const minsAria = group.times
-                .map((tt) => tt.time ? `${formatMinutesAway(tt.minutesAway)} at ${tt.time}` : formatMinutesAway(tt.minutesAway))
+                .map((tt) => tt.time ? `${formatMinutesAway(tt.minutesAway)} (${tt.time})` : formatMinutesAway(tt.minutesAway))
                 .join(", ")
-                + (group.moreCount > 0 ? `, +${group.moreCount} more` : "");
+                + (group.moreCount > 0 ? `, +${group.moreCount} ${t("ws_more")}` : "");
+            const ariaLine = group.line?.name || lineId;
             return `
-                <div class="departure-card departure-card--grouped${group.times.length ? "" : " departure-card--status"}${entranceCls}" role="listitem" aria-label="${lineId} towards ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
+                <div class="departure-card departure-card--grouped${group.times.length ? "" : " departure-card--status"}${entranceCls}" role="listitem" aria-label="${ariaLine} ${t("svc_towards")} ${destination}, ${minsAria}${group.ariaNote ? ', ' + group.ariaNote : ''}">
                     <div class="departure-card__header">
                         ${iconHtml}
                         <div class="departure-card__text">
@@ -5569,6 +5573,7 @@
                     language: currentLang,
                     coords: coordsFor(journey, byId),
                     lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                    lineName: (id) => { const key = id === "M3_AIR" ? "M3" : id; const l = lines.find((x) => x.id === key); return (l && l.name) || id; },
                     store: activeStore,
                     active,
                     transferRisks: optionTransferRisks(active.itinerarySnapshot),
@@ -5981,7 +5986,7 @@
 
                 // Phase R disruption surfaces (S10 suspended segment / routed-around).
                 if (planDisruption && planDisruption.kind === "suspended") {
-                    const list = (planDisruption.affectedLineIds || []).map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const list = (planDisruption.affectedLineIds || []).map((x) => { const up = String(x).toUpperCase(); const l = lines.find((y) => String(y.id).toUpperCase() === up); return (l && l.name) || up; }).sort().join(", ");
                     const box = document.createElement("div");
                     box.className = "plan-suspended";
                     const h = document.createElement("div");
@@ -5999,7 +6004,7 @@
                     return;
                 }
                 if (planDisruption && planDisruption.kind === "routed" && (planDisruption.excludedLineIds || []).length) {
-                    const list = planDisruption.excludedLineIds.map((x) => String(x).toUpperCase()).sort().join(", ");
+                    const list = planDisruption.excludedLineIds.map((x) => { const up = String(x).toUpperCase(); const l = lines.find((y) => String(y.id).toUpperCase() === up); return (l && l.name) || up; }).sort().join(", ");
                     const chip = document.createElement("div");
                     chip.className = "plan-routing-around";
                     chip.textContent = T("Routing around suspended " + list + ".", "Παράκαμψη της ανασταλμένης " + list + ".",
@@ -6078,6 +6083,7 @@
                         language: currentLang,
                         coords: coordsFor(journey, byId),
                         lineColor: (id) => { const l = lines.find((x) => x.id === id); return l && l.color; },
+                        lineName: (id) => { const key = id === "M3_AIR" ? "M3" : id; const l = lines.find((x) => x.id === key); return (l && l.name) || id; },
                         store: activeStore,
                         option: opt,
                         transferRisks: optionTransferRisks(opt),

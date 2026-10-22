@@ -237,7 +237,14 @@
       if (i0 >= 0 && i1 >= 0 && i0 !== i1) {
         const term = i1 > i0 ? ordered[ordered.length - 1] : ordered[0];
         out.terminalId = term ? term.id : null;
-        out.terminalName = term ? (term.name || term.name_el || term.nameEl || term.id) : null;
+        // Resolve the terminal name in the active language (el prefers name_el) so
+        // it matches the localized board `destination` it is compared against;
+        // the raw id is only a last resort when no name exists at all.
+        out.terminalName = term
+          ? (language === 'el'
+              ? (term.name_el || term.nameEl || term.name || term.id)
+              : (term.name || term.name_el || term.nameEl || term.id))
+          : null;
       }
     }
     return out;

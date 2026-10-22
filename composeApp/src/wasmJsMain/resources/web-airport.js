@@ -72,13 +72,16 @@
       (etasByLine[line] || (etasByLine[line] = [])).push(mins);
     }
     for (const line of Object.keys(etasByLine)) etasByLine[line].sort((x, y) => x - y);
+    const operatorByLine = {};
+    for (const line of Object.keys(etasByLine)) operatorByLine[line] = 'oasa';
     const updatedAt = (payload && typeof payload.updatedAt === 'string' && payload.updatedAt) ? payload.updatedAt : null;
-    return { updatedAt, etasByLine, operators: ['oasa'] };
+    return { updatedAt, etasByLine, operatorByLine, operators: ['oasa'] };
   }
 
   // Process unified format with multiple operators
   function reduceUnified(payload) {
     const etasByLine = {};
+    const operatorByLine = {};
     const operators = [];
     let mostRecentTimestamp = null;
 
@@ -96,9 +99,12 @@
       for (const a of arrivals) {
         const line = typeof a.line_id === 'string' ? a.line_id : '';
         if (!line) continue;
-        const mins = Number(a.estimated_minutes);
-        if (!Number.isFinite(mins) || mins < 0) continue;
-        (etasByLine[line] || (etasByLine[line] = [])).push(Math.round(mins));
+        const mins = Math.round(Number(a.estimated_minutes));
+        if (!Number.isFinite(mins)) continue;
+        // Clamp negatives to 0 (bus at the stop) to match the legacy path and
+        // this module's documented behaviour, rather than dropping the row.
+        (etasByLine[line] || (etasByLine[line] = [])).push(Math.max(0, mins));
+        operatorByLine[line] = operator;
       }
     }
 
@@ -110,7 +116,7 @@
     // Get most recent update timestamp
     const updatedAt = mostRecentTimestamp || payload.updated_at || null;
 
-    return { updatedAt, etasByLine, operators, sources: payload.sources || [] };
+    return { updatedAt, etasByLine, operatorByLine, operators, sources: payload.sources || [] };
   }
 
   function soonest(reduced, line) {
@@ -126,7 +132,9 @@
     for (const line of Object.keys(destinations)) {
       const mins = soonest(reduced, line);
       if (mins == null) continue;
-      rows.push({ line, destination: destinations[line], minutesAway: mins });
+      const operator = (reduced.operatorByLine && reduced.operatorByLine[line]) || 'oasa';
+      const color = OPERATOR_COLORS[operator] || OPERATOR_COLORS.oasa;
+      rows.push({ line, destination: destinations[line], minutesAway: mins, operator, color });
     }
     rows.sort((a, b) => a.minutesAway - b.minutesAway);
     return rows;
@@ -262,7 +270,7 @@
   function getRoutes(payload, operator) {
     if (!payload || !payload.operators) return [];
     const opData = payload.operators[operator];
-    return Array.isArray(opData.routes) ? opData.routes : [];
+    return (opData && Array.isArray(opData.routes)) ? opData.routes : [];
   }
 
   return {

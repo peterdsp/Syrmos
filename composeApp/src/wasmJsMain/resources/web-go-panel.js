@@ -32,31 +32,36 @@
   // The rider-facing text for a guidance object (headline + detail + sub).
   // `alightStation` names the current leg's alight point for the ride/board sub;
   // callers pass it from the journey, falling back to the next station.
-  function describe(g, lang, alightStation) {
+  function describe(g, lang, alightStation, lineName) {
     const alight = alightStation || g.nextStation;
+    // Resolve raw leg line IDs (e.g. "M3_AIR", "A1") to their display name so the
+    // guidance never surfaces an internal code; identity fallback keeps it safe.
+    const nameOf = typeof lineName === 'function' ? lineName : (id) => id;
+    const line = nameOf(g.lineId);
+    const toLine = nameOf(g.toLineId);
     switch (g.kind) {
       case 'board':
         return {
-          icon: '🚶', headline: t(lang, `Board ${g.lineId}`, `Επιβίβαση ${g.lineId}`, `Hip në ${g.lineId}`, `Sali su ${g.lineId}`),
+          icon: '🚶', headline: t(lang, `Board ${line}`, `Επιβίβαση ${line}`, `Hip në ${line}`, `Sali su ${line}`),
           detail: t(lang, `toward ${g.towards}`, `προς ${g.towards}`, `drejt ${g.towards}`, `verso ${g.towards}`),
           sub: stopsToAlight(g.stopsRemaining, alight, lang),
         };
       case 'ride':
         return {
-          icon: '🚈', headline: t(lang, `Stay on ${g.lineId}`, `Μείνε στη ${g.lineId}`, `Qëndro në ${g.lineId}`, `Resta su ${g.lineId}`),
+          icon: '🚈', headline: t(lang, `Stay on ${line}`, `Μείνε στη ${line}`, `Qëndro në ${line}`, `Resta su ${line}`),
           detail: t(lang, `toward ${g.towards}`, `προς ${g.towards}`, `drejt ${g.towards}`, `verso ${g.towards}`),
           sub: stopsToAlight(g.stopsRemaining, alight, lang),
         };
       case 'getOffNext':
         return {
           icon: '🚪', headline: t(lang, 'Get off next', 'Αποβίβαση στην επόμενη', 'Zbrit në tjetrën', 'Scendi alla prossima'),
-          detail: g.isDestination ? g.nextStation : (g.transferTo ? t(lang, `${g.nextStation} → change to ${g.transferTo}`, `${g.nextStation} → αλλαγή σε ${g.transferTo}`, `${g.nextStation} → ndërro në ${g.transferTo}`, `${g.nextStation} → cambia in ${g.transferTo}`) : g.nextStation),
+          detail: g.isDestination ? g.nextStation : (g.transferTo ? t(lang, `${g.nextStation} → change to ${nameOf(g.transferTo)}`, `${g.nextStation} → αλλαγή σε ${nameOf(g.transferTo)}`, `${g.nextStation} → ndërro në ${nameOf(g.transferTo)}`, `${g.nextStation} → cambia in ${nameOf(g.transferTo)}`) : g.nextStation),
           sub: g.isDestination ? t(lang, 'Your destination is next', 'Ο προορισμός σου είναι η επόμενη', 'Destinacioni yt është tjetra', 'La tua destinazione è la prossima') : t(lang, `Next stop: ${g.nextStation}`, `Επόμενη στάση: ${g.nextStation}`, `Ndalesa tjetër: ${g.nextStation}`, `Prossima fermata: ${g.nextStation}`),
         };
       case 'transfer':
         return {
           icon: '🔄', headline: t(lang, 'Change here', 'Αλλαγή εδώ', 'Ndërro këtu', 'Cambia qui'),
-          detail: t(lang, `${g.atStation} → ${g.toLineId} toward ${g.towards}`, `${g.atStation} → ${g.toLineId} προς ${g.towards}`, `${g.atStation} → ${g.toLineId} drejt ${g.towards}`, `${g.atStation} → ${g.toLineId} verso ${g.towards}`),
+          detail: t(lang, `${g.atStation} → ${toLine} toward ${g.towards}`, `${g.atStation} → ${toLine} προς ${g.towards}`, `${g.atStation} → ${toLine} drejt ${g.towards}`, `${g.atStation} → ${toLine} verso ${g.towards}`),
           sub: '',
         };
       case 'arrived':
@@ -72,11 +77,13 @@
     return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
-  // Mount the panel into `container`. `opts`: { language, lineColor(lineId)->css }.
+  // Mount the panel into `container`. `opts`: { language, lineColor(lineId)->css,
+  // lineName(lineId)->display name }.
   function mount(container, journey, opts) {
     opts = opts || {};
     const lang = opts.language || 'en';
     const color = (id) => (opts.lineColor ? opts.lineColor(id) || '#0072CE' : '#0072CE');
+    const lineName = (id) => (id && opts.lineName ? opts.lineName(id) || id : id);
     const coords = opts.coords || {}; // { [stopId]: {lat, lon} } for live advance
     const hasCoords = Object.keys(coords).length > 0;
     // Persistent live session (S06): when a store is supplied the panel resumes from
@@ -130,7 +137,7 @@
       const arrived = GO.isArrived(journey, pos);
       const curLeg = journey.legs[pos.legIndex];
       const alightName = (curLeg && curLeg.stops.length) ? curLeg.stops[curLeg.stops.length - 1].name : g.nextStation;
-      const d = describe(g, lang, alightName);
+      const d = describe(g, lang, alightName, lineName);
       const tint = g.kind === 'arrived' ? '#2E7D32' : color(g.lineId || (journey.legs[pos.legIndex] && journey.legs[pos.legIndex].lineId));
       const canBack = pos.legIndex > 0 || pos.stopIndex > 0;
 
