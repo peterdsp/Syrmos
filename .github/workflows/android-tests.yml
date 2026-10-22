@@ -1,8 +1,13 @@
 name: Android tests
 
 on:
+  # master + PRs only. Without a filter this ran on every feature-branch push
+  # AND every release tag, re-running the 45-minute emulator job needlessly and
+  # duplicating the Android tests the release CI gate already runs on the tag.
   push:
+    branches: [master]
   pull_request:
+    branches: [master]
   workflow_dispatch:
 
 concurrency:

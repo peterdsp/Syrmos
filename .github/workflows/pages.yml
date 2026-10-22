@@ -24,8 +24,11 @@ permissions:
   id-token: write
 
 concurrency:
+  # Do NOT cancel an in-progress run: this job builds AND deploys to Pages, and
+  # cancelling mid-deploy can leave the production site half-published. Queue the
+  # newer run instead (GitHub's documented guidance for deployment concurrency).
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
