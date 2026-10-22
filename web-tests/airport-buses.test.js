@@ -85,3 +85,19 @@ test('isAirportStationId matches metro/suburban airport ids and names', () => {
   assert.equal(A.isAirportStationId('X', 'Airport Terminal'), true);
   assert.equal(A.isAirportStationId('X', '', 'Αεροδρόμιο'), true);
 });
+
+// Unified (/api/airport-buses) path: a negative ETA is "bus at the stop" and
+// must clamp to 0, not be dropped (it used to drop in the unified reducer), and
+// each line's operator is tracked so OSETH rows can render in their own colour.
+const unified = (op, arrivals, updatedAt = '2026-09-03T21:42:32.703144+00:00') =>
+  ({ updated_at: updatedAt, operators: { [op]: { updated_at: updatedAt, arrivals } } });
+
+test('reduceAirportBuses (unified) clamps a negative ETA to 0 and tracks operator', () => {
+  const r = A.reduceAirportBuses(unified('oseth', [
+    { line_id: '02X', estimated_minutes: 7 },
+    { line_id: '02X', estimated_minutes: -2 }, // bus at the stop -> 0, not dropped
+    { line_id: '', estimated_minutes: 3 },     // dropped: no line
+  ]));
+  assert.deepEqual(r.etasByLine['02X'], [0, 7]);
+  assert.equal(r.operatorByLine['02X'], 'oseth');
+});
