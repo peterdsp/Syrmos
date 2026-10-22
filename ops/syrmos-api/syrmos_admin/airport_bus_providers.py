@@ -975,17 +975,44 @@ class OsethAirportProvider(AirportTransitProvider):
         feed = self._fetch_gtfs()
         return [r for r in feed["routes"] if self._display_route_id(r) in self.AIRPORT_ROUTE_NAMES]
 
+    @staticmethod
+    def _airport_direction(stops: list[dict[str, Any]]) -> str:
+        """Label a trip's stop order as to_airport / from_airport by where the
+        airport stop sits (last = heading to the airport, first = leaving it)."""
+        def is_airport(stop: dict[str, Any]) -> bool:
+            name = (stop.get("stop_name") or "").upper()
+            return "ΑΕΡΟΔΡΟΜΙΟ" in name or "AIRPORT" in name
+        if stops and is_airport(stops[-1]):
+            return "to_airport"
+        if stops and is_airport(stops[0]):
+            return "from_airport"
+        return "to_airport"
+
     def _gtfs_route(self, route_id: str) -> Optional[dict[str, Any]]:
         try:
             feed = self._fetch_gtfs()
             route = next((r for r in self._airport_routes() if self._display_route_id(r) == route_id.upper().replace("Χ", "X")), None)
             if not route:
                 return None
-            trip = next(t for t in feed["trips"].values() if t["route_id"] == route["route_id"])
-            ordered = sorted((s for s in feed["stop_times"] if s["trip_id"] == trip["trip_id"]), key=lambda s: int(s["stop_sequence"]))
-            stops = [feed["stops"][s["stop_id"]] for s in ordered if s["stop_id"] in feed["stops"]]
-            shape = [{"latitude": float(p["shape_pt_lat"]), "longitude": float(p["shape_pt_lon"]), "sequence": int(p["shape_pt_sequence"])} for p in feed["shapes"].get(trip.get("shape_id", ""), [])]
-            return {"route": route, "stops": stops, "shape": shape}
+            # One representative trip per GTFS direction_id, so BOTH directions of
+            # the route publish their own ordered stops and shape. Taking only the
+            # first trip (as before) dropped one direction and mislabeled the rest.
+            trips_by_dir: dict[str, dict[str, Any]] = {}
+            for t in feed["trips"].values():
+                if t.get("route_id") != route["route_id"]:
+                    continue
+                trips_by_dir.setdefault(str(t.get("direction_id", "0")), t)
+            directions: list[dict[str, Any]] = []
+            for trip in trips_by_dir.values():
+                ordered = sorted((s for s in feed["stop_times"] if s["trip_id"] == trip["trip_id"]), key=lambda s: int(s["stop_sequence"]))
+                stops = [feed["stops"][s["stop_id"]] for s in ordered if s["stop_id"] in feed["stops"]]
+                if not stops:
+                    continue
+                shape = [{"latitude": float(p["shape_pt_lat"]), "longitude": float(p["shape_pt_lon"]), "sequence": int(p["shape_pt_sequence"])} for p in feed["shapes"].get(trip.get("shape_id", ""), [])]
+                directions.append({"direction": self._airport_direction(stops), "stops": stops, "shape": shape})
+            if not directions:
+                return None
+            return {"route": route, "directions": directions}
         except (OSError, KeyError, StopIteration, ValueError, zipfile.BadZipFile) as exc:
             logger.warning("OSETH GTFS load failed: %s", exc)
             return None
@@ -1075,24 +1102,33 @@ class OsethAirportProvider(AirportTransitProvider):
         """
         gtfs = self._gtfs_route(route_id)
         if gtfs:
-            direction = "to_airport" if route_id == "X3" else "from_airport"
-            return [{
-                "stop_id": f"OSETH_{s['stop_id']}",
-                "stop_name": s.get("stop_name", ""),
-                "stop_name_el": s.get("stop_name", ""),
-                "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]),
-                "sequence": i + 1, "direction": direction,
-            } for i, s in enumerate(gtfs["stops"])]
+            out: list[dict[str, Any]] = []
+            for d in gtfs["directions"]:
+                for i, s in enumerate(d["stops"]):
+                    out.append({
+                        "stop_id": f"OSETH_{s['stop_id']}",
+                        "stop_name": s.get("stop_name", ""),
+                        "stop_name_el": s.get("stop_name", ""),
+                        "latitude": float(s["stop_lat"]), "longitude": float(s["stop_lon"]),
+                        "sequence": i + 1, "direction": d["direction"],
+                    })
+            return out
 
         # No guessed fallback geometry or stops: offline data is only valid
         # when the official feed was successfully loaded.
         return []
 
-        return []
-
     def fetch_shape(self, route_id: str) -> list[dict[str, Any]]:
         gtfs = self._gtfs_route(route_id)
-        return gtfs["shape"] if gtfs else []
+        if not gtfs:
+            return []
+        # Tag each shape point with its direction so clients draw both directions
+        # as separate polylines instead of one group.
+        out: list[dict[str, Any]] = []
+        for d in gtfs["directions"]:
+            for p in d["shape"]:
+                out.append({**p, "direction": d["direction"]})
+        return out
 
     def fetch_arrivals(self, stop_id: Optional[str] = None) -> list[NormalizedArrival]:
         """Fetch live arrivals at a stop.

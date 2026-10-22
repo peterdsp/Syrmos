@@ -728,6 +728,12 @@ def _project_scheduled_trip_departures(
         if raw is None:
             continue
         delta = raw - now_minutes
+        # A departure whose clock time is just after midnight (e.g. 00:26) reads
+        # as ~24h in the past late at night (23:50); an implausibly large negative
+        # is tomorrow's service, so wrap it into the next day instead of dropping
+        # the genuinely-next suburban departure.
+        if delta < -720:
+            delta += 24 * 60
         if delta < -1:
             continue
         # Resolve destination by looking up the trip's actual terminus.
@@ -830,7 +836,8 @@ def _project_scheduled_trip_active(
         # If the spread is huge, assume any time < min+12h that's smaller
         # than the previous one represents a midnight rollover.
         sorted_times = sorted(times)
-        if sorted_times[-1] - sorted_times[0] > 12 * 60:
+        wrapped = sorted_times[-1] - sorted_times[0] > 12 * 60
+        if wrapped:
             # Looks like a midnight wrap: trips that have e.g. 21:32 and
             # 00:26 sort to 00:26 first. Re-bucket: anything below 5*60 is
             # "next day".
@@ -840,10 +847,14 @@ def _project_scheduled_trip_active(
         else:
             start = min(times)
             end = max(times)
-        if not (start <= now_minutes <= end):
+        # now_minutes resets to ~0 at midnight; for a window rebased into the
+        # "yesterday+" range, rebase an early-morning now too so a train that is
+        # still enroute at 00:05 does not vanish from the live map.
+        now_eff = now_minutes + 24 * 60 if (wrapped and now_minutes < 5 * 60) else now_minutes
+        if not (start <= now_eff <= end):
             continue
         travel = end - start
-        elapsed = now_minutes - start
+        elapsed = now_eff - start
         key = (line_id, r["direction"], r["train_no"])
         if key in seen:
             continue

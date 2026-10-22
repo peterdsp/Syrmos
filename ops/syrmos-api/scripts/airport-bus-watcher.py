@@ -322,17 +322,33 @@ class AirportBusWatcher:
         self._cycle_budget = self._per_stop_budget if self._per_stop_enabled else 0
 
         try:
-            # Fetch OASA data
-            oasa_routes = self.oasa_provider.discover_routes()
-            oasa_vehicles = self.oasa_provider.fetch_vehicles()
-            oasa_arrivals = self.oasa_provider.fetch_arrivals()
-            oasa_alerts = self.oasa_provider.fetch_alerts()
+            # OASA (Athens) and OSETH (Thessaloniki) are fetched independently: a
+            # failure downloading one operator's upstream (e.g. the 46 MB OSETH
+            # GTFS zip) must not drop the OTHER city's live data, as the single
+            # shared try used to.
+            try:
+                oasa_routes = self.oasa_provider.discover_routes()
+                oasa_vehicles = self.oasa_provider.fetch_vehicles()
+                oasa_arrivals = self.oasa_provider.fetch_arrivals()
+                oasa_alerts = self.oasa_provider.fetch_alerts()
+            except Exception as e:
+                logger.error("OASA airport-bus fetch failed, keeping other operators: %s", e)
+                oasa_routes, oasa_vehicles, oasa_arrivals, oasa_alerts = [], [], [], []
 
-            # Fetch OSETH data (may be empty if not implemented)
-            oseth_routes = self.oseth_provider.discover_routes()
-            oseth_vehicles = self.oseth_provider.fetch_vehicles()
-            oseth_arrivals = self.oseth_provider.fetch_arrivals()
-            oseth_alerts = self.oseth_provider.fetch_alerts()
+            try:
+                oseth_routes = self.oseth_provider.discover_routes()
+                oseth_vehicles = self.oseth_provider.fetch_vehicles()
+                oseth_arrivals = self.oseth_provider.fetch_arrivals()
+                oseth_alerts = self.oseth_provider.fetch_alerts()
+            except Exception as e:
+                logger.error("OSETH airport-bus fetch failed, keeping other operators: %s", e)
+                oseth_routes, oseth_vehicles, oseth_arrivals, oseth_alerts = [], [], [], []
+
+            # Both upstreams down: keep the last good snapshot (return None) rather
+            # than overwrite it with an empty one.
+            if not (oasa_routes or oasa_vehicles or oseth_routes or oseth_vehicles):
+                logger.warning("No airport-bus data from either operator this cycle; keeping last snapshot")
+                return None
 
             def route_payload(provider, route):
                 """Publish route geometry with the atomic live snapshot.
@@ -454,6 +470,11 @@ class AirportBusWatcher:
 
             with open(self.journal_file, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+            # Cap unbounded growth (~2,880 lines/day forever): once the journal
+            # passes ~1 MB, keep only its most recent entries.
+            if self.journal_file.stat().st_size > 1_000_000:
+                recent = self.journal_file.read_text(encoding='utf-8').splitlines()[-2000:]
+                self.journal_file.write_text('\n'.join(recent) + '\n', encoding='utf-8')
         except Exception:
             pass
 
