@@ -103,6 +103,8 @@ class AirportBusService(
         val longitude: Double = 0.0,
         val sequence: Int = 0,
         val direction: String? = null,
+        /** Live "next bus at this stop" arrivals attached per OASA stop. */
+        val arrivals: List<UnifiedArrival> = emptyList(),
     )
 
     @Serializable

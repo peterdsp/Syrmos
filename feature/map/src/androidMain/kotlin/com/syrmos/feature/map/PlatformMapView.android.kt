@@ -3,6 +3,7 @@ package com.syrmos.feature.map
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.GradientDrawable
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
@@ -206,6 +207,7 @@ internal actual fun PlatformMapView(
     val lineColors = remember { loadLineColors(context) }
     val lineOverlays = remember { mutableListOf<Polyline>() }
     val airportBusRouteOverlays = remember { mutableListOf<Polyline>() }
+    val airportBusStopOverlays = remember { mutableListOf<Marker>() }
     val stationMarkers = remember { mutableMapOf<String, Marker>() }
     val trainMarkers = remember { mutableMapOf<String, Marker>() }
     val liveTrainMarkers = remember { mutableMapOf<String, Marker>() }
@@ -383,6 +385,8 @@ internal actual fun PlatformMapView(
     LaunchedEffect(uiState.airportBusRoutes, uiState.showAirportBuses) {
         airportBusRouteOverlays.forEach { mapView.overlays.remove(it) }
         airportBusRouteOverlays.clear()
+        airportBusStopOverlays.forEach { mapView.overlays.remove(it) }
+        airportBusStopOverlays.clear()
         if (uiState.showAirportBuses) {
             uiState.airportBusRoutes.forEach { route ->
                 val shapeByDirection = route.shape
@@ -413,6 +417,35 @@ internal actual fun PlatformMapView(
                     airportBusRouteOverlays += line
                     mapView.overlays.add(0, line)
                 }
+                // Tappable stop pins with "next bus at this stop" arrivals (title
+                // + snippet). Android drew only polylines before, so a rider could
+                // not open a stop to see when the next bus comes.
+                route.stops
+                    .filter { it.latitude.isFinite() && it.longitude.isFinite() && !(it.latitude == 0.0 && it.longitude == 0.0) }
+                    .forEach { stop ->
+                        val live = stop.arrivals.filter { it.estimated_minutes != null }.take(4)
+                        val marker = Marker(mapView).apply {
+                            position = GeoPoint(stop.latitude, stop.longitude)
+                            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                            title = stop.stop_name
+                            snippet = if (live.isNotEmpty()) {
+                                live.joinToString("\n") { a ->
+                                    val eta = a.estimated_minutes?.let { if (it <= 0) "now" else "$it min" }.orEmpty()
+                                    "${a.line_id} ${a.destination} $eta".trim()
+                                }
+                            } else {
+                                null
+                            }
+                            icon = GradientDrawable().apply {
+                                shape = GradientDrawable.OVAL
+                                setColor(parseHex(route.color.ifBlank { "#D97706" }))
+                                setStroke(4, android.graphics.Color.WHITE)
+                                setSize(28, 28)
+                            }
+                        }
+                        airportBusStopOverlays += marker
+                        mapView.overlays.add(marker)
+                    }
             }
         }
         mapView.invalidate()
