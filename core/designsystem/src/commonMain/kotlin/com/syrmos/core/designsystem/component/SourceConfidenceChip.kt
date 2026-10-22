@@ -37,6 +37,7 @@ private fun SourceConfidence.color(): Color = when (this) {
     SourceConfidence.ESTIMATED -> SyrmosColorTokens.estimated
     SourceConfidence.OPERATOR_LINK -> SyrmosColorTokens.brand
     SourceConfidence.UNKNOWN -> SyrmosColorTokens.offline
+    SourceConfidence.ASSISTANT -> SyrmosColorTokens.estimated
 }
 
 /** English default label; callers pass a localised [label] for EL / SQ. */
@@ -47,6 +48,7 @@ internal fun SourceConfidence.defaultLabel(language: AppLanguage): String = when
     SourceConfidence.ESTIMATED -> localized(language, "Estimated", "Εκτίμηση", "E vlerësuar", "Stimato")
     SourceConfidence.OPERATOR_LINK -> localized(language, "Check operator", "Έλεγχος στον φορέα", "Kontrollo operatorin", "Verifica operatore")
     SourceConfidence.UNKNOWN -> localized(language, "No live data", "Χωρίς ζωντανά δεδομένα", "Pa të dhëna direkte", "Nessun dato in tempo reale")
+    SourceConfidence.ASSISTANT -> localized(language, "AI answer", "Απάντηση AI", "Përgjigje AI", "Risposta AI")
 }
 
 private fun localized(language: AppLanguage, en: String, el: String, sq: String, it: String): String = when (language) {

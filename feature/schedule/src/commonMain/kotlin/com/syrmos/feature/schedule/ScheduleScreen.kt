@@ -1008,4 +1008,5 @@ private fun scheduleSourceLabel(sc: SourceConfidence, lang: AppLanguage): String
     SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
     SourceConfidence.OPERATOR_LINK -> L.SOURCE_OPERATOR.text(lang)
     SourceConfidence.UNKNOWN -> ""
+    SourceConfidence.ASSISTANT -> ""
 }

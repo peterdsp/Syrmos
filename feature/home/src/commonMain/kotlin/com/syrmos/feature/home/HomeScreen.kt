@@ -1638,6 +1638,7 @@ private fun sourceConfidenceLabel(sc: SourceConfidence, lang: AppLanguage): Stri
     SourceConfidence.OFFLINE -> L.SOURCE_OFFLINE.text(lang)
     SourceConfidence.OPERATOR_LINK -> L.SOURCE_OPERATOR.text(lang)
     SourceConfidence.UNKNOWN -> null
+    SourceConfidence.ASSISTANT -> null
 }
 
 /** "then" lead-in for the hero's follow-on departures list. */

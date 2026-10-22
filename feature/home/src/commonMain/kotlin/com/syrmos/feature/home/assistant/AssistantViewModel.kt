@@ -239,11 +239,53 @@ class AssistantViewModel(
             it.copy(messages = it.messages + userMessage(text), thinking = true)
         }
         scope.launch {
-            // Online mode: try cloud Ariadne first. The Pi backend has live
-            // transit data (lines, fares, alerts, frequencies) and chains
-            // three LLMs, so it gives richer answers than local parsing. A cloud
-            // FAILURE (network, timeout) must fall through to the offline path,
-            // not abort the whole turn — hence the inner try.
+            // Grounded first (matches iOS Ariadne). Parse the turn locally; if it
+            // resolves to a concrete transit intent, answer it from REAL data via
+            // resolve(). Schedule, route, last-train and fare claims are therefore
+            // never produced by the cloud LLM, which can only fabricate them, and
+            // a known answer never waits on a network round-trip. Parsing is
+            // wrapped so a thrown use-case can't leave "thinking" stuck or crash
+            // the app on Android.
+            val p = parser
+            val groundedIntent: AssistantIntent? = if (p != null) {
+                try {
+                    val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
+                        ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
+                    fillFromContext(mergePendingIfApplicable(raw))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+
+            if (groundedIntent != null && groundedIntent !is AssistantIntent.OutOfScope) {
+                if (groundedIntent is AssistantIntent.NeedsClarification) {
+                    pendingIntent = groundedIntent.base
+                    pendingMissing = groundedIntent.missing
+                } else {
+                    pendingIntent = null
+                    pendingMissing = null
+                }
+                updateSession(groundedIntent)
+                val reply = try {
+                    resolve(groundedIntent)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    botMessage(outOfScopeText())
+                }
+                _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
+                return@launch
+            }
+
+            // Out of scope locally (or the parser never loaded): the cloud LLM may
+            // still answer an open question. This is the ONLY path that reaches the
+            // cloud, so transit questions stay on-device; its reply is tagged as an
+            // assistant answer, not verified data. A cloud FAILURE (network,
+            // timeout) must fall through, not abort the turn - hence the inner try.
             val cloudReply = try {
                 askCloudLLM(text)
             } catch (e: CancellationException) {
@@ -255,45 +297,24 @@ class AssistantViewModel(
                 _uiState.update { it.copy(messages = it.messages + cloudReply, thinking = false) }
                 return@launch
             }
-            // Offline fallback: local Ariadne (rule-based parser + resolver).
-            // If the local parser never loaded (station/line load failed at init)
-            // AND the cloud is unreachable, be honest instead of silently
-            // dropping the message and leaving the composer looking broken.
-            val p = parser
-            if (p == null) {
-                _uiState.update {
-                    it.copy(
-                        messages = it.messages + botMessage(t(
+
+            // Neither a grounded answer nor the cloud produced anything. Be honest
+            // instead of silently dropping the message: if the local parser never
+            // loaded say so, otherwise the question is genuinely out of scope.
+            _uiState.update {
+                it.copy(
+                    messages = it.messages + if (p == null) {
+                        botMessage(t(
                             "I could not reach the assistant and my offline data has not finished loading. Please try again in a moment.",
                             "Δεν μπόρεσα να συνδεθώ με τον βοηθό και τα δεδομένα εκτός σύνδεσης δεν έχουν φορτωθεί ακόμη. Δοκιμάστε ξανά σε λίγο.",
                             "Nuk arrita te asistenti dhe të dhënat offline nuk kanë përfunduar ngarkimin. Provo përsëri pas pak.",
                             it = "Non sono riuscito a raggiungere l'assistente e i dati offline non hanno finito di caricarsi. Riprova tra un momento.",
-                        )),
-                        thinking = false,
-                    )
-                }
-                return@launch
-            }
-            // Wrapped so a thrown use-case (e.g. an empty Flow.first()) can never
-            // leave the "thinking" indicator stuck or crash the app on Android.
-            try {
-                val raw = applyDayFollowUp(text, assistantClassifier.classify(text, p.vocabulary)
-                    ?: p.parse(queryNormalizer.normalize(text) ?: text), p)
-                val intent = fillFromContext(mergePendingIfApplicable(raw))
-                if (intent is AssistantIntent.NeedsClarification) {
-                    pendingIntent = intent.base
-                    pendingMissing = intent.missing
-                } else {
-                    pendingIntent = null
-                    pendingMissing = null
-                }
-                updateSession(intent)
-                val reply = resolve(intent)
-                _uiState.update { it.copy(messages = it.messages + reply, thinking = false) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _uiState.update { it.copy(messages = it.messages + botMessage(outOfScopeText()), thinking = false) }
+                        ))
+                    } else {
+                        botMessage(outOfScopeText())
+                    },
+                    thinking = false,
+                )
             }
         }
     }
@@ -1637,7 +1658,10 @@ class AssistantViewModel(
         // from a degraded provider trips the breaker instead of being silently
         // discarded here while the cloud keeps getting retried.
         val reply = service.chat(history) { isUsableReply(it) } ?: return null
-        return botMessage(reply)
+        // Mark the conversational reply as an assistant answer, never as verified
+        // transit data: it is only reached for questions the grounded parser could
+        // not resolve, and the chip tells the rider the content is not confirmed.
+        return botMessage(reply, SourceConfidence.ASSISTANT)
     }
 
     private companion object {

@@ -81,6 +81,8 @@ fun resolveDataStatusDisplay(status: DataStatus): DataStatusDisplay {
         SourceConfidence.OFFLINE -> DisplayKind.OFFLINE to null
         SourceConfidence.OPERATOR_LINK -> DisplayKind.OPERATOR to null
         SourceConfidence.UNKNOWN -> DisplayKind.UNAVAILABLE to null
+        // A conversational assistant reply carries no departure data status.
+        SourceConfidence.ASSISTANT -> DisplayKind.UNAVAILABLE to null
     }
     return DataStatusDisplay(resolved.first, resolved.second, status)
 }

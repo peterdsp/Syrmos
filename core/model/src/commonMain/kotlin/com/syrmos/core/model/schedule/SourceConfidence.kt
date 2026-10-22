@@ -24,7 +24,14 @@ enum class SourceConfidence {
     OPERATOR_LINK,
 
     /** No live disruption/status data is available. */
-    UNKNOWN;
+    UNKNOWN,
+
+    /**
+     * A conversational reply from the cloud assistant model, not grounded in
+     * verified transit data. Marked so a chatty answer can never read as a
+     * confirmed departure, fare, or route - the app says what it knows.
+     */
+    ASSISTANT;
 
     companion object {
         fun fromRaw(raw: String?): SourceConfidence = when (raw?.lowercase()) {
