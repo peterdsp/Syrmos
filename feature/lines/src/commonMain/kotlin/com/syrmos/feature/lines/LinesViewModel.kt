@@ -44,7 +44,12 @@ class LinesViewModel(
                 // propagates the exception. Clear the spinner and stop instead.
                 .catch { _uiState.update { it.copy(isLoading = false) } }
                 .collect { lines ->
-                    _uiState.update { it.copy(lines = lines, isLoading = false) }
+                    // Hide the crude two-point Thessaloniki airport shuttles (X3 /
+                    // 2X): they are superseded by the real OSETH routes shown in the
+                    // Airport tab, and their stub geometry is already skipped on the
+                    // map, so a 2-stop stub in the line browser only reads as broken.
+                    val visible = lines.filterNot { it.id == "X3" || it.id == "2X" }
+                    _uiState.update { it.copy(lines = visible, isLoading = false) }
                 }
         }
     }
