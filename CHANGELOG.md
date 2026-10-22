@@ -10,6 +10,14 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.46 - 2026-10-22
+
+### Added
+- "Next bus at this stop": airport-bus stops now show live arrival times, not
+  only the airport stop. The server polls OASA per city stop (conservatively);
+  iOS shows the next buses in the stop sheet, and Android and web add tappable
+  stop pins with their next arrivals (they drew only the route line before).
+
 ## 3.0.0-beta.45 - 2026-10-22
 
 ### Fixed
