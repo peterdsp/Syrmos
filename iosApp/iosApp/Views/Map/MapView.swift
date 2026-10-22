@@ -2437,10 +2437,15 @@ struct AirportBusRouteTimetableSheet: View {
     }
 
     private func time(for stop: AirportBusService.UnifiedStop) -> String {
-        // The current iOS cache exposes verified live ETAs by line. It does
-        // not expose verified clock times for every intermediate stop yet.
-        // Keep those cells explicitly unavailable instead of inventing times.
-        return language == .greek ? "Μη διαθέσιμο" : "Unavailable"
+        // The watcher now attaches live per-stop arrivals, so show the soonest
+        // one as an ETA; still explicitly "unavailable" (never invented) when the
+        // operator supplies nothing for this stop.
+        let live = (stop.arrivals ?? []).compactMap { $0.estimated_minutes }.filter { $0 >= 0 }.sorted()
+        if let m = live.first {
+            if m <= 0 { return language == .greek ? "Τώρα" : language == .albanian ? "Tani" : language == .italian ? "Ora" : "Now" }
+            return "\(m) \(language == .greek ? "λεπ" : "min")"
+        }
+        return language == .greek ? "Μη διαθέσιμο" : language == .albanian ? "E padisponueshme" : language == .italian ? "Non disponibile" : "Unavailable"
     }
 
     var body: some View {
