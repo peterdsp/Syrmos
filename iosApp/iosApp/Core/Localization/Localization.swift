@@ -245,6 +245,7 @@ enum LocalizedKey: CaseIterable {
     case sourceEstimated
     case sourceOffline
     case sourceOperator
+    case sourceAssistant
     case lastTrain
     case leaveBy
     case serviceOver
@@ -493,6 +494,10 @@ enum LocalizedKey: CaseIterable {
         case (.sourceOperator, .greek): return "Δείτε πάροχο"
         case (.sourceOperator, .albanian): return "Kontrolloni operatorin"
         case (.sourceOperator, .italian): return "Controlla operatore"
+        case (.sourceAssistant, .english): return "AI answer"
+        case (.sourceAssistant, .greek): return "Απάντηση AI"
+        case (.sourceAssistant, .albanian): return "Përgjigje AI"
+        case (.sourceAssistant, .italian): return "Risposta AI"
         case (.lastTrain, .english): return "Last train"
         case (.lastTrain, .greek): return "Τελευταίος συρμός"
         case (.lastTrain, .albanian): return "Treni i fundit"

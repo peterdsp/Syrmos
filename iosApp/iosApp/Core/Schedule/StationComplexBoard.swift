@@ -202,7 +202,7 @@ enum StationComplexBoard {
         case .scheduled: return 3
         case .estimated: return 2
         case .offline, .operatorLink: return 1
-        case .unknown: return 0
+        case .unknown, .assistant: return 0
         }
     }
 

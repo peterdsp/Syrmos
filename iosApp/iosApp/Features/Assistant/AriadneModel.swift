@@ -1495,7 +1495,10 @@ final class AriadneModel: ObservableObject {
         ) else {
             return nil
         }
-        return bot(reply)
+        // Tag the conversational reply as an assistant answer: it is only reached
+        // for questions the grounded parser could not resolve, so the chip tells
+        // the rider it is not verified transit data.
+        return bot(reply, confidence: .assistant)
     }
 
     private static let leakedReasoningPatterns: [String] = [
