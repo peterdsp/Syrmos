@@ -870,6 +870,40 @@ class OsethAirportProvider(AirportTransitProvider):
         },
     }
 
+    # The live OSETH GTFS feed ships Greek-only route names, so non-Greek riders
+    # saw raw Greek. Map the real airport routes (by display id) to en/el/sq/it so
+    # normalize_route can attach a localised name. Regular hyphen, no em-dash.
+    ROUTE_I18N = {
+        "01X": {
+            "en": "KTEL Station - Airport", "el": "Κ.Τ.Ε.Λ. - Αεροδρόμιο",
+            "sq": "Stacioni KTEL - Aeroporti", "it": "Stazione KTEL - Aeroporto",
+        },
+        "01N": {
+            "en": "KTEL Station - Airport (night)", "el": "Κ.Τ.Ε.Λ. - Αεροδρόμιο (νυχτερινό)",
+            "sq": "Stacioni KTEL - Aeroporti (natë)", "it": "Stazione KTEL - Aeroporto (notte)",
+        },
+        "1N": {
+            "en": "KTEL - Airport via IKEA (night)", "el": "Κ.Τ.Ε.Λ. - Αεροδρόμιο μέσω Α.Σ. ΙΚΕΑ (νυχτερινό)",
+            "sq": "KTEL - Aeroporti përmes IKEA (natë)", "it": "KTEL - Aeroporto via IKEA (notte)",
+        },
+        "02X": {
+            "en": "Nea Elvetia Metro - Makedonia Airport", "el": "Νέα Ελβετία - Αεροδρόμιο Μακεδονία",
+            "sq": "Nea Elvetia - Aeroporti Makedonia", "it": "Nea Elvetia - Aeroporto Makedonia",
+        },
+        "03X": {
+            "en": "Mikra Metro Station - Makedonia Airport", "el": "Σταθμός Μετρό Μίκρα - Αεροδρόμιο Μακεδονία",
+            "sq": "Stacioni Metro Mikra - Aeroporti Makedonia", "it": "Stazione Metro Mikra - Aeroporto Makedonia",
+        },
+        "79": {
+            "en": "IKEA Station - Airport", "el": "Α.Σ. ΙΚΕΑ - Αεροδρόμιο",
+            "sq": "Stacioni IKEA - Aeroporti", "it": "Stazione IKEA - Aeroporto",
+        },
+        "79E": {
+            "en": "Airport - Cosmos - IKEA Station", "el": "Αεροδρόμιο - Cosmos - Α.Σ. ΙΚΕΑ",
+            "sq": "Aeroporti - Cosmos - Stacioni IKEA", "it": "Aeroporto - Cosmos - Stazione IKEA",
+        },
+    }
+
     def __init__(self, timeout: float = REQUEST_TIMEOUT, user_agent: Optional[str] = None):
         self.timeout = timeout
         self.user_agent = user_agent or self.USER_AGENT
@@ -966,6 +1000,9 @@ class OsethAirportProvider(AirportTransitProvider):
 
         for route in self._airport_routes():
             route_id = self._display_route_id(route)
+            # The GTFS feed is Greek-only; attach real en/el/sq/it names for the
+            # known airport routes so non-Greek riders never see raw Greek.
+            i18n = self.ROUTE_I18N.get(route_id)
             metadata = self.ROUTE_METADATA.get(route_id, {"public_name": route.get("route_long_name", route_id), "origin": "Makedonia Airport", "destination": route.get("route_long_name", route_id), "color": "#0E7490"})
             gtfs = self._gtfs_route(route_id)
             if not gtfs:
@@ -973,9 +1010,11 @@ class OsethAirportProvider(AirportTransitProvider):
             route = NormalizedRoute(
                 operator=Operator.OSETH,
                 route_id=route_id,
-                public_name=metadata["public_name"],
-                public_name_en=metadata["public_name"],
-                public_name_el=metadata.get("public_name_el"),
+                public_name=(i18n["en"] if i18n else metadata["public_name"]),
+                public_name_en=(i18n["en"] if i18n else metadata["public_name"]),
+                public_name_el=(i18n["el"] if i18n else metadata.get("public_name_el")),
+                public_name_sq=(i18n["sq"] if i18n else None),
+                public_name_it=(i18n["it"] if i18n else None),
                 origin=metadata["origin"],
                 destination=metadata["destination"],
                 airport=self.AIRPORT_CODE,
@@ -1000,15 +1039,18 @@ class OsethAirportProvider(AirportTransitProvider):
         gtfs = self._gtfs_route(route_id)
         if not gtfs:
             return None
+        i18n = self.ROUTE_I18N.get(route_id)
         metadata = self.ROUTE_METADATA.get(route_id, {"public_name": gtfs["route"].get("route_long_name", route_id), "origin": "Makedonia Airport", "destination": gtfs["route"].get("route_long_name", route_id), "color": "#0E7490"})
         now = datetime.now(timezone.utc)
 
         return NormalizedRoute(
             operator=Operator.OSETH,
             route_id=route_id,
-            public_name=metadata["public_name"],
-            public_name_en=metadata["public_name"],
-            public_name_el=metadata.get("public_name_el"),
+            public_name=(i18n["en"] if i18n else metadata["public_name"]),
+            public_name_en=(i18n["en"] if i18n else metadata["public_name"]),
+            public_name_el=(i18n["el"] if i18n else metadata.get("public_name_el")),
+            public_name_sq=(i18n["sq"] if i18n else None),
+            public_name_it=(i18n["it"] if i18n else None),
             origin=metadata["origin"],
             destination=metadata["destination"],
             airport=self.AIRPORT_CODE,
@@ -1248,14 +1290,22 @@ class AirportBusNormalizer:
 
             public_name = raw_data.get("name", raw_data.get("publicName", raw_data.get("public_name", "")))
 
+            # OSETH's GTFS feed is Greek-only. For the known airport routes attach a
+            # real en/el/sq/it name and promote the English form to public_name (the
+            # default clients fall back to), matching the OASA convention, so a
+            # non-Greek rider never sees raw Greek.
+            i18n = None
+            if getattr(provider.operator, "value", provider.operator) == "oseth":
+                i18n = OsethAirportProvider.ROUTE_I18N.get(route_id)
+
             route = NormalizedRoute(
                 operator=provider.operator,
                 route_id=route_id,
-                public_name=str(public_name or ""),
-                public_name_en=raw_data.get("name_en", raw_data.get("publicNameEn")),
-                public_name_el=raw_data.get("name_el", raw_data.get("publicNameEl")),
-                public_name_sq=raw_data.get("name_sq", raw_data.get("publicNameSq")),
-                public_name_it=raw_data.get("name_it", raw_data.get("publicNameIt")),
+                public_name=(i18n["en"] if i18n else str(public_name or "")),
+                public_name_en=(i18n["en"] if i18n else raw_data.get("name_en", raw_data.get("publicNameEn"))),
+                public_name_el=(i18n["el"] if i18n else raw_data.get("name_el", raw_data.get("publicNameEl"))),
+                public_name_sq=(i18n["sq"] if i18n else raw_data.get("name_sq", raw_data.get("publicNameSq"))),
+                public_name_it=(i18n["it"] if i18n else raw_data.get("name_it", raw_data.get("publicNameIt"))),
                 origin=raw_data.get("origin", raw_data.get("terminal_a", "")),
                 destination=raw_data.get("destination", raw_data.get("terminal_b", "")),
                 airport=raw_data.get("airport", ""),

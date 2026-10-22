@@ -1712,6 +1712,9 @@
         for (const operatorData of Object.values(payload?.operators || {})) {
             for (const route of operatorData.routes || []) {
                 const color = /^#[0-9A-Fa-f]{6}$/.test(route.color || "") ? route.color : "#D97706";
+                // Localized route name (OSETH ships Greek-only public_name; the
+                // server now attaches en/el/sq/it), falling back gracefully.
+                const routeName = route[`public_name_${currentLang}`] || route.public_name_en || route.public_name || route.route_id;
                 for (const segment of airportBusSegments(route)) {
                     L.polyline(segment, {
                         color,
@@ -1720,7 +1723,7 @@
                         lineCap: "round",
                         lineJoin: "round",
                         dashArray: "8 6",
-                    }).bindTooltip(`${route.public_name || route.route_id} · ${operatorData.operator || route.operator || "airport bus"}`, { direction: "top" }).addTo(airportBusRouteLayer);
+                    }).bindTooltip(`${routeName} · ${operatorData.operator || route.operator || "airport bus"}`, { direction: "top" }).addTo(airportBusRouteLayer);
                 }
                 // Tappable stop pins with "next bus at this stop" live arrivals
                 // (the watcher attaches them per OASA stop). Previously only the

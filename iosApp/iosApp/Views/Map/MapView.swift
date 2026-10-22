@@ -2479,7 +2479,7 @@ struct AirportBusRouteTimetableSheet: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle(route.public_name.isEmpty ? route.route_id : route.public_name)
+        .navigationTitle(route.localizedName(language))
             .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -2511,7 +2511,7 @@ struct AirportBusStopDetailSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Label(stop.stop.stop_name, systemImage: "bus.fill").font(.title2.bold())
-                LabeledContent(language == .greek ? "Γραμμή" : language == .albanian ? "Linja" : language == .italian ? "Linea" : "Route", value: stop.route.public_name)
+                LabeledContent(language == .greek ? "Γραμμή" : language == .albanian ? "Linja" : language == .italian ? "Linea" : "Route", value: stop.route.localizedName(language))
                 LabeledContent(language == .greek ? "Κατεύθυνση" : language == .albanian ? "Drejtimi" : language == .italian ? "Direzione" : "Direction",
                                value: stop.route.direction?.replacingOccurrences(of: "_", with: " ") ?? (language == .greek ? "Άγνωστη" : language == .albanian ? "E panjohur" : language == .italian ? "Sconosciuta" : "Unknown"))
                 let live = (stop.stop.arrivals ?? []).filter { $0.estimated_minutes != nil }

@@ -72,6 +72,8 @@ enum AirportBusService {
         let public_name: String
         let public_name_en: String?
         let public_name_el: String?
+        let public_name_sq: String?
+        let public_name_it: String?
         let origin: String
         let destination: String
         let airport: String
@@ -87,12 +89,30 @@ enum AirportBusService {
         let shape: [UnifiedShapePoint]?
         var id: String { route_id }
 
+        /// The route name in the active language, falling back to English then the
+        /// default public_name then the id, so a non-Greek rider never sees the
+        /// raw Greek name the OSETH feed ships.
+        func localizedName(_ language: AppLanguage) -> String {
+            let preferred: String?
+            switch language {
+            case .greek: preferred = public_name_el
+            case .albanian: preferred = public_name_sq
+            case .italian: preferred = public_name_it
+            default: preferred = public_name_en
+            }
+            let nonEmpty: (String?) -> String? = { ($0?.isEmpty == false) ? $0 : nil }
+            let picked = nonEmpty(preferred) ?? nonEmpty(public_name_en) ?? nonEmpty(public_name) ?? route_id
+            return picked
+        }
+
         enum CodingKeys: String, CodingKey {
             case operatorId = "operator"
             case route_id
             case public_name
             case public_name_en
             case public_name_el
+            case public_name_sq
+            case public_name_it
             case origin
             case destination
             case airport
