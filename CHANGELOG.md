@@ -10,6 +10,13 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.56 - 2026-10-22
+
+### Hardened
+- Rebuilt the Android on-device LLM native shim (libsyrmos_llama.so) so the
+  empty-batch crash guard is now effective on device (ABI verified identical to
+  the pinned llama.cpp b4585).
+
 ## 3.0.0-beta.55 - 2026-10-22
 
 ### Hardened
