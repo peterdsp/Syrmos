@@ -642,6 +642,7 @@ struct TransitMapView: View {
                             .clipShape(Circle())
                             .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
                     }
+                    .accessibilityLabel(mapLocalized(loc.language, "My location", "Η τοποθεσία μου", "Vendndodhja ime", "La mia posizione"))
                 }
                 .padding(.trailing, 16)
                 .padding(.bottom, 80)

@@ -859,6 +859,10 @@ struct PlanView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { if savedEditMode != .active { loadSaved(entry) } }
+            // The tap gesture is invisible to VoiceOver; expose it as an
+            // activatable button so a saved journey can be opened with assistive tech.
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { if savedEditMode != .active { loadSaved(entry) } }
             // Borderless so the List row doesn't treat the whole row as one button.
             Button { renameTarget = entry; renameText = entry.label ?? "" } label: {
                 Image(systemName: "pencil")

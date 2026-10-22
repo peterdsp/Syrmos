@@ -546,6 +546,7 @@ struct ServiceAlertBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Text("⚠️")
+                .accessibilityHidden(true)
                 .font(.subheadline)
             VStack(alignment: .leading, spacing: 4) {
                 Text(LocalizedKey.serviceAlertAffectsLine.text(for: language))

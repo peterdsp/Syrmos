@@ -71,13 +71,17 @@ struct LinePill: View {
 
 struct LineDisruptionDot: View {
     let severity: String?
+    /// Localized announcement for VoiceOver (the app passes el/sq/it); nil uses
+    /// an English fallback. Without this the disruption was color-only AND hidden
+    /// from VoiceOver, so a blind rider had no way to learn a line was closed.
+    var localizedLabel: String? = nil
 
     var body: some View {
         if severity == "warning" || severity == "closure" {
             Circle()
                 .fill(severity == "closure" ? SyrmosTokens.disruption : SyrmosTokens.warning)
                 .frame(width: 7, height: 7)
-                .accessibilityHidden(true)
+                .accessibilityLabel(localizedLabel ?? (severity == "closure" ? "service closure" : "service warning"))
         }
     }
 }

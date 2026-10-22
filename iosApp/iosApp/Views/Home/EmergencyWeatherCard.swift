@@ -41,7 +41,7 @@ struct EmergencyWeatherCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 10) {
                 ZStack(alignment: .top) {
-                    Text("☁️").font(.title2)
+                    Text("☁️").font(.title2).accessibilityHidden(true)
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
                         .fill(amber.opacity(dropOpacity))
                         .frame(width: 4, height: 10)

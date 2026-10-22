@@ -42,6 +42,7 @@ struct TrackPickerSheet: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                 }
+                .accessibilityLabel(loc.language == .greek ? "Πίσω" : loc.language == .albanian ? "Prapa" : loc.language == .italian ? "Indietro" : "Back")
             }
             Text(headerText)
                 .font(.title3).fontWeight(.semibold)

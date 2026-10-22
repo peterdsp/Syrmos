@@ -35,8 +35,20 @@ struct TrackingCardBody: View {
         let total = max(tracked.targetEpoch - anchor, 1)
         let elapsed = max(now - anchor, 0)
         let progress = min(max(elapsed / total, 0), 1)
+        // One coherent spoken unit for VoiceOver: the live surface otherwise read
+        // as a pile of fragments and the updating countdown was never announced as
+        // a whole. The decorative strip/emoji are already hidden; the Stop button
+        // stays a separate, reachable element below.
+        let trackingA11y = [
+            arrivingLabel,
+            due ? dueLabel : formatRemaining(remaining),
+            tracked.currentStationName,
+            tracked.lineId,
+            tracked.destination.isEmpty ? nil : "\(toLabel) \(tracked.destination)",
+        ].compactMap { $0 }.joined(separator: ", ")
 
         VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 LivePulseDot(color: isLive ? accent : .secondary)
                 Text(liveLabel)
@@ -97,6 +109,9 @@ struct TrackingCardBody: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(trackingA11y)
 
             Button(action: onStop) {
                 HStack(spacing: 8) {
@@ -250,6 +265,7 @@ private struct StationStrip: View {
                     }
                     // Train marker interpolating between dots.
                     Text("🚆")
+                        .accessibilityHidden(true)
                         .font(.callout)
                         .offset(x: width * safe - 10, y: 0)
                 }

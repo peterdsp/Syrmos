@@ -108,6 +108,7 @@ struct AriadneView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Text("🦉")
+                .accessibilityHidden(true)
                 .font(.system(size: 28))
                 .frame(width: 44, height: 44)
                 .background(
@@ -276,6 +277,7 @@ struct AriadneView: View {
                 Spacer(minLength: 40)
             } else {
                 Text("🦉")
+                    .accessibilityHidden(true)
                     .font(.system(size: 14))
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(Color.syrmosPrimary.opacity(0.12)))
@@ -372,6 +374,7 @@ struct TypingIndicator: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Text("🦉")
+                .accessibilityHidden(true)
                 .font(.system(size: 14))
                 .frame(width: 28, height: 28)
                 .background(Circle().fill(Color.syrmosPrimary.opacity(0.12)))
