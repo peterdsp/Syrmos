@@ -2491,17 +2491,42 @@ final class SyrmosBusStopAnnotation: NSObject, MKAnnotation {
 struct AirportBusStopDetailSheet: View {
     let stop: AirportBusStopNode
     let language: AppLanguage
+    private func etaLabel(_ minutes: Int) -> String {
+        if minutes <= 0 { return language == .greek ? "Τώρα" : language == .albanian ? "Tani" : language == .italian ? "Ora" : "Now" }
+        let unit = language == .greek ? "λεπ" : "min"
+        return "\(minutes) \(unit)"
+    }
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Label(stop.stop.stop_name, systemImage: "bus.fill").font(.title2.bold())
-                LabeledContent(language == .greek ? "Γραμμή" : "Route", value: stop.route.public_name)
-                LabeledContent(language == .greek ? "Κατεύθυνση" : "Direction", value: stop.route.direction?.replacingOccurrences(of: "_", with: " ") ?? (language == .greek ? "Άγνωστη" : "Unavailable"))
-                Text(language == .greek ? "Οι αφίξεις εμφανίζονται μόνο όταν παρέχονται από τον πάροχο." : "Arrivals appear only when supplied by the operator.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                LabeledContent(language == .greek ? "Γραμμή" : language == .albanian ? "Linja" : language == .italian ? "Linea" : "Route", value: stop.route.public_name)
+                LabeledContent(language == .greek ? "Κατεύθυνση" : language == .albanian ? "Drejtimi" : language == .italian ? "Direzione" : "Direction",
+                               value: stop.route.direction?.replacingOccurrences(of: "_", with: " ") ?? (language == .greek ? "Άγνωστη" : language == .albanian ? "E panjohur" : language == .italian ? "Sconosciuta" : "Unknown"))
+                let live = (stop.stop.arrivals ?? []).filter { $0.estimated_minutes != nil }
+                if !live.isEmpty {
+                    Text((language == .greek ? "Επόμενα λεωφορεία" : language == .albanian ? "Autobusët e ardhshëm" : language == .italian ? "Prossimi autobus" : "Next buses").uppercasedForDisplay(language))
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(Array(live.prefix(4).enumerated()), id: \.offset) { _, a in
+                        HStack(spacing: 10) {
+                            Text(a.line_id).font(.caption.bold())
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(Color.syrmosPrimary.opacity(0.14)).clipShape(Capsule())
+                            Text(a.destination).lineLimit(1).truncationMode(.tail)
+                            Spacer()
+                            Text(etaLabel(a.estimated_minutes ?? 0)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                        }
+                    }
+                    Text(language == .greek ? "Ζωντανά από τον πάροχο." : language == .albanian ? "Drejtpërdrejt nga operatori." : language == .italian ? "In diretta dall'operatore." : "Live from the operator.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text(language == .greek ? "Οι αφίξεις εμφανίζονται μόνο όταν παρέχονται από τον πάροχο." : language == .albanian ? "Mbërritjet shfaqen vetëm kur jepen nga operatori." : language == .italian ? "Gli arrivi compaiono solo quando forniti dall'operatore." : "Arrivals appear only when supplied by the operator.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Spacer()
             }.padding(20)
-            .navigationTitle(language == .greek ? "Στάση λεωφορείου" : "Bus stop")
+            .navigationTitle(language == .greek ? "Στάση λεωφορείου" : language == .albanian ? "Stacion autobusi" : language == .italian ? "Fermata autobus" : "Bus stop")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

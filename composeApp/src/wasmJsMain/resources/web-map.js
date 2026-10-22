@@ -1718,6 +1718,21 @@
                         dashArray: "8 6",
                     }).bindTooltip(`${route.public_name || route.route_id} · ${operatorData.operator || route.operator || "airport bus"}`, { direction: "top" }).addTo(airportBusRouteLayer);
                 }
+                // Tappable stop pins with "next bus at this stop" live arrivals
+                // (the watcher attaches them per OASA stop). Previously only the
+                // route polyline was drawn, so a rider could not open a stop.
+                for (const stop of route.stops || []) {
+                    const lat = stop.latitude, lng = stop.longitude;
+                    if (typeof lat !== "number" || typeof lng !== "number") continue;
+                    const arrivals = (stop.arrivals || []).filter((a) => a.estimated_minutes != null).slice(0, 4);
+                    const unit = currentLang === "el" ? "λεπ" : "min";
+                    const rows = arrivals.length
+                        ? arrivals.map((a) => `<div>${escapeHtml(a.line_id || "")} ${escapeHtml(a.destination || "")} &middot; ${a.estimated_minutes <= 0 ? T("Now", "Τώρα", "Tani", "Ora") : a.estimated_minutes + " " + unit}</div>`).join("")
+                        : `<div style="opacity:.6">${T("No live arrivals.", "Χωρίς ζωντανές αφίξεις.", "Pa mbërritje të drejtpërdrejta.", "Nessun arrivo in diretta.")}</div>`;
+                    L.circleMarker([lat, lng], { radius: 4, color, weight: 2, fillColor: "#ffffff", fillOpacity: 1 })
+                        .bindPopup(`<strong>${escapeHtml(stop.stop_name || "")}</strong>${rows}`)
+                        .addTo(airportBusRouteLayer);
+                }
             }
         }
     };

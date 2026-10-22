@@ -113,6 +113,9 @@ enum AirportBusService {
         let longitude: Double
         let sequence: Int?
         let direction: String?
+        /// Live "next bus at this stop" arrivals, attached per stop by the
+        /// watcher (OASA). Absent/empty when unavailable or for OSETH.
+        let arrivals: [UnifiedArrival]?
         var id: String { stop_id }
     }
 
