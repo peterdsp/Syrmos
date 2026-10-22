@@ -45,7 +45,7 @@ class NextTrainGlanceWidget : GlanceAppWidget() {
                     if (lead != null) {
                         GlanceLinePill(lead.lineId, fontSize = 13.sp)
                         Text(
-                            text = if (lead.minutes <= 1) widgetText("now", "τώρα", "tani", "ora") else "${lead.minutes} min",
+                            text = lead.liveMinutes().let { if (it <= 1) widgetText("now", "τώρα", "tani", "ora") else "$it min" },
                             style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Bold, fontSize = 32.sp),
                             modifier = GlanceModifier.padding(top = 6.dp),
                         )

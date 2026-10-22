@@ -1,5 +1,7 @@
 package com.syrmos.android.widget
 
+import kotlinx.datetime.toLocalDateTime
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
@@ -51,7 +53,7 @@ fun GlanceDepartureRow(row: WidgetRow, onSurface: ColorProvider, secondary: Colo
         Text(row.destination, style = TextStyle(color = onSurface, fontSize = 13.sp), maxLines = 1)
         Spacer(GlanceModifier.defaultWeight())
         Text(
-            text = if (row.minutes <= 1) widgetText("now", "τώρα", "tani", "ora") else "${row.minutes}m",
+            text = row.liveMinutes().let { if (it <= 1) widgetText("now", "τώρα", "tani", "ora") else "${it}m" },
             style = TextStyle(color = secondary, fontWeight = FontWeight.Medium, fontSize = 13.sp),
         )
     }
@@ -88,4 +90,23 @@ internal fun widgetText(en: String, el: String, sq: String, it: String): String 
     AppLanguage.ALBANIAN -> sq
     AppLanguage.ITALIAN -> it
     else -> en
+}
+
+/**
+ * Minutes until this row's absolute Athens departure time ("HH:mm"), computed
+ * at RENDER. A Glance widget cannot self-tick, and the baked [WidgetRow.minutes]
+ * froze when the snapshot was written (up to ~30 min earlier), so a stale "4 min"
+ * could outlive the train. Recomputing from the clock time at every redraw keeps
+ * the countdown honest; falls back to the stored minutes when the time is blank.
+ */
+internal fun WidgetRow.liveMinutes(): Int {
+    val parts = time.split(":")
+    val h = parts.getOrNull(0)?.toIntOrNull()
+    val m = parts.getOrNull(1)?.toIntOrNull()
+    if (parts.size != 2 || h == null || m == null) return minutes.coerceAtLeast(0)
+    val now = kotlinx.datetime.Clock.System.now()
+        .toLocalDateTime(kotlinx.datetime.TimeZone.of("Europe/Athens"))
+    var delta = (h * 60 + m) - (now.hour * 60 + now.minute)
+    if (delta < -120) delta += 24 * 60 // just-after-midnight departure, not ~23h ago
+    return delta.coerceAtLeast(0)
 }
