@@ -94,8 +94,11 @@ final class AriadneOrchestrationTests: XCTestCase {
         let before = model.messages.count
         model.ask("qqzzxx wibble")
         // Comfortably above the two optional budgets combined, so the assertion
-        // is about the answer rather than about a provider's latency.
-        let budget = AriadneModel.normalizeBudget + AriadneModel.cloudBudget + 10
+        // is about the answer rather than about a provider's latency. The margin
+        // is generous (the CI runner is slow and the normalize/cloud bounds plus
+        // scheduling overhead intermittently pushed the local recovery past a
+        // tighter budget, flaking this test across several release runs).
+        let budget = AriadneModel.normalizeBudget + AriadneModel.cloudBudget + 30
         await waitForReply(model, after: before + 1, timeout: budget)
         let reply = model.messages.suffix(from: before).first { !$0.fromUser }
         XCTAssertNotNil(reply, "an unresolvable question still gets an answer")
