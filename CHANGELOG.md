@@ -10,6 +10,18 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.52 - 2026-10-22
+
+### Fixed (iOS native audit)
+- Airport-bus data decode is resilient: one malformed route/arrival row no
+  longer wipes every airport polyline, stop and live ETA.
+- Rail News survives a malformed item instead of blanking the whole section.
+- Timetables split past vs upcoming in Europe/Athens time (correct for riders
+  on another device timezone).
+- Four-language the airport "times by stop" and Hellenic Train ticket sheets;
+  localise the X95/X93/M3 airport destinations and the weather city name.
+- Fixed a sort that could surface a routine announcement over a real alert.
+
 ## 3.0.0-beta.51 - 2026-10-22
 
 ### Fixed
