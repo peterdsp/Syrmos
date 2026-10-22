@@ -141,12 +141,12 @@ struct AirportBusDetailSheet: View {
                         Text(bus.route).font(.title3.bold()).foregroundStyle(.white)
                             .frame(width: 58, height: 42).background(SyrmosTokens.warning, in: RoundedRectangle(cornerRadius: 12))
                         VStack(alignment: .leading) {
-                            Text("OASA airport express").font(.headline)
+                            Text(detailText(language, "OASA airport express", "Υπεραστικό αεροδρομίου OASA", "Ekspres aeroporti OASA", "Espresso aeroporto OASA")).font(.headline)
                             Text("\(bus.origin) ↔ \(bus.destination)").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(eta.map { $0 <= 1 ? "Arriving now" : "\($0) min" } ?? "No live vehicle currently reported")
+                        Text(eta.map { $0 <= 1 ? detailText(language, "Arriving now", "Φτάνει τώρα", "Po mbërrin", "In arrivo") : "\($0) \(language == .greek ? "λεπ" : "min")" } ?? detailText(language, "No live vehicle currently reported", "Δεν αναφέρεται ζωντανό όχημα", "S'ka mjet të drejtpërdrejtë tani", "Nessun veicolo in diretta"))
                             .font(.system(size: 30, weight: .bold, design: .rounded))
                         Text(eta == nil ? "This is not a live departure. Check the official operator information for current service." : "Direction at the airport stop: toward the airport")
                             .font(.subheadline).foregroundStyle(.secondary)
@@ -155,7 +155,7 @@ struct AirportBusDetailSheet: View {
                     Label("24-hour airport express service is shown as operator information, not as a guaranteed current departure.", systemImage: "info.circle")
                         .font(.caption).foregroundStyle(.secondary)
                     Button { openURL(bus.sourceURL) } label: {
-                        Label("Open official OASA information", systemImage: "arrow.up.right.square")
+                        Label(detailText(language, "Open official OASA information", "Άνοιγμα επίσημων πληροφοριών OASA", "Hap informacionet zyrtare OASA", "Apri le informazioni ufficiali OASA"), systemImage: "arrow.up.right.square")
                             .frame(maxWidth: .infinity)
                     }.buttonStyle(.borderedProminent)
                 }.padding(20)
