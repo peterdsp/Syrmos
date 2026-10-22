@@ -238,7 +238,10 @@ fun HomeScreen(
                                 val currentStop = stops.lastOrNull {
                                     it.minutesFromOrigin.toDouble() <= elapsed
                                 }
-                                resolved = currentStop?.stationEn
+                                // Localize the offset-derived current station (the
+                                // feed supplies English only) so the tracking chip
+                                // reads in the rider's language.
+                                resolved = currentStop?.stationEn?.let { StationNameTranslator.localizeEnglish(it, lang) }
                             }
                         }
                     }

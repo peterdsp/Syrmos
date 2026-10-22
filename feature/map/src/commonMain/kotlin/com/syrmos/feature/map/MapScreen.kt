@@ -904,13 +904,13 @@ private fun SimulatedTrainDetailCard(
                     ) {
                         if (line != null) LineBadge(line, lang)
                         Text(
-                            text = train.lineName,
+                            text = if (lang == AppLanguage.GREEK) (train.lineNameEl?.ifBlank { null } ?: train.lineName) else train.lineName,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                         )
                     }
                     Text(
-                        text = "${vehicleText(lang, "Towards", "Προς", "Drejt", "Verso")} ${train.destinationName}",
+                        text = "${vehicleText(lang, "Towards", "Προς", "Drejt", "Verso")} ${resolveStation(train.destinationNameEl, train.destinationName, lang) ?: train.destinationName}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -940,13 +940,13 @@ private fun SimulatedTrainDetailCard(
                     VehiclePositionRow(
                         icon = Icons.Filled.Place,
                         label = vehicleText(lang, "Estimated position", "Εκτιμώμενη θέση", "Pozicioni i vlerësuar", "Posizione stimata"),
-                        value = train.currentStationName,
+                        value = resolveStation(train.currentStationNameEl, train.currentStationName, lang) ?: train.currentStationName,
                         accent = lineColor,
                     )
                     VehiclePositionRow(
                         icon = Icons.Filled.NearMe,
                         label = vehicleText(lang, "Next station", "Επόμενος σταθμός", "Stacioni i ardhshëm", "Prossima stazione"),
-                        value = train.nextStationName,
+                        value = resolveStation(train.nextStationNameEl, train.nextStationName, lang) ?: train.nextStationName,
                         accent = lineColor,
                     )
                 }

@@ -113,6 +113,7 @@ fun simulateTrains(
             id = "${raw.lineId}_${raw.directionKey}_${raw.originDepartureMinute.toInt()}",
             lineId = displayLineId,
             lineName = line.name,
+            lineNameEl = line.nameEl,
             lineColor = line.color,
             lineType = line.type,
             direction = direction,
@@ -124,8 +125,12 @@ fun simulateTrains(
                 Direction.OUTBOUND -> line.terminalB
                 Direction.INBOUND -> line.terminalA
             },
+            // Terminals are plain line strings with no bundled Greek name, so the
+            // display falls back to them; the per-segment stations do carry nameEl.
             currentStationName = fromStation.name,
+            currentStationNameEl = fromStation.nameEl,
             nextStationName = toStation.name,
+            nextStationNameEl = toStation.nameEl,
             progress = (elapsedMinutes / raw.totalTravelMinutes.toDouble()).coerceIn(0.0, 1.0),
             latitude = lat,
             longitude = lon,
@@ -236,18 +241,24 @@ fun projectScheduledTrains(
             val lon = pos.lng
             val direction = if (trip.direction.lowercase() == "outbound") Direction.OUTBOUND else Direction.INBOUND
             val dest = stationById[stops.last().stationId]?.name ?: line.terminalB
+            val destEl = stationById[stops.last().stationId]?.nameEl
 
             out += SimulatedTrain(
                 id = "${line.id}_${trip.trainNo}_${trip.direction}",
                 lineId = line.id,
                 lineName = line.name,
+                lineNameEl = line.nameEl,
                 lineColor = line.color,
                 lineType = line.type,
                 direction = direction,
                 originName = stationById[stops.first().stationId]?.name ?: line.terminalA,
+                originNameEl = stationById[stops.first().stationId]?.nameEl,
                 destinationName = dest,
+                destinationNameEl = destEl,
                 currentStationName = from.name,
+                currentStationNameEl = from.nameEl,
                 nextStationName = to.name,
+                nextStationNameEl = to.nameEl,
                 progress = frac,
                 latitude = lat,
                 longitude = lon,

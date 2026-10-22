@@ -595,13 +595,17 @@ internal actual fun PlatformMapView(
                     position = snappedSimPos
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildCapsuleTrainBitmap(res, lineColor, train.bearing)
-                    title = "${train.lineName} > ${train.destinationName}"
+                    val greek = appLang == com.syrmos.core.common.AppLanguage.GREEK
+                    val lineLbl = if (greek) (train.lineNameEl?.ifBlank { null } ?: train.lineName) else train.lineName
+                    val destLbl = if (greek) (train.destinationNameEl?.ifBlank { null } ?: train.destinationName) else train.destinationName
+                    val curLbl = if (greek) (train.currentStationNameEl?.ifBlank { null } ?: train.currentStationName) else train.currentStationName
+                    title = "$lineLbl > $destLbl"
                     snippet = "${when (appLang) {
                         com.syrmos.core.common.AppLanguage.GREEK -> "Κοντά σε"
                         com.syrmos.core.common.AppLanguage.ALBANIAN -> "Pranë"
                         com.syrmos.core.common.AppLanguage.ITALIAN -> "Vicino a"
                         else -> "Near"
-                    }} ${train.currentStationName}"
+                    }} $curLbl"
                     setOnMarkerClickListener { _, _ ->
                         onTrainSelected(trainId)
                         true
