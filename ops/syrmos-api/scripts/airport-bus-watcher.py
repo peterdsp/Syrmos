@@ -160,6 +160,18 @@ class AirportBusWatcher:
         self._running = False
         self._consecutive_failures = 0
 
+        # Per-stop live arrivals (for "next bus at THIS stop"). OASA only serves
+        # one stop per getStopArrivals call, so this is kept conservative: each
+        # stop code is refreshed at most every PER_STOP_TTL seconds (TTL cache),
+        # and at most PER_STOP_BUDGET fresh calls are made per snapshot cycle,
+        # round-robin, with a small inter-call delay. Set AIRPORT_PER_STOP=0 to
+        # disable entirely and fall back to airport-stop-only arrivals.
+        self._per_stop_enabled = os.environ.get("AIRPORT_PER_STOP", "1") != "0"
+        self._stop_cache: dict[str, tuple[float, list]] = {}
+        self._per_stop_ttl = float(os.environ.get("AIRPORT_PER_STOP_TTL", "120"))
+        self._per_stop_budget = int(os.environ.get("AIRPORT_PER_STOP_BUDGET", "25"))
+        self._per_stop_delay = float(os.environ.get("AIRPORT_PER_STOP_DELAY", "0.25"))
+
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -264,10 +276,50 @@ class AirportBusWatcher:
             },
         }
 
+    def _stop_arrivals(self, stop_id: str) -> list:
+        """Live arrivals at one OASA city stop, for "next bus at this stop".
+
+        TTL-cached and budgeted: a stop code is refetched at most every
+        _per_stop_ttl seconds, and at most _cycle_budget fresh OASA calls happen
+        per snapshot cycle (round-robin over cycles). Stops over budget reuse the
+        last cached value (even if stale) or an empty list. Never raises.
+        """
+        if not stop_id:
+            return []
+        code = stop_id.replace("OASA_", "").strip()
+        if not code.isdigit():
+            return []
+        nowt = time.time()
+        cached = self._stop_cache.get(code)
+        if cached and (nowt - cached[0]) < self._per_stop_ttl:
+            return cached[1]
+        if getattr(self, "_cycle_budget", 0) <= 0:
+            return cached[1] if cached else []
+        self._cycle_budget -= 1
+        try:
+            arrivals = self.oasa_provider.fetch_arrivals(stop_id=code) or []
+            # Keep only airport-bound soonest few, as serialisable dicts.
+            rows = [
+                a.to_dict() for a in sorted(
+                    (x for x in arrivals if getattr(x, "direction", None) != "from_airport"
+                     and getattr(x, "estimated_minutes", None) is not None),
+                    key=lambda x: x.estimated_minutes,
+                )[:4]
+            ]
+            self._stop_cache[code] = (nowt, rows)
+            if self._per_stop_delay > 0:
+                time.sleep(self._per_stop_delay)
+            return rows
+        except Exception:  # noqa: BLE001 - one stop must never break the snapshot
+            self._stop_cache[code] = (nowt, cached[1] if cached else [])
+            return cached[1] if cached else []
+
     def _fetch_all_data(self) -> Optional[dict]:
         """Fetch all airport bus data using the new provider abstraction."""
         start_time = time.time()
         now = datetime.now(timezone.utc)
+        # Reset the per-cycle per-stop fetch budget (round-robin over cycles).
+        self._cycle_budget = self._per_stop_budget if self._per_stop_enabled else 0
 
         try:
             # Fetch OASA data
@@ -301,6 +353,11 @@ class AirportBusWatcher:
                     and not (s["latitude"] == 0 and s["longitude"] == 0)
                 ]
                 valid_stops.sort(key=lambda s: (s.get("direction", ""), s.get("sequence", 0)))
+                # Attach "next bus at this stop" live arrivals, OASA only (OSETH
+                # has no live feed). Bounded by the TTL cache + per-cycle budget.
+                if self._per_stop_enabled and payload.get("operator") == "oasa":
+                    for s in valid_stops:
+                        s["arrivals"] = self._stop_arrivals(s.get("stop_id", ""))
                 payload["stops"] = valid_stops
                 official_shape = getattr(provider, "fetch_shape", lambda _route_id: [])(route.route_id)
                 if official_shape:
