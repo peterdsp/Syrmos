@@ -663,9 +663,12 @@ internal actual fun PlatformMapView(
     // Live airport express-buses. Same regional declutter as trains, but plotted
     // at the raw GPS coordinate (buses follow roads, not a rail polyline, so no
     // snapping) and drawn in warning-orange to stand apart from the rail dots.
-    LaunchedEffect(uiState.busVehicles, mapBand) {
+    LaunchedEffect(uiState.busVehicles, mapBand, uiState.showAirportBuses) {
         val res = context.resources
-        if (mapBand < 2) {
+        // Honour the airport-bus toggle: hiding it must also drop the live bus
+        // vehicle markers, not only the route polylines (the effect did not key
+        // on showAirportBuses before, so the vehicles stayed on the map).
+        if (mapBand < 2 || !uiState.showAirportBuses) {
             busMarkers.values.forEach { mapView.overlays.remove(it) }
             busMarkers.clear()
             mapView.invalidate()
