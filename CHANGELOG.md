@@ -10,6 +10,14 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.55 - 2026-10-22
+
+### Hardened
+- On-device assistant LLM guards against an empty/invalid token batch (a native
+  crash class): iOS bails before decoding, Android skips the native round-trip
+  for a blank prompt. (The Android JNI shim source is also guarded; its
+  vendored .so needs an official rebuild to carry it on device.)
+
 ## 3.0.0-beta.54 - 2026-10-22
 
 ### Fixed (Android i18n audit, final)
