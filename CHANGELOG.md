@@ -10,6 +10,12 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.59 - 2026-10-23
+
+### Fixed
+- Android All-Lines status widget now shows real per-line disruptions (was
+  always "Good service"), matching the iOS widget. Completes the widget audit.
+
 ## 3.0.0-beta.58 - 2026-10-23
 
 ### Accessibility + widgets (chart-readiness)
