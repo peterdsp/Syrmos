@@ -417,3 +417,96 @@ class LastTrainShortTurnTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def make_scheduled_trip_conn() -> sqlite3.Connection:
+    """A1 inbound train 1239 stopping at Athens (A1_ATH) just after midnight,
+    terminating at Piraeus. Canonical stop_sequence is outbound order
+    (Piraeus low -> Airport high), so the inbound terminus is the lowest."""
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE scheduled_trips (train_no TEXT, line_id TEXT, day_type TEXT, direction TEXT, valid_dates TEXT);
+        CREATE TABLE scheduled_trip_stops (train_no TEXT, line_id TEXT, day_type TEXT, direction TEXT, station_id TEXT, departure_time TEXT, stop_sequence INTEGER);
+        """
+    )
+    conn.execute("INSERT INTO scheduled_trips VALUES ('1239','A1','mon_thu','inbound',NULL)")
+    conn.executemany(
+        "INSERT INTO scheduled_trip_stops VALUES (?,?,?,?,?,?,?)",
+        [
+            ("1239", "A1", "mon_thu", "inbound", "A1_PIR", "00:50", 1),
+            ("1239", "A1", "mon_thu", "inbound", "A1_ATH", "00:26", 5),
+            ("1239", "A1", "mon_thu", "inbound", "A1_AIR", "00:05", 9),
+        ],
+    )
+    return conn
+
+
+class ScheduledTripMidnightTest(unittest.TestCase):
+    """#5: a just-after-midnight suburban departure must not be dropped late at
+    night (00:26 seen at 23:50 is ~36 min away, not ~24h in the past)."""
+
+    def _run(self, now_minutes: int) -> list:
+        from syrmos_admin.projector import _project_scheduled_trip_departures
+        out: list = []
+        _project_scheduled_trip_departures(
+            make_scheduled_trip_conn(), "A1", "A1_ATH", "mon_thu", "inbound",
+            now_minutes=now_minutes, limit=5, out=out, today_iso="",
+        )
+        return out
+
+    def test_after_midnight_departure_kept_at_2350(self):
+        out = self._run(23 * 60 + 50)  # 23:50
+        times = {d.time: d.minutesAway for d in out}
+        self.assertIn("00:26", times, "the 00:26 departure must survive the midnight wrap")
+        self.assertEqual(times["00:26"], 36)
+
+    def test_same_day_departure_still_works(self):
+        out = self._run(0 * 60 + 10)  # 00:10, same day as 00:26
+        times = {d.time: d.minutesAway for d in out}
+        self.assertEqual(times.get("00:26"), 16)
+
+
+def make_overnight_trip_conn() -> sqlite3.Connection:
+    """A1 inbound train 3203 enroute across midnight (departs 21:32, arrives
+    00:26)."""
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE scheduled_trips (train_no TEXT, line_id TEXT, day_type TEXT, direction TEXT, valid_dates TEXT);
+        CREATE TABLE scheduled_trip_stops (train_no TEXT, line_id TEXT, day_type TEXT, direction TEXT, station_id TEXT, departure_time TEXT, stop_sequence INTEGER);
+        """
+    )
+    conn.execute("INSERT INTO scheduled_trips VALUES ('3203','A1','mon_thu','inbound',NULL)")
+    conn.executemany(
+        "INSERT INTO scheduled_trip_stops VALUES (?,?,?,?,?,?,?)",
+        [
+            ("3203", "A1", "mon_thu", "inbound", "A1_AIR", "21:32", 9),
+            ("3203", "A1", "mon_thu", "inbound", "A1_ATH", "23:50", 5),
+            ("3203", "A1", "mon_thu", "inbound", "A1_PIR", "00:26", 1),
+        ],
+    )
+    return conn
+
+
+class ScheduledTripActiveMidnightTest(unittest.TestCase):
+    """#6: a train still enroute across midnight must stay on the live map after
+    00:00, not vanish because now resets to ~0."""
+
+    def _run(self, now_minutes: float) -> list:
+        from syrmos_admin.projector import _project_scheduled_trip_active
+        out: list = []
+        _project_scheduled_trip_active(
+            make_overnight_trip_conn(), "A1", "mon_thu", now_minutes, out, set(), ""
+        )
+        return out
+
+    def test_overnight_train_active_after_midnight(self):
+        trains = {o["trainNo"] for o in self._run(5)}  # 00:05
+        self.assertIn("3203", trains)
+
+    def test_overnight_train_active_before_midnight(self):
+        trains = {o["trainNo"] for o in self._run(23 * 60 + 40)}  # 23:40
+        self.assertIn("3203", trains)

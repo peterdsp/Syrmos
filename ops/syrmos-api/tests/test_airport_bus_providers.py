@@ -828,3 +828,31 @@ class TestUnifiedModel(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOsethAirportDirection(unittest.TestCase):
+    """#1: OSETH stop direction is derived from where the airport stop sits, not
+    a dead route_id == 'X3' test that labeled every Thessaloniki stop the same."""
+
+    def test_airport_last_is_to_airport(self):
+        stops = [
+            {"stop_name": "Α.Σ. ΙΚΕΑ"},
+            {"stop_name": "COSMOS"},
+            {"stop_name": "ΑΕΡΟΔΡΟΜΙΟ ΜΑΚΕΔΟΝΙΑ"},
+        ]
+        self.assertEqual(OsethAirportProvider._airport_direction(stops), "to_airport")
+
+    def test_airport_first_is_from_airport(self):
+        stops = [
+            {"stop_name": "ΑΕΡΟΔΡΟΜΙΟ ΜΑΚΕΔΟΝΙΑ"},
+            {"stop_name": "COSMOS"},
+            {"stop_name": "Α.Σ. ΙΚΕΑ"},
+        ]
+        self.assertEqual(OsethAirportProvider._airport_direction(stops), "from_airport")
+
+    def test_english_airport_name_recognized(self):
+        stops = [{"stop_name": "City Centre"}, {"stop_name": "Makedonia Airport"}]
+        self.assertEqual(OsethAirportProvider._airport_direction(stops), "to_airport")
+
+    def test_empty_defaults_safely(self):
+        self.assertEqual(OsethAirportProvider._airport_direction([]), "to_airport")
