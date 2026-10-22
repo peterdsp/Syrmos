@@ -48,11 +48,16 @@ actor LlamaSession {
         // Tokenize.
         let promptC = Array(prompt.utf8CString)
         let nPrompt = -llama_tokenize(vocab, promptC, Int32(promptC.count - 1), nil, 0, true, true)
+        // An empty prompt (or a tokenizer error) yields nPrompt <= 0. Allocating
+        // an Array with a negative count traps, and decoding an empty token batch
+        // (llama_batch_get_one(nil, 0) below) crashes inside llama.cpp, so bail
+        // before either can happen.
+        guard nPrompt > 0 else { return "" }
         var tokens = [llama_token](repeating: 0, count: Int(nPrompt))
         let got = tokens.withUnsafeMutableBufferPointer {
             llama_tokenize(vocab, promptC, Int32(promptC.count - 1), $0.baseAddress, Int32($0.count), true, true)
         }
-        if got < 0 { return "" }
+        if got <= 0 { return "" }
 
         // Sampler chain: grammar (constrains to valid JSON) then greedy.
         let chain = llama_sampler_chain_init(llama_sampler_chain_default_params())

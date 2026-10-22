@@ -64,9 +64,14 @@ Java_com_syrmos_llm_LlamaBridge_nativeComplete(JNIEnv *env, jobject, jlong handl
     // Tokenize the prompt.
     int n_prompt = -llama_tokenize(vocab, prompt.c_str(), (int) prompt.size(),
                                    nullptr, 0, true, true);
+    // An empty prompt (or a tokenizer error) yields n_prompt <= 0. A negative
+    // size makes std::vector allocate a huge buffer (bad_alloc / crash), and
+    // decoding an empty token batch (llama_batch_get_one below) crashes inside
+    // llama.cpp, so bail before either can happen.
+    if (n_prompt <= 0) return env->NewStringUTF("");
     std::vector<llama_token> tokens(n_prompt);
     if (llama_tokenize(vocab, prompt.c_str(), (int) prompt.size(),
-                       tokens.data(), (int) tokens.size(), true, true) < 0) {
+                       tokens.data(), (int) tokens.size(), true, true) <= 0) {
         return env->NewStringUTF("");
     }
 

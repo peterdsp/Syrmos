@@ -36,6 +36,10 @@ private object LlamaAssistantClassifier : AssistantClassifier {
         if (!ensureLoaded()) return null
         return withContext(Dispatchers.Default) {
             val prompt = IntentGrounder.classificationPrompt(input)
+            // A blank prompt tokenizes to nothing and crashes llama.cpp natively
+            // (a SIGABRT the try/catch below cannot catch). The native layer also
+            // guards this now, but skip the round-trip entirely to be safe.
+            if (prompt.isBlank()) return@withContext null
             val json = try {
                 LlamaBridge.nativeComplete(handle, prompt, 160, AriadneGrammar.GBNF)
             } catch (_: Throwable) {
