@@ -679,6 +679,7 @@ private struct AirportRouteMapCard: View {
                                 .background(selectedRoute == route ? routeColor(route) : routeColor(route).opacity(0.12), in: Capsule())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityAddTraits(selectedRoute == route ? .isSelected : [])
                     }
                 }
                 .padding(.horizontal, 2)
@@ -713,7 +714,7 @@ private struct AirportRouteMapCard: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
             }
-            .frame(height: 64)
+            .frame(minHeight: 64)
             .background(color.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             HStack(spacing: 6) {
@@ -927,7 +928,7 @@ private struct AirportPredictiveCard: View {
                 .overlay(Circle().stroke(Color.metroBlue.opacity(0.85), lineWidth: 2))
             Text(time).font(.subheadline.bold()).monospacedDigit()
             Text(title)
-                .font(.system(size: 9, weight: .medium))
+                .font(.caption2).fontWeight(.medium)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -957,7 +958,7 @@ private struct AirportPredictiveCard: View {
 
     private func durationChip(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 8, weight: .semibold))
+            .font(.caption2).fontWeight(.semibold)
             .monospacedDigit()
             .foregroundStyle(Color.metroBlue)
             .padding(.horizontal, 6)
@@ -1809,6 +1810,14 @@ private struct FeaturedRow: View {
             }
         }
         .padding(.vertical, 4)
+        // One spoken unit so the updating "N min" reads with its line and
+        // direction instead of as scattered glyph/line/time fragments.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(SyrmosData.line(for: departure.lineId)?.localizedName(loc.language) ?? departure.lineId), "
+            + "\(directionLabel), "
+            + (isToday ? "\(minutesLabel), \(departure.time)" : departure.time)
+        )
     }
 
     private var minutesLabel: String {

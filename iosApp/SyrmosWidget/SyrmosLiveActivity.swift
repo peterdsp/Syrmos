@@ -68,10 +68,10 @@ struct SyrmosLiveActivity: Widget {
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
             } else {
-                Text("now")
+                Text(WLoc.t("now", "τώρα", "tani", "ora"))
             }
         } else if context.state.isDue {
-            Text("now")
+            Text(WLoc.t("now", "τώρα", "tani", "ora"))
         } else {
             Text("\(context.state.minutesRemaining)m")
                 .contentTransition(.numericText())
@@ -139,10 +139,10 @@ private struct LockScreenView: View {
                     .font(.system(size: 8))
                     .foregroundStyle(tint)
                     .symbolEffect(.pulse.wholeSymbol, options: .repeating)
-                Text("LIVE").font(.caption).fontWeight(.bold).foregroundStyle(tint)
+                Text(WLoc.t("LIVE", "ΖΩΝΤΑΝΑ", "LIVE", "LIVE")).font(.caption).fontWeight(.bold).foregroundStyle(tint)
                     .widgetAccentable()
                 Spacer(minLength: 8)
-                Text("Arriving \(context.attributes.stationName)")
+                Text("\(WLoc.t("Arriving", "Άφιξη", "Mbërritje", "Arrivo")) \(context.attributes.stationName)")
                     .font(.subheadline).fontWeight(.semibold)
                     .lineLimit(1).truncationMode(.tail)
             }
@@ -156,12 +156,12 @@ private struct LockScreenView: View {
                         if Date().timeIntervalSince1970 < epoch {
                             Text(timerInterval: Date()...Date(timeIntervalSince1970: epoch), countsDown: true)
                         } else {
-                            Text("Now")
+                            Text(WLoc.t("Now", "Τώρα", "Tani", "Ora"))
                         }
                     } else if context.state.isDue {
-                        Text("Now")
+                        Text(WLoc.t("Now", "Τώρα", "Tani", "Ora"))
                     } else {
-                        Text("\(context.state.minutesRemaining) min").contentTransition(.numericText())
+                        Text("\(context.state.minutesRemaining) \(WLoc.t("min", "λεπ", "min", "min"))").contentTransition(.numericText())
                     }
                 }
                 .font(.system(size: 40, weight: .bold, design: .rounded))
@@ -198,14 +198,14 @@ private struct LockScreenView: View {
                         .fill(Color(hex: 0xFFC24A))
                         .frame(width: 12, height: 12)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Community: \(status.lowercased())")
+                        Text("\(WLoc.t("Community", "Κοινότητα", "Komuniteti", "Comunità")): \(status.lowercased())")
                             .font(.caption).fontWeight(.semibold)
                         HStack(spacing: 4) {
                             if let detail = context.state.communityDetail {
                                 Text(detail)
                             }
                             if let count = context.state.communityConfirmations {
-                                Text("· \(count) confirmations")
+                                Text("· \(count) \(WLoc.t("confirmations", "επιβεβαιώσεις", "konfirmime", "conferme"))")
                             }
                         }
                         .font(.caption2)
@@ -214,7 +214,7 @@ private struct LockScreenView: View {
                     Spacer(minLength: 4)
                     if #available(iOSApplicationExtension 17.0, *) {
                         Button(intent: ConfirmRailPulseIntent(signal: status.lowercased())) {
-                            Text("Confirm")
+                            Text(WLoc.t("Confirm", "Επιβεβαίωση", "Konfirmo", "Conferma"))
                                 .font(.caption2).fontWeight(.bold)
                         }
                         .buttonStyle(.borderedProminent)
@@ -227,9 +227,9 @@ private struct LockScreenView: View {
 
             if context.state.unexpectedStop == true {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Unexpected stop ahead")
+                    Text(WLoc.t("Unexpected stop ahead", "Απρόσμενη στάση μπροστά", "Ndalesë e papritur përpara", "Fermata imprevista in arrivo"))
                         .font(.caption).fontWeight(.bold)
-                    Text("Community supported · not an official operator alert")
+                    Text(WLoc.t("Community supported · not an official operator alert", "Από την κοινότητα · όχι επίσημη ειδοποίηση φορέα", "Mbështetur nga komuniteti · jo njoftim zyrtar", "Supportato dalla community · non un avviso ufficiale"))
                         .font(.caption2)
                 }
                 .foregroundStyle(Color(hex: 0x9B1C2D))
@@ -241,11 +241,11 @@ private struct LockScreenView: View {
             // Line pill + destination, with the "last train" footer trailing.
             HStack(spacing: 8) {
                 LinePill(lineId: context.attributes.lineId, size: .regular)
-                Text("to \(context.attributes.destination)")
+                Text("\(WLoc.t("to", "προς", "drejt", "verso")) \(context.attributes.destination)")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 0)
                 if let last = context.state.lastTrain {
-                    Text("Last \(last) 🌙").font(.caption2).foregroundStyle(.secondary)
+                    Text("\(WLoc.t("Last", "Τελευταίο", "I fundit", "Ultimo")) \(last) 🌙").font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }

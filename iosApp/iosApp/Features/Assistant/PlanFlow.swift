@@ -842,7 +842,7 @@ struct PlanView: View {
             .scrollContentBackground(.hidden)
             .scrollDisabled(true)
             .environment(\.editMode, $savedEditMode)
-            .frame(height: CGFloat(savedStore.items.count) * 68 + 4)
+            .frame(minHeight: CGFloat(savedStore.items.count) * 68 + 4)
         }
     }
 

@@ -1542,6 +1542,18 @@ struct HomeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    // One spoken unit: "to" (not the "→" VoiceOver reads as "right
+                    // arrow") and the live state in words (the dot is colour-only).
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(
+                        "\(train.lineId), "
+                        + "\(SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)) "
+                        + "\(loc.language == .greek ? "προς" : loc.language == .albanian ? "drejt" : loc.language == .italian ? "verso" : "to") "
+                        + "\(SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language)), "
+                        + "#\(train.trainNumber)"
+                        + (train.delayMinutes > 0 ? ", +\(train.delayMinutes) \(loc.language == .greek ? "λεπτά καθυστέρηση" : loc.language == .albanian ? "minuta vonesë" : loc.language == .italian ? "minuti ritardo" : "min delay")" : "")
+                        + ", \(loc.language == .greek ? "ζωντανά" : loc.language == .albanian ? "drejtpërdrejt" : loc.language == .italian ? "in diretta" : "live")"
+                    )
                 }
             }
         }

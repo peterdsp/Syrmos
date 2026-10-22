@@ -3153,6 +3153,7 @@ struct LiveTrainsListSheet: View {
                     Capsule().strokeBorder(isSelected ? color : .clear, lineWidth: 1.5)
                 )
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     @ViewBuilder

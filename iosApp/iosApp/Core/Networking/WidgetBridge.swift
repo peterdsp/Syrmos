@@ -40,6 +40,15 @@ enum WidgetBridge {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// Publish the lines that currently have a disruption, encoded as
+    /// "lineId|severity" (severity = "warning" | "closure"), so the All-Lines
+    /// status widget stops claiming "Good Service" for a line that is closed.
+    static func publishLineDisruptions(_ disruptions: [String: String]) {
+        guard let d = defaults else { return }
+        d.set(disruptions.map { "\($0.key)|\($0.value)" }, forKey: "line_disruptions")
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Publish the live suburban train count and freshness so widgets can show
     /// a "N trains running" badge and a live-data indicator.
     static func publishLiveTrains(count: Int, updatedEpoch: Double) {

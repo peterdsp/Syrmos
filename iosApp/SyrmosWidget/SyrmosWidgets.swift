@@ -403,9 +403,32 @@ struct SyrmosProvider: AppIntentTimelineProvider {
     }
 
     private func lineStatuses() -> [WLineStatus] {
-        // Offline-optimistic: without a live alert feed the honest default is
-        // "Good Service". The layout is ready for a real feed via App Group.
-        SyrmosLineTokens.allLines.map { WLineStatus(lineId: $0, ok: true, label: "Good Service") }
+        // Reflect the per-line disruptions the app publishes (WidgetBridge
+        // .publishLineDisruptions), so this widget no longer claims "Good Service"
+        // for a line that is actually closed. Absent the key (fresh install /
+        // offline), it degrades to the optimistic default.
+        let disrupted = Self.cachedLineDisruptions()
+        return SyrmosLineTokens.allLines.map { id in
+            if let severity = disrupted[id] {
+                let label = severity == "closure"
+                    ? WLoc.t("Service closed", "Διακοπή", "I mbyllur", "Interrotto")
+                    : WLoc.t("Delays", "Καθυστερήσεις", "Vonesa", "Ritardi")
+                return WLineStatus(lineId: id, ok: false, label: label)
+            }
+            return WLineStatus(lineId: id, ok: true, label: "Good Service")
+        }
+    }
+
+    /// Per-line disruptions written by the app as "lineId|severity".
+    private static func cachedLineDisruptions() -> [String: String] {
+        let raw = UserDefaults(suiteName: "group.com.syrmosApp.ios")?
+            .stringArray(forKey: "line_disruptions") ?? []
+        var map: [String: String] = [:]
+        for entry in raw {
+            let parts = entry.split(separator: "|", maxSplits: 1).map(String.init)
+            if parts.count == 2 { map[parts[0]] = parts[1] }
+        }
+        return map
     }
 
     /// Cached weather from the shared App Group, written by the app's

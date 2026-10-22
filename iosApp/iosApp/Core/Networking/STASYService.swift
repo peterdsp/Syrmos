@@ -371,6 +371,10 @@ final class STASYService: ObservableObject {
             // widget headline).
             let ranked = parsed.sorted { ($0.category == .serviceAlert ? 0 : 1) < ($1.category == .serviceAlert ? 0 : 1) }
             WidgetBridge.publishAlerts(ranked.map { $0.titleEn.isEmpty ? $0.title : $0.titleEn })
+            // Per-line disruptions (set by `announcements` didSet above), so the
+            // All-Lines status widget reflects real closures instead of always
+            // claiming "Good Service".
+            WidgetBridge.publishLineDisruptions(lineDisruptions)
         } catch {
             self.error = "Could not reach Syrmos API"
             // keep showing cached content silently — don't flip back to empty
