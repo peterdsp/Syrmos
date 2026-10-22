@@ -10,6 +10,13 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.54 - 2026-10-22
+
+### Fixed (Android i18n audit, final)
+- Simulated-train detail card and the map marker title/snippet now show
+  localised station and line names (were Latin for Greek/Albanian/Italian).
+- The tracked-departure "current station" chip localises the station name.
+
 ## 3.0.0-beta.53 - 2026-10-22
 
 ### Fixed (Android i18n audit)
