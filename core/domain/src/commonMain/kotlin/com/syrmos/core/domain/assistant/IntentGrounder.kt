@@ -83,6 +83,7 @@ object IntentGrounder {
         for (st in vocabulary.stations) {
             for (raw in st.names) {
                 val name = AthensTransitParser.fold(raw)
+                if (name.isEmpty()) continue  // a punctuation-only name folds away; "".startsWith/contains matches everything (parity with resolveLine)
                 if (name == needle) return st.id
                 if (prefixHit == null && (name.startsWith(needle) || needle.startsWith(name))) prefixHit = st.id
                 if (containsHit == null && (name.contains(needle) || needle.contains(name))) containsHit = st.id
