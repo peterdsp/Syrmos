@@ -137,4 +137,54 @@ final class AirportServiceTests: XCTestCase {
         XCTAssertEqual(AirportServiceRows.etaLabel(minutes: 7, language: .english), "7 min")
         XCTAssertEqual(AirportServiceRows.etaLabel(minutes: 65, language: .english), "1h 5 min")
     }
+
+    // MARK: - Unified decode resilience (one bad row must not wipe all data)
+
+    func testUnifiedDecodeDropsOneMalformedRouteKeepsGood() throws {
+        // The malformed route is missing the non-optional UnifiedRoute fields, so
+        // decoding it throws; the lossy UnifiedOperatorData init must drop only it
+        // and still return the good route. Before the fix the whole payload decode
+        // threw, wiping every route/vehicle/arrival for both cities at once.
+        let json = """
+        {
+          "updated_at": "2026-10-22T00:00:00+00:00",
+          "operators": {
+            "oasa": {
+              "operator": "oasa",
+              "routes": [
+                {"operator":"oasa","route_id":"X95","public_name":"X95 Syntagma - Airport","origin":"Syntagma","destination":"Airport","airport":"ATH","color":"#E8792B","is_operational":true},
+                {"route_id":"BADROW"}
+              ],
+              "vehicles": [], "arrivals": [], "alerts": []
+            }
+          }
+        }
+        """.data(using: .utf8)!
+        let payload = try JSONDecoder().decode(AirportBusService.UnifiedPayload.self, from: json)
+        let routes = payload.operators?["oasa"]?.routes ?? []
+        XCTAssertEqual(routes.count, 1, "the good route survives; the malformed one is dropped")
+        XCTAssertEqual(routes.first?.route_id, "X95")
+    }
+
+    func testUnifiedDecodeSurvivesAMalformedArrivalRow() throws {
+        let json = """
+        {
+          "updated_at": "2026-10-22T00:00:00+00:00",
+          "operators": {
+            "oasa": {
+              "operator": "oasa", "routes": [], "vehicles": [], "alerts": [],
+              "arrivals": [
+                {"line_id":"X95","route_id":"X95","operator":"oasa","stop_id":"1","stop_name":"S","destination":"Airport","observed_at":"2026-10-22T00:00:00+00:00","estimated_minutes":5},
+                {"line_id":"X95"}
+              ]
+            }
+          }
+        }
+        """.data(using: .utf8)!
+        let payload = try JSONDecoder().decode(AirportBusService.UnifiedPayload.self, from: json)
+        let arrivals = payload.operators?["oasa"]?.arrivals ?? []
+        XCTAssertEqual(arrivals.count, 1, "the good arrival survives the malformed one")
+        XCTAssertEqual(arrivals.first?.estimated_minutes, 5)
+    }
+
 }
