@@ -69,6 +69,17 @@ class LineStatusGlanceWidget : GlanceAppWidget() {
                         }
                     }
                     lines.forEach { line ->
+                        // Reflect real per-line disruptions (published via the
+                        // snapshot) instead of always claiming "Good service".
+                        val severity = snapshot.disruptedLines[line]
+                            ?: snapshot.disruptedLines.entries.firstOrNull {
+                                AndroidLineTokens.normalize(it.key) == AndroidLineTokens.normalize(line)
+                            }?.value
+                        val statusText = when (severity) {
+                            "closure" -> widgetText("Service closed", "Διακοπή", "I mbyllur", "Interrotto")
+                            "warning" -> widgetText("Delays", "Καθυστερήσεις", "Vonesa", "Ritardi")
+                            else -> widgetText("Good service", "Κανονική λειτουργία", "Shërbim normal", "Servizio regolare")
+                        }
                         Row(
                             modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -76,8 +87,11 @@ class LineStatusGlanceWidget : GlanceAppWidget() {
                             GlanceLinePill(line, fontSize = 12.sp)
                             Spacer(GlanceModifier.width(10.dp))
                             Text(
-                                widgetText("Good service", "Κανονική λειτουργία", "Shërbim normal", "Servizio regolare"),
-                                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                                statusText,
+                                style = TextStyle(
+                                    color = if (severity != null) GlanceTheme.colors.error else GlanceTheme.colors.onSurfaceVariant,
+                                    fontSize = 13.sp,
+                                ),
                             )
                         }
                     }

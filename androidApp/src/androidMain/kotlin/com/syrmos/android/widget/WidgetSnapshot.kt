@@ -31,6 +31,8 @@ data class WidgetSnapshot(
     val nearby: List<NearbyStation> = emptyList(),
     val liveTrainCount: Int = 0,
     val liveUpdatedEpoch: Long = 0,
+    /** lineId -> severity ("warning" | "closure"); empty when all clear. */
+    val disruptedLines: Map<String, String> = emptyMap(),
 ) {
     val isLiveDataFresh: Boolean get() = liveTrainCount > 0 && (System.currentTimeMillis() - liveUpdatedEpoch) < 300_000
     companion object {
@@ -47,6 +49,7 @@ object SnapshotStore {
     private const val KEY_UPDATED = "updated"
     private const val KEY_LIVE_COUNT = "live_count"
     private const val KEY_LIVE_UPDATED = "live_updated"
+    private const val KEY_DISRUPTIONS = "disruptions"
     private const val ROW_SEP = ""
     private const val FIELD_SEP = ""
 
@@ -65,6 +68,7 @@ object SnapshotStore {
             .putLong(KEY_UPDATED, snapshot.updatedEpoch)
             .putInt(KEY_LIVE_COUNT, snapshot.liveTrainCount)
             .putLong(KEY_LIVE_UPDATED, snapshot.liveUpdatedEpoch)
+            .putString(KEY_DISRUPTIONS, snapshot.disruptedLines.entries.joinToString(",") { "${it.key}|${it.value}" })
             .apply()
     }
 
@@ -85,6 +89,10 @@ object SnapshotStore {
                 walkMinutes = f[2].toIntOrNull() ?: 0,
             )
         }
+        val disrupted = p.getString(KEY_DISRUPTIONS, "").orEmpty()
+            .split(",").filter { it.isNotEmpty() }
+            .mapNotNull { e -> e.split("|").takeIf { it.size == 2 }?.let { it[0] to it[1] } }
+            .toMap()
         return WidgetSnapshot(
             stationName = station,
             lastTrain = p.getString(KEY_LAST, null),
@@ -93,6 +101,7 @@ object SnapshotStore {
             nearby = nearby,
             liveTrainCount = p.getInt(KEY_LIVE_COUNT, 0),
             liveUpdatedEpoch = p.getLong(KEY_LIVE_UPDATED, 0),
+            disruptedLines = disrupted,
         )
     }
 

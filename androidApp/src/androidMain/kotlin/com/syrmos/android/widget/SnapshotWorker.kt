@@ -39,6 +39,7 @@ class SnapshotWorker(
 
     private val getNextDepartures: GetNextDeparturesUseCase by inject()
     private val stationRepository: StationRepositoryImpl by inject()
+    private val announcementsRepository: com.syrmos.core.data.sync.AnnouncementsRepository by inject()
 
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
@@ -73,11 +74,19 @@ class SnapshotWorker(
             )
         }
 
+        // Per-line disruptions for the status widget, so it stops claiming
+        // "Good service" for a closed line. Hydrated from the bundled snapshot
+        // (refreshed nightly), like the schedules; only warning/closure surface.
+        announcementsRepository.hydrateFromBundleIfNeeded()
+        val disruptions = announcementsRepository.lineDisruptions.value
+            .mapValues { it.value.name.lowercase() }
+            .filterValues { it == "warning" || it == "closure" }
+
         val deps = getNextDepartures
             .invoke(stationId, line, Direction.OUTBOUND, limit = 5)
             .firstOrNull()
             .orEmpty()
-        if (deps.isEmpty()) return BundledFallback.snapshot(now).copy(nearby = nearby)
+        if (deps.isEmpty()) return BundledFallback.snapshot(now).copy(nearby = nearby, disruptedLines = disruptions)
         val rows = deps.map { d ->
             WidgetRow(
                 lineId = AndroidLineTokens.label(d.lineId),
@@ -92,6 +101,7 @@ class SnapshotWorker(
             rows = rows,
             updatedEpoch = now,
             nearby = nearby,
+            disruptedLines = disruptions,
         )
     }
 
