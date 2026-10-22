@@ -10,6 +10,13 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.48 - 2026-10-22
+
+### Added / Fixed
+- iOS airport-bus route timetable shows the live per-stop ETA (from the new
+  per-stop arrivals) instead of "Unavailable".
+- iOS airport-bus detail sheet fully four-language (was leaking English).
+
 ## 3.0.0-beta.47 - 2026-10-22
 
 ### Fixed
