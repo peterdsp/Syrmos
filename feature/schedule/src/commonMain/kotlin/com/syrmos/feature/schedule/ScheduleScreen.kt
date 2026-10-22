@@ -109,12 +109,17 @@ fun ScheduleScreen() {
 
     var allLines by remember { mutableStateOf<List<Line>>(emptyList()) }
     var stationsOnLine by remember { mutableStateOf<List<Station>>(emptyList()) }
+    // Every station (not just the selected line's), so the projector can resolve
+    // a last-train override's raw endStationId or a trip's terminal station id
+    // into a display name instead of leaking "M1_PIR" into "Towards ...".
+    var allStations by remember { mutableStateOf<List<Station>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         scope.launch { sync.hydrateFromBundleIfNeeded() }
         scope.launch { offsetsRepo.hydrateFromBundleIfNeeded() }
         val lines = lineRepo.getAllLines().firstOrNull().orEmpty()
         allLines = lines.filter { it.isOperational }
+        allStations = stationRepo.getAllStations().firstOrNull().orEmpty()
     }
 
     // rememberSaveable, so a rotation or fold keeps the chosen day/line/station
@@ -151,7 +156,16 @@ fun ScheduleScreen() {
         }
     }
 
-    val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now, offsets) {
+    // id -> display name for the active language, so the projector emits a real
+    // destination (terminal / resolved station) rather than a raw id or the
+    // internal "outbound"/"inbound" direction token.
+    val stationNames = remember(allStations, lang) {
+        allStations.associate { it.id to stationDisplayName(it, lang) }
+    }
+    val outboundTerminal = selectedLine?.terminalB ?: ""
+    val inboundTerminal = selectedLine?.terminalA ?: ""
+
+    val departures = remember(bundles, dayOffset, selectedStationId, selectedLineId, now, offsets, stationNames, outboundTerminal, inboundTerminal) {
         if (selectedStationId.isEmpty() || selectedLineId.isEmpty()) emptyList()
         else DepartureProjection.compute(
             bundles = bundles,
@@ -160,6 +174,9 @@ fun ScheduleScreen() {
             lineId = selectedLineId,
             dayOffset = dayOffset,
             now = now,
+            stationNames = stationNames,
+            outboundTerminal = outboundTerminal,
+            inboundTerminal = inboundTerminal,
         )
     }
     val outbound = departures.filter { it.isOutbound }
@@ -833,6 +850,9 @@ internal object DepartureProjection {
         lineId: String,
         dayOffset: Int,
         now: LocalDateTime,
+        stationNames: Map<String, String> = emptyMap(),
+        outboundTerminal: String = "",
+        inboundTerminal: String = "",
     ): List<ProjectedDeparture> {
         val results = mutableListOf<ProjectedDeparture>()
         val targetDate = run {
@@ -861,6 +881,7 @@ internal object DepartureProjection {
                     stationId = stationId,
                     lineIdOut = lineId,
                     out = results,
+                    stationNames = stationNames,
                 )
             } else {
                 emitFromBands(
@@ -871,6 +892,9 @@ internal object DepartureProjection {
                     offsets = offsets,
                     lineIdOut = lineId,
                     out = results,
+                    stationNames = stationNames,
+                    outboundTerminal = outboundTerminal,
+                    inboundTerminal = inboundTerminal,
                 )
             }
         }
@@ -886,6 +910,9 @@ internal object DepartureProjection {
         offsets: StationOffsetsRepository,
         lineIdOut: String,
         out: MutableList<ProjectedDeparture>,
+        stationNames: Map<String, String> = emptyMap(),
+        outboundTerminal: String = "",
+        inboundTerminal: String = "",
     ) {
         val outOffset = stationOffset(offsets, bundle.lineId, "outbound", stationId)
         val inOffset = stationOffset(offsets, bundle.lineId, "inbound", stationId)
@@ -898,12 +925,17 @@ internal object DepartureProjection {
             val end = rawEnd + (if (rawEnd < rawStart) 24 * 60 else 0)
             val dir = (band.direction ?: "both").lowercase()
             data class DirEntry(val label: String, val offset: Int, val isOutbound: Boolean)
+            // The destination label is the line's terminal in that direction, never
+            // the band's internal time-band id ("early_morning") or the raw
+            // "outbound"/"inbound" token, which used to leak into "Towards ...".
+            val outLabel = outboundTerminal.ifBlank { "outbound" }
+            val inLabel = inboundTerminal.ifBlank { "inbound" }
             val directions: List<DirEntry> = when (dir) {
-                "outbound" -> listOf(DirEntry(band.label.ifBlank { "outbound" }, outOffset, true))
-                "inbound" -> listOf(DirEntry(band.label.ifBlank { "inbound" }, inOffset, false))
+                "outbound" -> listOf(DirEntry(outLabel, outOffset, true))
+                "inbound" -> listOf(DirEntry(inLabel, inOffset, false))
                 else -> listOf(
-                    DirEntry("outbound", outOffset, true),
-                    DirEntry("inbound", inOffset, false),
+                    DirEntry(outLabel, outOffset, true),
+                    DirEntry(inLabel, inOffset, false),
                 )
             }
             for ((label, stationOffset, isOutbound) in directions) {
@@ -918,7 +950,9 @@ internal object DepartureProjection {
                                 entry.fromStationId == stationId &&
                                 ((entry.time.toMinutesOfDay() ?: -1) - timeMin).let { delta -> delta in -1..1 }
                         }
-                        val destLabel = override?.endStationId ?: label
+                        // Resolve a last-train override's raw endStationId to a
+                        // display name; fall back to the resolved direction label.
+                        val destLabel = override?.endStationId?.let { stationNames[it] ?: it } ?: label
                         out.add(ProjectedDeparture(
                             time = time,
                             timeMinutes = timeMin,
@@ -940,6 +974,7 @@ internal object DepartureProjection {
         stationId: String,
         lineIdOut: String,
         out: MutableList<ProjectedDeparture>,
+        stationNames: Map<String, String> = emptyMap(),
     ) {
         for (trip in bundle.trips) {
             if (trip.dayType != dt) continue
@@ -949,7 +984,10 @@ internal object DepartureProjection {
             val display = ((depMin % (24 * 60)) + 24 * 60) % (24 * 60)
             val time = "${(display / 60).toString().padStart(2, '0')}:${(display % 60).toString().padStart(2, '0')}"
             val isOut = trip.direction.lowercase() != "inbound"
-            val dest = trip.stops.lastOrNull()?.stationId ?: trip.serviceLabel
+            // Resolve the terminal stop's raw station id to a display name so the
+            // row reads "Towards Piraeus", not "Towards M1_PIR".
+            val terminalId = trip.stops.lastOrNull()?.stationId
+            val dest = terminalId?.let { stationNames[it] ?: it } ?: trip.serviceLabel
             out.add(ProjectedDeparture(
                 time = time,
                 timeMinutes = depMin,
