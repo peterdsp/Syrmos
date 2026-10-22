@@ -148,11 +148,13 @@ struct AirportBusDetailSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(eta.map { $0 <= 1 ? detailText(language, "Arriving now", "Φτάνει τώρα", "Po mbërrin", "In arrivo") : "\($0) \(language == .greek ? "λεπ" : "min")" } ?? detailText(language, "No live vehicle currently reported", "Δεν αναφέρεται ζωντανό όχημα", "S'ka mjet të drejtpërdrejtë tani", "Nessun veicolo in diretta"))
                             .font(.system(size: 30, weight: .bold, design: .rounded))
-                        Text(eta == nil ? "This is not a live departure. Check the official operator information for current service." : "Direction at the airport stop: toward the airport")
+                        Text(eta == nil
+                             ? detailText(language, "This is not a live departure. Check the official operator information for current service.", "Δεν είναι ζωντανή αναχώρηση. Δες τις επίσημες πληροφορίες του παρόχου.", "Nuk është nisje e drejtpërdrejtë. Shih informacionet zyrtare të operatorit.", "Non è una partenza in diretta. Controlla le informazioni ufficiali dell'operatore.")
+                             : detailText(language, "Direction at the airport stop: toward the airport", "Κατεύθυνση στη στάση αεροδρομίου: προς το αεροδρόμιο", "Drejtimi te stacioni i aeroportit: drejt aeroportit", "Direzione alla fermata dell'aeroporto: verso l'aeroporto"))
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     Text(freshness).font(.caption).foregroundStyle(.secondary)
-                    Label("24-hour airport express service is shown as operator information, not as a guaranteed current departure.", systemImage: "info.circle")
+                    Label(detailText(language, "24-hour airport express service is shown as operator information, not as a guaranteed current departure.", "Το 24ωρο υπεραστικό αεροδρομίου εμφανίζεται ως πληροφορία παρόχου, όχι ως εγγυημένη τρέχουσα αναχώρηση.", "Shërbimi 24-orësh ekspres i aeroportit shfaqet si informacion operatori, jo si nisje e garantuar.", "Il servizio espresso aeroporto 24 ore è mostrato come informazione dell'operatore, non come partenza garantita."), systemImage: "info.circle")
                         .font(.caption).foregroundStyle(.secondary)
                     Button { openURL(bus.sourceURL) } label: {
                         Label(detailText(language, "Open official OASA information", "Άνοιγμα επίσημων πληροφοριών OASA", "Hap informacionet zyrtare OASA", "Apri le informazioni ufficiali OASA"), systemImage: "arrow.up.right.square")
@@ -285,7 +287,7 @@ struct UnifiedAirportBusDetailSheet: View {
                         Button {
                             openURL(sourceURL)
                         } label: {
-                            Label("Open official operator information", systemImage: "arrow.up.right.square")
+                            Label(detailText(language, "Open official operator information", "Άνοιγμα επίσημων πληροφοριών παρόχου", "Hap informacionet zyrtare të operatorit", "Apri le informazioni ufficiali dell'operatore"), systemImage: "arrow.up.right.square")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
