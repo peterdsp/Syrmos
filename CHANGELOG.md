@@ -10,6 +10,16 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.58 - 2026-10-23
+
+### Accessibility + widgets (chart-readiness)
+- VoiceOver: combined the home live-train and featured departure rows into one
+  spoken unit, added selected-state to filter/route chips, and let large text
+  scale/grow on the timetable + plan surfaces (Dynamic Type).
+- iOS Live Activity (Lock Screen / Dynamic Island) is now four-language.
+- The All-Lines status widget reflects real per-line disruptions on iOS instead
+  of always claiming "Good Service".
+
 ## 3.0.0-beta.57 - 2026-10-23
 
 ### Accessibility + widgets
