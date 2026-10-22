@@ -10,6 +10,16 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.49 - 2026-10-22
+
+### Fixed (assistant grounding)
+- Android Ariadne now answers transit questions (departures, routes, last
+  train, fares) from real on-device data FIRST; the cloud LLM is only a
+  fallback for genuinely out-of-scope questions, so schedule/route claims can
+  no longer be fabricated and transit questions stay on-device.
+- Both platforms tag a cloud assistant reply with an "AI answer" provenance
+  chip (four languages) so a chatty answer never reads as verified data.
+
 ## 3.0.0-beta.48 - 2026-10-22
 
 ### Added / Fixed
