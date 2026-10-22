@@ -11,7 +11,7 @@ struct WeatherCard: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(snapshot.placeName)
+                    Text(localizedPlace(snapshot.placeName))
                         .font(.subheadline).fontWeight(.semibold)
                         .foregroundStyle(.white.opacity(0.95))
                     Text(WeatherStyle.label(w.condition, loc.language))
@@ -78,6 +78,17 @@ struct WeatherCard: View {
 
     private func tri(_ en: String, _ el: String, _ sq: String, _ it: String? = nil) -> String {
         switch loc.language { case .greek: return el; case .albanian: return sq; case .italian: return it ?? en; default: return en }
+    }
+
+    /// Localize the weather city name (the store supplies it in Latin only), so a
+    /// Greek rider sees "Αθήνα", not "Athens".
+    private func localizedPlace(_ name: String) -> String {
+        switch name {
+        case "Athens": return tri("Athens", "Αθήνα", "Athinë", "Atene")
+        case "Thessaloniki": return tri("Thessaloniki", "Θεσσαλονίκη", "Selanik", "Salonicco")
+        case "Patras": return tri("Patras", "Πάτρα", "Patra", "Patrasso")
+        default: return name
+        }
     }
 }
 

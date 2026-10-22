@@ -61,7 +61,7 @@ enum AirportServiceRows {
         if !metroTimes.isEmpty {
             output.append(AirportListRow(
                 route: "M3",
-                destination: "Syntagma",
+                destination: t(language, "Syntagma", "Σύνταγμα", "Sintagma", "Syntagma"),
                 detail: t(language,
                           "Scheduled metro departure",
                           "Προγραμματισμένη αναχώρηση μετρό",
@@ -166,8 +166,8 @@ enum AirportServiceRows {
 
     private static func busLines(_ language: AppLanguage) -> [BusLine] {
         [
-            BusLine(line: "X95", destination: "Syntagma"),
-            BusLine(line: "X93", destination: "Kifisos"),
+            BusLine(line: "X95", destination: t(language, "Syntagma", "Σύνταγμα", "Sintagma", "Syntagma")),
+            BusLine(line: "X93", destination: t(language, "Kifisos", "Κηφισός", "Kifisos", "Kifisos")),
             BusLine(line: "X96", destination: t(language, "Piraeus", "Πειραιάς", "Pireus", "Pireo")),
             BusLine(line: "X97", destination: t(language, "Elliniko", "Ελληνικό", "Elliniko", "Elliniko")),
         ]

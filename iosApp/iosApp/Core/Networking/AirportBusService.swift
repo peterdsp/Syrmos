@@ -50,6 +50,13 @@ enum AirportBusService {
 
     // MARK: - Unified Normalized Model
 
+    /// Decodes `T`, or nil if that one element is malformed, so a single bad row
+    /// in an array never throws out the whole array (per-row resilience).
+    private struct FailableDecodable<T: Decodable>: Decodable {
+        let value: T?
+        init(from decoder: Decoder) throws { value = try? T(from: decoder) }
+    }
+
     /// Unified operator data from the new normalized endpoint
     struct UnifiedOperatorData: Decodable {
         let operatorId: String
@@ -62,6 +69,19 @@ enum AirportBusService {
         enum CodingKeys: String, CodingKey {
             case operatorId = "operator"
             case routes, vehicles, arrivals, alerts, source, attribution
+        }
+        // Lossy, defaulting decode: one malformed route/vehicle/arrival/alert is
+        // dropped (not fatal), and a missing array/operator id falls back to a
+        // safe empty, so a single bad field can't wipe ALL live airport-bus data.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            operatorId = ((try? c.decodeIfPresent(String.self, forKey: .operatorId)) ?? nil) ?? ""
+            routes = ((try? c.decodeIfPresent([FailableDecodable<UnifiedRoute>].self, forKey: .routes)) ?? [])?.compactMap { $0.value } ?? []
+            vehicles = ((try? c.decodeIfPresent([FailableDecodable<UnifiedVehicle>].self, forKey: .vehicles)) ?? [])?.compactMap { $0.value } ?? []
+            arrivals = ((try? c.decodeIfPresent([FailableDecodable<UnifiedArrival>].self, forKey: .arrivals)) ?? [])?.compactMap { $0.value } ?? []
+            alerts = ((try? c.decodeIfPresent([FailableDecodable<UnifiedAlert>].self, forKey: .alerts)) ?? [])?.compactMap { $0.value } ?? []
+            source = (try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil
+            attribution = (try? c.decodeIfPresent(String.self, forKey: .attribution)) ?? nil
         }
     }
 

@@ -365,7 +365,11 @@ final class STASYService: ObservableObject {
             cacheAnnouncements(parsed)
             // Surface the current alerts in the Weather + Alerts widget. Prefer
             // real service alerts, then fall back to general announcements.
-            let ranked = parsed.sorted { a, _ in a.category == .serviceAlert }
+            // Rank service alerts first with a valid strict-weak ordering (a
+            // comparator that ignores its second argument is not a strict-weak
+            // order and can mis-rank, surfacing a routine announcement as the
+            // widget headline).
+            let ranked = parsed.sorted { ($0.category == .serviceAlert ? 0 : 1) < ($1.category == .serviceAlert ? 0 : 1) }
             WidgetBridge.publishAlerts(ranked.map { $0.titleEn.isEmpty ? $0.title : $0.titleEn })
         } catch {
             self.error = "Could not reach Syrmos API"

@@ -1753,6 +1753,10 @@ private struct DirectionSection: View {
     private var currentTimeString: String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
+        // The departures being compared are pinned to Europe/Athens, so format
+        // "now" in the same zone; otherwise a device on another timezone (a
+        // tourist before arrival) mis-splits past vs upcoming by the UTC offset.
+        f.timeZone = TimeZone(identifier: "Europe/Athens")
         return f.string(from: SyrmosClock.now)
     }
 }

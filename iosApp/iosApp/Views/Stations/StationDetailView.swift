@@ -524,13 +524,13 @@ private struct HellenicTrainTicketSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(line.localizedName(loc.language))
                 .font(.title3.weight(.bold))
-            Text(loc.language == .greek ? "Αγορά εισιτηρίου για τον προαστιακό" : "Buy a suburban railway ticket")
+            Text(loc.language == .greek ? "Αγορά εισιτηρίου για τον προαστιακό" : loc.language == .albanian ? "Bli biletë për hekurudhën lokale" : loc.language == .italian ? "Acquista un biglietto ferroviario suburbano" : "Buy a suburban railway ticket")
                 .foregroundStyle(.secondary)
             Button {
                 dismiss()
                 safariURL = URL(string: "https://newtickets.hellenictrain.gr/Channels.HellenicTrainWeb/")
             } label: {
-                Label(loc.language == .greek ? "Αγορά στην Hellenic Train" : "Buy on Hellenic Train", systemImage: "ticket")
+                Label(loc.language == .greek ? "Αγορά στην Hellenic Train" : loc.language == .albanian ? "Bli te Hellenic Train" : loc.language == .italian ? "Acquista su Hellenic Train" : "Buy on Hellenic Train", systemImage: "ticket")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)

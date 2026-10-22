@@ -2426,7 +2426,7 @@ struct AirportBusVehicleDetailSheet: View {
                 }
                 .padding(20)
             }
-            .navigationTitle(language == .greek ? "Λεωφορείο" : "Bus")
+            .navigationTitle(language == .greek ? "Λεωφορείο" : language == .albanian ? "Autobusi" : language == .italian ? "Autobus" : "Bus")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -2460,7 +2460,7 @@ struct AirportBusRouteTimetableSheet: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(stop.stop_name)
-                            Text(language == .greek ? "Στάση \(stop.sequence ?? 0)" : "Stop \(stop.sequence ?? 0)")
+                            Text(language == .greek ? "Στάση \(stop.sequence ?? 0)" : language == .albanian ? "Ndalesa \(stop.sequence ?? 0)" : language == .italian ? "Fermata \(stop.sequence ?? 0)" : "Stop \(stop.sequence ?? 0)")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -2470,10 +2470,14 @@ struct AirportBusRouteTimetableSheet: View {
                     .accessibilityLabel("\(stop.stop_name), \(time(for: stop))")
                 }
             } header: {
-                Text(language == .greek ? "Ώρες ανά στάση" : "Times by stop")
+                Text(language == .greek ? "Ώρες ανά στάση" : language == .albanian ? "Oraret sipas ndalesës" : language == .italian ? "Orari per fermata" : "Times by stop")
             } footer: {
                 Text(language == .greek
                      ? "Οι χρόνοι είναι οι διαθέσιμοι από τον πάροχο. Η πραγματική κίνηση μπορεί να προκαλέσει μικρή διαφορά λίγων λεπτών."
+                     : language == .albanian
+                     ? "Këto janë oraret e ofruara nga operatori. Trafiku real mund të shkaktojë një diferencë të vogël prej disa minutash."
+                     : language == .italian
+                     ? "Questi sono gli orari forniti dall'operatore. Il traffico reale può causare una piccola differenza di alcuni minuti."
                      : "These are the times currently supplied by the operator. Real traffic may cause a small difference of a few minutes.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

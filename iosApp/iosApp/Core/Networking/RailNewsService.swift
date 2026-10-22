@@ -68,21 +68,24 @@ final class RailNewsService: ObservableObject {
 
     private struct APIPayload: Decodable {
         let updatedAt: String?
-        let count: Int
+        let count: Int?
         let news: [APINewsItem]
     }
 
+    // Only `id` is required: making the rest optional keeps one malformed row
+    // (a missing title/summary/url) from throwing the whole decode and blanking
+    // the entire News section, matching how STASYService was hardened.
     private struct APINewsItem: Decodable {
         let id: String
-        let title: String
+        let title: String?
         let titleEn: String?
         let titleSq: String?
         let titleIt: String?
-        let summary: String
+        let summary: String?
         let summaryEn: String?
         let summarySq: String?
         let summaryIt: String?
-        let url: String
+        let url: String?
         let publishedAt: String?
         let thumbnailUrl: String?
     }
@@ -103,15 +106,15 @@ final class RailNewsService: ObservableObject {
             let parsed = payload.news.map { item in
                 RailNewsItem(
                     id: item.id,
-                    title: item.title,
+                    title: item.title ?? "",
                     titleEn: item.titleEn ?? "",
                     titleSq: item.titleSq ?? "",
                     titleIt: item.titleIt ?? "",
-                    summary: item.summary,
+                    summary: item.summary ?? "",
                     summaryEn: item.summaryEn ?? "",
                     summarySq: item.summarySq ?? "",
                     summaryIt: item.summaryIt ?? "",
-                    url: URL(string: item.url),
+                    url: URL(string: item.url ?? ""),
                     publishedAt: item.publishedAt ?? "",
                     thumbnailUrl: item.thumbnailUrl ?? ""
                 )
