@@ -596,7 +596,12 @@ internal actual fun PlatformMapView(
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     icon = buildCapsuleTrainBitmap(res, lineColor, train.bearing)
                     title = "${train.lineName} > ${train.destinationName}"
-                    snippet = "Near ${train.currentStationName}"
+                    snippet = "${when (appLang) {
+                        com.syrmos.core.common.AppLanguage.GREEK -> "Κοντά σε"
+                        com.syrmos.core.common.AppLanguage.ALBANIAN -> "Pranë"
+                        com.syrmos.core.common.AppLanguage.ITALIAN -> "Vicino a"
+                        else -> "Near"
+                    }} ${train.currentStationName}"
                     setOnMarkerClickListener { _, _ ->
                         onTrainSelected(trainId)
                         true

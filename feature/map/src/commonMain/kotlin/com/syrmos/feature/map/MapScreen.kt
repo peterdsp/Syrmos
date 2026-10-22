@@ -308,25 +308,25 @@ fun MapScreen(
                 ) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("${bus.lineId} airport bus", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            IconButton(onClick = viewModel::clearBusSelection) { Icon(Icons.Filled.Close, "Close") }
+                            Text(vehicleText(lang, "${bus.lineId} airport bus", "Λεωφορείο αεροδρομίου ${bus.lineId}", "Autobus aeroporti ${bus.lineId}", "Autobus aeroporto ${bus.lineId}"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            IconButton(onClick = viewModel::clearBusSelection) { Icon(Icons.Filled.Close, vehicleText(lang, "Close", "Κλείσιμο", "Mbyll", "Chiudi")) }
                         }
-                        Text("Live vehicle position", color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
-                        Text("${route?.destination ?: "Destination unavailable from operator feed"}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Next stop: ${nextStop?.stop_name ?: "not supplied by the verified feed"}", style = MaterialTheme.typography.bodyMedium)
+                        Text(vehicleText(lang, "Live vehicle position", "Ζωντανή θέση οχήματος", "Pozicioni i mjetit në kohë reale", "Posizione del veicolo in tempo reale"), color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
+                        Text(route?.destination ?: vehicleText(lang, "Destination unavailable from operator feed", "Ο προορισμός δεν είναι διαθέσιμος από τον πάροχο", "Destinacioni s'është i disponueshëm nga operatori", "Destinazione non disponibile dal gestore"), style = MaterialTheme.typography.bodyMedium)
+                        Text("${vehicleText(lang, "Next stop", "Επόμενη στάση", "Ndalesa tjetër", "Prossima fermata")}: ${nextStop?.stop_name ?: vehicleText(lang, "not supplied by the verified feed", "δεν παρέχεται από την επαληθευμένη ροή", "s'jepet nga burimi i verifikuar", "non fornita dal feed verificato")}", style = MaterialTheme.typography.bodyMedium)
                         val etas = uiState.airportBusArrivals.filter { arrival ->
                             arrival.line_id == bus.lineId || arrival.route_id == bus.lineId
                         }.sortedBy { it.estimated_minutes ?: Int.MAX_VALUE }.take(3)
                         if (etas.isNotEmpty()) {
-                            Text("Next buses", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(vehicleText(lang, "Next buses", "Επόμενα λεωφορεία", "Autobusët e ardhshëm", "Prossimi autobus"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             etas.forEach { eta ->
-                                Text("${eta.stop_name}: ${eta.estimated_minutes?.let { "$it min" } ?: eta.scheduled_time ?: "time unavailable"}", style = MaterialTheme.typography.bodySmall)
+                                Text("${eta.stop_name}: ${eta.estimated_minutes?.let { "$it ${vehicleText(lang, "min", "λεπ", "min", "min")}" } ?: eta.scheduled_time ?: vehicleText(lang, "time unavailable", "ώρα μη διαθέσιμη", "ora s'disponohet", "orario non disponibile")}", style = MaterialTheme.typography.bodySmall)
                             }
                         } else {
-                            Text("Next-bus ETAs are not available from the current snapshot", style = MaterialTheme.typography.bodySmall)
+                            Text(vehicleText(lang, "Next-bus ETAs are not available from the current snapshot", "Οι χρόνοι επόμενων λεωφορείων δεν είναι διαθέσιμοι αυτή τη στιγμή", "Oraret e autobusëve të ardhshëm s'janë të disponueshme tani", "Gli orari dei prossimi autobus non sono disponibili al momento"), style = MaterialTheme.typography.bodySmall)
                         }
-                        Text("Speed: not supplied by the verified operator feed", style = MaterialTheme.typography.bodySmall)
-                        Text("Weather: use the free Open-Meteo weather card for the vehicle area", style = MaterialTheme.typography.bodySmall)
+                        Text(vehicleText(lang, "Speed: not supplied by the verified operator feed", "Ταχύτητα: δεν παρέχεται από τον επαληθευμένο πάροχο", "Shpejtësia: s'jepet nga operatori i verifikuar", "Velocità: non fornita dal gestore verificato"), style = MaterialTheme.typography.bodySmall)
+                        Text(vehicleText(lang, "Weather: use the free Open-Meteo weather card for the vehicle area", "Καιρός: χρησιμοποιήστε την κάρτα καιρού Open-Meteo για την περιοχή του οχήματος", "Moti: përdorni kartën e motit Open-Meteo për zonën e mjetit", "Meteo: usa la scheda meteo Open-Meteo per la zona del veicolo"), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

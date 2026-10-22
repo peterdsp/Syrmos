@@ -590,18 +590,71 @@ private fun FareResult(quote: FareQuote, lang: AppLanguage) {
             color = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = "${quote.product} · ${quote.operator}",
+            text = "${localizedFareProduct(quote.product, lang)} · ${quote.operator}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (!quote.note.isNullOrBlank() && quote.dynamic) {
             Text(
-                text = quote.note!!,
+                text = localizedFareNote(quote.note!!, lang),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
+}
+
+/// The domain ships fare product names and the dynamic-pricing note in English;
+/// map the known values to the active language so non-English riders don't see
+/// English on the fare result. Unknown values fall back to the original.
+private fun localizedFareProduct(product: String, lang: AppLanguage): String = when (product) {
+    "90-minute integrated ticket" -> when (lang) {
+        AppLanguage.GREEK -> "Ενιαίο εισιτήριο 90 λεπτών"
+        AppLanguage.ALBANIAN -> "Biletë e integruar 90-minutëshe"
+        AppLanguage.ITALIAN -> "Biglietto integrato da 90 minuti"
+        else -> product
+    }
+    "Airport Metro ticket (Line 3)" -> when (lang) {
+        AppLanguage.GREEK -> "Εισιτήριο μετρό αεροδρομίου (Γραμμή 3)"
+        AppLanguage.ALBANIAN -> "Biletë metroje për aeroportin (Linja 3)"
+        AppLanguage.ITALIAN -> "Biglietto metro aeroporto (Linea 3)"
+        else -> product
+    }
+    "Urban single ticket" -> when (lang) {
+        AppLanguage.GREEK -> "Αστικό απλό εισιτήριο"
+        AppLanguage.ALBANIAN -> "Biletë njëshe urbane"
+        AppLanguage.ITALIAN -> "Biglietto singolo urbano"
+        else -> product
+    }
+    "Suburban (peri-urban) single ticket" -> when (lang) {
+        AppLanguage.GREEK -> "Προαστιακό απλό εισιτήριο"
+        AppLanguage.ALBANIAN -> "Biletë njëshe periurbane"
+        AppLanguage.ITALIAN -> "Biglietto singolo suburbano"
+        else -> product
+    }
+    "Suburban ticket (zone A/B/C)" -> when (lang) {
+        AppLanguage.GREEK -> "Προαστιακό εισιτήριο (ζώνη Α/Β/Γ)"
+        AppLanguage.ALBANIAN -> "Biletë periurbane (zona A/B/C)"
+        AppLanguage.ITALIAN -> "Biglietto suburbano (zona A/B/C)"
+        else -> product
+    }
+    "Intercity / regional ticket" -> when (lang) {
+        AppLanguage.GREEK -> "Υπεραστικό / περιφερειακό εισιτήριο"
+        AppLanguage.ALBANIAN -> "Biletë ndërqytetëse / rajonale"
+        AppLanguage.ITALIAN -> "Biglietto intercity / regionale"
+        else -> product
+    }
+    else -> product
+}
+
+private fun localizedFareNote(note: String, lang: AppLanguage): String = when {
+    note.startsWith("Price is set at booking") -> when (lang) {
+        AppLanguage.GREEK -> "Η τιμή ορίζεται κατά την κράτηση (διαδρομή, θέση, ημερομηνία). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές 25-50%, νέοι κάτω των 24 25%, παιδιά 4-12 50%, ΑΜΕΑ 50% (συνολική έκπτωση έως 40%). Κλείστε για την ακριβή τιμή."
+        AppLanguage.ALBANIAN -> "Çmimi caktohet gjatë rezervimit (itinerari, klasa, data). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë 25-50%, të rinj nën 24 25%, fëmijë 4-12 50%, lëvizshmëri e reduktuar 50% (zbritja totale deri 40%). Rezervoni për çmimin e saktë."
+        AppLanguage.ITALIAN -> "Il prezzo è fissato alla prenotazione (percorso, classe, data). Sconti: prenotazione anticipata fino al 15%, andata e ritorno 20%, studenti 25-50%, giovani under 24 25%, bambini 4-12 50%, mobilità ridotta 50% (riduzione totale fino al 40%). Prenota per la tariffa esatta."
+        else -> note
+    }
+    else -> note
 }
 
 private fun stationLabel(st: Station, lang: AppLanguage): String =

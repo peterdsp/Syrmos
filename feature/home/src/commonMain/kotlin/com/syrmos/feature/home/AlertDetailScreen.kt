@@ -174,5 +174,10 @@ private fun severityLabel(severity: String, language: AppLanguage): String = whe
         AppLanguage.ITALIAN -> "Avviso"
         else -> "Warning"
     }
-    else -> "Info"
+    else -> when (language) {
+        AppLanguage.GREEK -> "Πληροφορία"
+        AppLanguage.ALBANIAN -> "Informacion"
+        AppLanguage.ITALIAN -> "Informazione"
+        else -> "Info"
+    }
 }
