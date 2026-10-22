@@ -10,6 +10,17 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.57 - 2026-10-23
+
+### Accessibility + widgets
+- VoiceOver: labelled the map "my location" button, made line-disruption
+  severity audible (was colour-only and hidden), combined the live tracking
+  card into one coherent spoken unit, made the saved-journey row activatable,
+  labelled the track-picker back button, and hid decorative emoji.
+- iOS widget: completed the Italian localisation (21 strings were English).
+- Android widget: the next-train countdown is recomputed at render so it no
+  longer freezes/goes stale (could show a departed train).
+
 ## 3.0.0-beta.56 - 2026-10-22
 
 ### Hardened
