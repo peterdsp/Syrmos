@@ -10,6 +10,18 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.50 - 2026-10-22
+
+### Fixed
+- Map: removed the two ugly straight lines that shot from the Thessaloniki
+  metro termini to the airport (crude X3/2X stubs); the real OSETH airport
+  routes are drawn from live data (iOS, Android, web).
+- Android schedule rows no longer leak raw internal IDs into "Towards ..."
+  (resolve the last-train/terminal station id and use line terminals).
+- Web: 10 audited defects fixed (raw line IDs in GO guidance and disruption
+  banners, i18n leaks, a "NaNh NaNmin" time, airport-bus ETA clamping, OSETH
+  route colour, a latent getRoutes crash, terminal-name language).
+
 ## 3.0.0-beta.49 - 2026-10-22
 
 ### Fixed (assistant grounding)
