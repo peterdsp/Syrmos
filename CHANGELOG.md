@@ -10,6 +10,13 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.47 - 2026-10-22
+
+### Fixed
+- Android airport-bus toggle now also hides the live bus vehicles, not only the
+  route lines and stop pins.
+- CI reliability: widened a flaky assistant-recovery test timeout.
+
 ## 3.0.0-beta.46 - 2026-10-22
 
 ### Added
