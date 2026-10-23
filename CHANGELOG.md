@@ -10,6 +10,32 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.0-beta.60 - 2026-10-23
+
+### Fixed
+- Airport bus-stop sheet no longer renders in a stale language (e.g. Greek
+  while the app is set to English). The stop, vehicle, and route-timetable
+  sheets now read the app language live from the shared LocalizationManager,
+  so they always match the rest of the app.
+- Bus-stop "Direction" now shows the stop's own direction, localized ("To the
+  airport" / "From the airport"), instead of the route-level value that was
+  often "unknown" for OASA routes like X96.
+- Ichnos quick report is more robust: a 20s timeout (was the 60s default) plus
+  one retry on a transient network or 5xx error. The report id is stable and
+  the server upserts by it, so a retry can never create a duplicate.
+- Fixed a Swift type-checker timeout in the Home live-train accessibility label
+  that was failing the iOS build.
+
+### Changed
+- When a bus stop has no live arrival, the sheet now explains that no bus is
+  approaching rather than showing a vague operator message. For the 24/7
+  airport express routes (X93/X95/X96/X97) it adds an approximate frequency
+  (e.g. "roughly every 20-45 min"), clearly labelled as approximate, since the
+  operator feed carries no timetable to show exact scheduled times.
+
+### Notes
+- Android versionCode 264 -> 265.
+
 ## 3.0.0-beta.59 - 2026-10-23
 
 ### Fixed
