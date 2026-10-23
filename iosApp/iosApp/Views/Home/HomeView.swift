@@ -1545,18 +1545,27 @@ struct HomeView: View {
                     // One spoken unit: "to" (not the "→" VoiceOver reads as "right
                     // arrow") and the live state in words (the dot is colour-only).
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(
-                        "\(train.lineId), "
-                        + "\(SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)) "
-                        + "\(loc.language == .greek ? "προς" : loc.language == .albanian ? "drejt" : loc.language == .italian ? "verso" : "to") "
-                        + "\(SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language)), "
-                        + "#\(train.trainNumber)"
-                        + (train.delayMinutes > 0 ? ", +\(train.delayMinutes) \(loc.language == .greek ? "λεπτά καθυστέρηση" : loc.language == .albanian ? "minuta vonesë" : loc.language == .italian ? "minuti ritardo" : "min delay")" : "")
-                        + ", \(loc.language == .greek ? "ζωντανά" : loc.language == .albanian ? "drejtpërdrejt" : loc.language == .italian ? "in diretta" : "live")"
-                    )
+                    .accessibilityLabel(liveTrainA11yLabel(train))
                 }
             }
         }
+    }
+
+    /// One spoken unit for a live train row: "to" (not the "→" VoiceOver reads as
+    /// "right arrow") and the live state in words (the dot is colour-only). Built
+    /// in steps so the Swift type-checker does not choke on a long ternary chain.
+    private func liveTrainA11yLabel(_ train: LiveTrain) -> String {
+        let origin = SyrmosData.resolveStation(train.origin, en: train.originEn, language: loc.language)
+        let destination = SyrmosData.resolveStation(train.destination, en: train.destinationEn, language: loc.language)
+        let toward: String = loc.language == .greek ? "προς" : loc.language == .albanian ? "drejt" : loc.language == .italian ? "verso" : "to"
+        var label = "\(train.lineId), \(origin) \(toward) \(destination), #\(train.trainNumber)"
+        if train.delayMinutes > 0 {
+            let delayUnit: String = loc.language == .greek ? "λεπτά καθυστέρηση" : loc.language == .albanian ? "minuta vonesë" : loc.language == .italian ? "minuti ritardo" : "min delay"
+            label += ", +\(train.delayMinutes) \(delayUnit)"
+        }
+        let liveWord: String = loc.language == .greek ? "ζωντανά" : loc.language == .albanian ? "drejtpërdrejt" : loc.language == .italian ? "in diretta" : "live"
+        label += ", \(liveWord)"
+        return label
     }
 
     @ViewBuilder

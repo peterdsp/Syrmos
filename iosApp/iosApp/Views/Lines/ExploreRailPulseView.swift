@@ -109,12 +109,24 @@ actor IchnosCommunityService {
             "platform": "ios",
             "locale": language.rawValue,
         ])
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            return (response as? HTTPURLResponse)?.statusCode == 200
-        } catch {
-            return false
+        // Fail fast instead of hanging on the 60s default, and retry once on a
+        // transient error. The reportId is stable and the server upserts by it,
+        // so a retry can never create a duplicate report.
+        request.timeoutInterval = 20
+        for attempt in 0..<2 {
+            do {
+                let (_, response) = try await URLSession.shared.data(for: request)
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if (200..<300).contains(code) { return true }
+                // A 4xx is a permanent rejection; retrying the same payload cannot help.
+                if (400..<500).contains(code) { return false }
+                // 5xx or an unexpected status: fall through and retry once.
+            } catch {
+                // Network error (timeout, dropped connection): fall through and retry once.
+            }
+            if attempt == 0 { try? await Task.sleep(nanoseconds: 900_000_000) }
         }
+        return false
     }
 
     func delete(reportId: String) async -> Bool {

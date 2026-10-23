@@ -442,7 +442,7 @@ struct TransitMapView: View {
                     .presentationContentInteraction(.scrolls)
             }
             .sheet(item: $tappedBusStop) { stop in
-                AirportBusStopDetailSheet(stop: stop, language: loc.language)
+                AirportBusStopDetailSheet(stop: stop)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
@@ -458,7 +458,7 @@ struct TransitMapView: View {
                         .presentationDragIndicator(.visible)
                         .presentationContentInteraction(.scrolls)
                 case .airportBus(let bus):
-                    AirportBusVehicleDetailSheet(vehicle: bus, language: loc.language)
+                    AirportBusVehicleDetailSheet(vehicle: bus)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                 }
@@ -498,7 +498,7 @@ struct TransitMapView: View {
                 case .live(let train):
                     TrainDetailSheet(train: train)
                 case .airportBus(let bus):
-                    AirportBusVehicleDetailSheet(vehicle: bus, language: loc.language)
+                    AirportBusVehicleDetailSheet(vehicle: bus)
                 }
             } else {
                 mapInspectorPlaceholder
@@ -2345,7 +2345,10 @@ final class SyrmosBusAnnotation: NSObject, MKAnnotation {
 
 struct AirportBusVehicleDetailSheet: View {
     let vehicle: AirportBusVehicle
-    let language: AppLanguage
+    // Live language (see AirportBusStopDetailSheet) so a sheet from the kept-alive
+    // Map tab never renders in a stale language.
+    @ObservedObject private var loc = LocalizationManager.shared
+    private var language: AppLanguage { loc.language }
     @ObservedObject private var service = LiveAirportBusService.shared
 
     private var route: AirportBusService.UnifiedRoute? {
@@ -2377,7 +2380,7 @@ struct AirportBusVehicleDetailSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     if let route {
                         NavigationLink {
-                            AirportBusRouteTimetableSheet(route: route, language: language)
+                            AirportBusRouteTimetableSheet(route: route)
                         } label: {
                             HStack(spacing: 12) {
                                 Label(vehicle.lineId, systemImage: "bus.fill")
@@ -2435,7 +2438,9 @@ struct AirportBusVehicleDetailSheet: View {
 
 struct AirportBusRouteTimetableSheet: View {
     let route: AirportBusService.UnifiedRoute
-    let language: AppLanguage
+    // Live language (see AirportBusStopDetailSheet) so it never renders stale.
+    @ObservedObject private var loc = LocalizationManager.shared
+    private var language: AppLanguage { loc.language }
     @ObservedObject private var service = LiveAirportBusService.shared
 
     private var stops: [AirportBusService.UnifiedStop] {
@@ -2505,11 +2510,36 @@ final class SyrmosBusStopAnnotation: NSObject, MKAnnotation {
 
 struct AirportBusStopDetailSheet: View {
     let stop: AirportBusStopNode
-    let language: AppLanguage
+    // Observe the language live instead of taking a captured snapshot: a sheet
+    // presented from a kept-alive Map tab could otherwise render in a stale
+    // language (e.g. the device default) after the user switched the app language.
+    @ObservedObject private var loc = LocalizationManager.shared
+    private var language: AppLanguage { loc.language }
     private func etaLabel(_ minutes: Int) -> String {
         if minutes <= 0 { return language == .greek ? "Τώρα" : language == .albanian ? "Tani" : language == .italian ? "Ora" : "Now" }
         let unit = language == .greek ? "λεπ" : "min"
         return "\(minutes) \(unit)"
+    }
+    private func directionLabel(_ raw: String?) -> String {
+        switch raw {
+        case "to_airport": return language == .greek ? "Προς το αεροδρόμιο" : language == .albanian ? "Drejt aeroportit" : language == .italian ? "Verso l'aeroporto" : "To the airport"
+        case "from_airport": return language == .greek ? "Από το αεροδρόμιο" : language == .albanian ? "Nga aeroporti" : language == .italian ? "Dall'aeroporto" : "From the airport"
+        default: return language == .greek ? "Άγνωστη" : language == .albanian ? "E panjohur" : language == .italian ? "Sconosciuta" : "Unknown"
+        }
+    }
+    /// Rough published frequency for the OASA 24/7 airport express routes. The
+    /// operator feed carries no timetable, so when no bus is approaching this
+    /// stop we show an approximate headway (clearly labelled) rather than an
+    /// empty list that reads as "no service". These are ballpark public-schedule
+    /// figures, not live data.
+    private var approxHeadwayMinutes: String? {
+        switch stop.route.route_id {
+        case "X95": return "15-35"
+        case "X96": return "20-45"
+        case "X93": return "30-50"
+        case "X97": return "45-70"
+        default: return nil
+        }
     }
 
     var body: some View {
@@ -2518,7 +2548,9 @@ struct AirportBusStopDetailSheet: View {
                 Label(stop.stop.stop_name, systemImage: "bus.fill").font(.title2.bold())
                 LabeledContent(language == .greek ? "Γραμμή" : language == .albanian ? "Linja" : language == .italian ? "Linea" : "Route", value: stop.route.localizedName(language))
                 LabeledContent(language == .greek ? "Κατεύθυνση" : language == .albanian ? "Drejtimi" : language == .italian ? "Direzione" : "Direction",
-                               value: stop.route.direction?.replacingOccurrences(of: "_", with: " ") ?? (language == .greek ? "Άγνωστη" : language == .albanian ? "E panjohur" : language == .italian ? "Sconosciuta" : "Unknown"))
+                               // Use the STOP's own direction (to_airport / from_airport);
+                               // the route-level direction is often "unknown".
+                               value: directionLabel(stop.stop.direction))
                 let live = (stop.stop.arrivals ?? []).filter { $0.estimated_minutes != nil }
                 if !live.isEmpty {
                     Text((language == .greek ? "Επόμενα λεωφορεία" : language == .albanian ? "Autobusët e ardhshëm" : language == .italian ? "Prossimi autobus" : "Next buses").uppercasedForDisplay(language))
@@ -2535,8 +2567,17 @@ struct AirportBusStopDetailSheet: View {
                     }
                     Text(language == .greek ? "Ζωντανά από τον πάροχο." : language == .albanian ? "Drejtpërdrejt nga operatori." : language == .italian ? "In diretta dall'operatore." : "Live from the operator.")
                         .font(.footnote).foregroundStyle(.secondary)
+                } else if let headway = approxHeadwayMinutes {
+                    // No live bus approaching, but this is a known 24/7 express
+                    // route: give an approximate frequency so the stop does not
+                    // read as dead, clearly marked as approximate (not live).
+                    Text(language == .greek ? "Κανένα λεωφορείο δεν πλησιάζει αυτή τη στάση αυτή τη στιγμή. Αυτό το εξπρές αεροδρομίου λειτουργεί 24/7, περίπου κάθε \(headway) λεπτά. Οι ζωντανές ώρες εμφανίζονται μόλις πλησιάσει ένα λεωφορείο." : language == .albanian ? "Asnjë autobus nuk po i afrohet kësaj ndalese tani. Ky ekspres i aeroportit punon 24/7, afërsisht çdo \(headway) minuta. Oraret e drejtpërdrejta shfaqen kur një autobus afrohet." : language == .italian ? "Nessun autobus è in avvicinamento a questa fermata al momento. Questo espresso aeroportuale opera 24/7, all'incirca ogni \(headway) min. Gli orari in diretta compaiono quando un autobus si avvicina." : "No bus is approaching this stop right now. This airport express runs 24/7, roughly every \(headway) min. Live times appear here as a bus gets near.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 } else {
-                    Text(language == .greek ? "Οι αφίξεις εμφανίζονται μόνο όταν παρέχονται από τον πάροχο." : language == .albanian ? "Mbërritjet shfaqen vetëm kur jepen nga operatori." : language == .italian ? "Gli arrivi compaiono solo quando forniti dall'operatore." : "Arrivals appear only when supplied by the operator.")
+                    // Non-express route with no timetable in the feed: say plainly
+                    // that no bus is approaching so an empty list does not read as
+                    // an app error.
+                    Text(language == .greek ? "Κανένα λεωφορείο δεν πλησιάζει αυτή τη στάση αυτή τη στιγμή. Οι ζωντανές ώρες εμφανίζονται εδώ μόλις πλησιάσει ένα λεωφορείο." : language == .albanian ? "Asnjë autobus nuk po i afrohet kësaj ndalese tani. Oraret e drejtpërdrejta shfaqen këtu kur një autobus afrohet." : language == .italian ? "Nessun autobus è in avvicinamento a questa fermata al momento. Gli orari in diretta compaiono qui quando un autobus si avvicina." : "No buses are approaching this stop right now. Live times appear here as a bus gets near.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Spacer()
