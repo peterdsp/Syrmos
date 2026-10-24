@@ -35,14 +35,15 @@ platform :ios do
       metadata_path: "./fastlane/metadata/ios",
       skip_binary_upload: true,
       skip_screenshots: true,
-      skip_app_version_update: false,
-      overwrite_screenshots: false,
+      # dry_run writes nothing (auth + app-access check only); a real run pushes
+      # the listing to the editable App Store version, which stays editable until
+      # submitted. Submission happens only when submit=true on a real run.
+      skip_metadata: dry_run,
       force: true,                      # no interactive HTML-preview confirmation
       run_precheck_before_submit: false,
       precheck_include_in_app_purchases: false,
       submit_for_review: (submit && !dry_run),
       automatic_release: false,
-      verify_only: dry_run,
       submission_information: { add_id_info_uses_idfa: false }
     )
   end
@@ -74,7 +75,11 @@ platform :android do
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: false,
-      skip_upload_changelogs: false,
+      # The changelog attaches to a specific track release, so only upload it
+      # while promoting the build (internal -> production). A listing-only push
+      # (promote=false) skips it, otherwise supply looks for the versionCode on
+      # the production track and fails before it is promoted there.
+      skip_upload_changelogs: !promote,
       skip_upload_images: true,
       skip_upload_screenshots: true,
       validate_only: dry_run
