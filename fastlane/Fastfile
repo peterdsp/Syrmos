@@ -71,7 +71,10 @@ platform :android do
       metadata_path: "./fastlane/metadata/android",
       track: (promote ? "internal" : track),
       track_promote_to: (promote ? "production" : nil),
-      version_code: (version_code.empty? ? nil : version_code.to_i),
+      # version_code is only meaningful when promoting a specific build; passing
+      # it for a listing-only push makes supply hunt for that release on the
+      # target track and fail before the build has been promoted there.
+      version_code: (promote && !version_code.empty? ? version_code.to_i : nil),
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: false,
