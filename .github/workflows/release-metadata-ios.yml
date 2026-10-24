@@ -1,0 +1,38 @@
+# Pushes the App Store listing + "What's New" from fastlane/metadata/ios to
+# App Store Connect, using the same App Store Connect API key the build upload
+# uses. Does NOT upload a binary. Manually triggered.
+#
+# Safe by default: dry_run=true validates only; set dry_run=false to push, and
+# submit=true to Submit for Review after the metadata update.
+name: Release metadata (iOS App Store)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate only (do not push to App Store Connect)"
+        type: boolean
+        default: true
+      submit:
+        description: "Submit for App Store review after updating metadata"
+        type: boolean
+        default: false
+
+jobs:
+  metadata:
+    name: Deliver App Store listing
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Deliver metadata
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          SUBMIT: ${{ inputs.submit }}
+        run: bundle exec fastlane ios release_metadata

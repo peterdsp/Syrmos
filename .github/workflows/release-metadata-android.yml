@@ -1,0 +1,42 @@
+# Pushes the Play Store listing + changelog from fastlane/metadata/android to
+# Google Play, using the same service account the build upload uses. Does NOT
+# upload an AAB. Can also promote an already-uploaded internal build to the
+# production track. Manually triggered.
+#
+# Safe by default: dry_run=true validates only; set dry_run=false to push, and
+# promote=true to move the given versionCode from internal to production.
+name: Release metadata (Google Play)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "AAB versionCode the changelog/promotion applies to"
+        required: true
+        default: "266"
+      dry_run:
+        description: "Validate only (do not push to Google Play)"
+        type: boolean
+        default: true
+      promote:
+        description: "Promote that versionCode from internal to production"
+        type: boolean
+        default: false
+
+jobs:
+  metadata:
+    name: Supply Play listing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Supply metadata
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          PROMOTE: ${{ inputs.promote }}
+        run: bundle exec fastlane android release_metadata

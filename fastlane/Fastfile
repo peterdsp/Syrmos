@@ -1,0 +1,83 @@
+# Store-listing + release-note delivery for Syrmos.
+#
+# These lanes push the metadata under fastlane/metadata/ (listing copy,
+# keywords, promotional text, and the "What's New" / changelog) to the stores.
+# They do NOT upload binaries: the IPA and AAB are built and uploaded by the
+# separate release-ios / release-android workflows on a v* tag. Authentication
+# is read from the same CI secrets those workflows use.
+#
+# Safety: review submission and production promotion are OFF unless explicitly
+# requested, so running a lane only updates the draft listing by default.
+
+default_platform(:ios)
+
+platform :ios do
+  # Push the App Store listing + "What's New" for the current 3.0.x version.
+  # options:
+  #   submit:    true to Submit for Review after updating metadata (default false)
+  #   dry_run:   true to validate only (precheck) without pushing
+  desc "Update App Store listing metadata (and optionally submit for review)"
+  lane :release_metadata do |options|
+    submit  = options.fetch(:submit,  ENV["SUBMIT"]  == "true")
+    dry_run = options.fetch(:dry_run, ENV["DRY_RUN"] == "true")
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_API_KEY_P8_BASE64"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.syrmosApp.ios",
+      metadata_path: "./fastlane/metadata/ios",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_app_version_update: false,
+      overwrite_screenshots: false,
+      force: true,                      # no interactive HTML-preview confirmation
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false,
+      submit_for_review: (submit && !dry_run),
+      automatic_release: false,
+      verify_only: dry_run,
+      submission_information: { add_id_info_uses_idfa: false }
+    )
+  end
+end
+
+platform :android do
+  # Push the Play listing + changelog for a versionCode, and optionally promote
+  # that build from the internal track to production.
+  # options:
+  #   version_code: the AAB versionCode the changelog belongs to (required to
+  #                 attach the changelog / promote); defaults to ENV VERSION_CODE
+  #   track:        listing track to update (default "production")
+  #   promote:      true to promote version_code from internal -> production
+  #   dry_run:      true to validate only
+  desc "Update Play Store listing + changelog (and optionally promote to production)"
+  lane :release_metadata do |options|
+    version_code = (options[:version_code] || ENV["VERSION_CODE"]).to_s
+    track    = options.fetch(:track, ENV["TRACK"] || "production")
+    promote  = options.fetch(:promote, ENV["PROMOTE"] == "true")
+    dry_run  = options.fetch(:dry_run, ENV["DRY_RUN"] == "true")
+
+    supply(
+      package_name: "com.syrmos.android",
+      json_key_data: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON"),
+      metadata_path: "./fastlane/metadata/android",
+      track: (promote ? "internal" : track),
+      track_promote_to: (promote ? "production" : nil),
+      version_code: (version_code.empty? ? nil : version_code.to_i),
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      validate_only: dry_run
+    )
+  end
+end

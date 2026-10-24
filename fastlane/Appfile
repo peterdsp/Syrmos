@@ -1,0 +1,11 @@
+# App identifiers for fastlane deliver (iOS) and supply (Android).
+# Authentication is via CI secrets (App Store Connect API key / Play service
+# account), not stored here. Team id YTS4KJBX3P.
+
+for_platform :ios do
+  app_identifier("com.syrmosApp.ios")
+end
+
+for_platform :android do
+  package_name("com.syrmos.android")
+end

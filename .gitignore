@@ -48,3 +48,8 @@ ops/syrmos-api/db/
 # See scripts/fetch-ariadne-model.sh and core/common/.../AriadneModelManifest.kt
 *.gguf
 iosApp/iosApp/Resources/model/
+
+# fastlane auto-generated artifacts (keep Appfile, Fastfile, metadata/)
+fastlane/report.xml
+fastlane/README.md
+fastlane/test_output
