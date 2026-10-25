@@ -1,0 +1,35 @@
+# Replaces ONLY the iPhone Duo screenshot set on the current App Store version
+# and resubmits it for review, via the App Store Connect API. Other devices'
+# screenshots are preserved. Manually triggered. Uses the same ASC API key as
+# the build upload.
+name: iPhone Duo screenshots (replace + resubmit)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'yes' to un-submit 3.0.0, replace the Duo screenshots, and resubmit for review"
+        required: true
+        default: "no"
+
+jobs:
+  duo:
+    name: Replace Duo screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Guard
+        run: |
+          if [ "${{ inputs.confirm }}" != "yes" ]; then
+            echo "confirm != yes; aborting (this un-submits and resubmits the version)"; exit 1
+          fi
+      - name: Replace Duo screenshots + resubmit
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+        run: bundle exec ruby scripts/asc_duo_screenshots.rb
