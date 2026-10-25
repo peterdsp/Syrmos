@@ -1,17 +1,9 @@
-Three-point-oh. The one that leaves the platform and actually goes somewhere.
+3.0.0
 
-Syrmos is no longer just "when is my train." It now plans the whole trip, catches the airport bus, and crosses to Thessaloniki.
+- Live airport buses: X93, X95, X96, X97 in Athens and OSETH in Thessaloniki, on the map and at the stop
+- Thessaloniki is in
+- Plan a route, with guidance and a leave-now reminder
+- Ichnos: flag a crowded or disrupted stop, anonymously
+- Italian joins English, Greek and Albanian
 
-• Airport buses, live. X93, X95, X96 and X97 in Athens, plus Thessaloniki, on the map and at the stop, with real positions when the operator is sharing them. Tap a stop to see what is actually coming.
-
-• Thessaloniki. Because Athens does not get to have all the transit anxiety.
-
-• Journeys. Plan a route, get step-by-step guidance, and set a leave-by reminder so your phone nudges you off the couch at the right minute. A Live Activity rides along on the Lock Screen.
-
-• Ichnos, community status. See and flag a crowded or disrupted stop, anonymously, so the next rider is not surprised the way you just were.
-
-• Italian joins English, Greek and Albanian. Ariadne answers offline in all four and still refuses to invent train times.
-
-Widgets, the Apple Watch app, complications and the Dynamic Island countdown are all still here, offline, in your language.
-
-Thank you for keeping Syrmos near the top of Navigation in Greece.
+Widgets, the Watch app and the Lock Screen countdown are still here. Ariadne still won't invent a train time.
