@@ -17,6 +17,10 @@ on:
         description: "Submit for App Store review after updating metadata"
         type: boolean
         default: false
+      screenshots_only:
+        description: "Upload only the screenshots in fastlane/screenshots (e.g. iPhone Duo), skip listing text"
+        type: boolean
+        default: false
 
 jobs:
   metadata:
@@ -35,4 +39,9 @@ jobs:
           ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
           DRY_RUN: ${{ inputs.dry_run }}
           SUBMIT: ${{ inputs.submit }}
-        run: bundle exec fastlane ios release_metadata
+        run: |
+          if [ "${{ inputs.screenshots_only }}" = "true" ]; then
+            bundle exec fastlane ios screenshots
+          else
+            bundle exec fastlane ios release_metadata
+          fi
