@@ -65,6 +65,9 @@ platform :ios do
       api_key: api_key,
       app_identifier: "com.syrmosApp.ios",
       screenshots_path: "./fastlane/screenshots",
+      # Scope metadata_path even though metadata is skipped: deliver still
+      # validates the dir and would otherwise choke on the ios/android subdirs.
+      metadata_path: "./fastlane/metadata/ios",
       skip_binary_upload: true,
       skip_metadata: true,
       skip_screenshots: false,
