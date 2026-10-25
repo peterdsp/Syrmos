@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Syrmos Support: contact, report a problem and answers</title>
+    <meta name="description" content="Get help with Syrmos. Contact the developer, report a problem or wrong data, request a feature, and read answers about offline use, coverage, tickets and privacy.">
+    <meta name="author" content="Petros Dhespollari">
+    <link rel="canonical" href="https://syrmos.peterdsp.dev/support/">
+    <meta name="theme-color" content="#07142B">
+    <link rel="icon" type="image/png" sizes="48x48" href="/product/img/syrmos-icon-48.png">
+    <link rel="apple-touch-icon" href="/product/img/syrmos-icon-180.png">
+    <meta name="apple-itunes-app" content="app-id=6777650671">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Syrmos">
+    <meta property="og:title" content="Syrmos Support">
+    <meta property="og:description" content="Contact, report a problem, request a feature, and answers about offline use, coverage, tickets and privacy.">
+    <meta property="og:url" content="https://syrmos.peterdsp.dev/support/">
+    <meta property="og:image" content="https://syrmos.peterdsp.dev/product/img/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_GB">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Syrmos Support">
+    <meta name="twitter:description" content="Contact, report a problem, and answers about Syrmos.">
+    <meta name="twitter:image" content="https://syrmos.peterdsp.dev/product/img/og.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": "How do I report a problem or wrong data?", "acceptedAnswer": {"@type": "Answer", "text": "Email info@peterdsp.dev with the line or station, what you saw and what you expected. Schedule and fare data comes from official operator sources and can change without notice; we correct what we can at the source."}},
+        {"@type": "Question", "name": "Does Syrmos work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, for stored information. Schedules and station details ship with the iOS and Android apps. Live times, positions and alerts need a connection, and every time is labelled live or scheduled."}},
+        {"@type": "Question", "name": "Can I buy tickets in Syrmos?", "acceptedAnswer": {"@type": "Answer", "text": "No. Syrmos shows fare information and links to the operator, such as Hellenic Train, where you complete the purchase."}},
+        {"@type": "Question", "name": "Do I need an account? What about my data?", "acceptedAnswer": {"@type": "Answer", "text": "No account. Location is optional and used only on your device to find nearby stations. Community reports are anonymous. To remove everything, delete the app."}}
+      ]
+    }
+    </script>
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            root.classList.add("js");
+            function isHandheldDevice(ua, maxTouchPoints) {
+                ua = ua || "";
+                if (/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|KFAPWI|PlayBook|BlackBerry|BB10|webOS|Opera Mini|IEMobile|Windows Phone/i.test(ua)) return true;
+                return /Macintosh/.test(ua) && (maxTouchPoints || 0) > 1;
+            }
+            if (isHandheldDevice(navigator.userAgent, navigator.maxTouchPoints)) root.classList.add("is-handheld");
+            var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            if (!reduce) root.classList.add("motion");
+            setTimeout(function () { if (!window.syrmosProductReady) root.classList.remove("motion"); }, 2500);
+        })();
+    </script>
+    <link rel="stylesheet" href="/product/product.css">
+    <script src="/product/product.js" defer></script>
+</head>
+<body class="product">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+    <div class="container site-header__inner">
+        <a class="brand" href="/product/" aria-label="Syrmos home">
+            <img class="brand__icon" src="/product/img/syrmos-icon-96.webp" alt="" width="36" height="36">
+            <span class="brand__word">Syrmos</span>
+        </a>
+        <nav class="site-nav" aria-label="Support page">
+            <a href="#contact">Contact</a>
+            <a href="#report">Report a problem</a>
+            <a href="#faq">Answers</a>
+            <a href="/product/">Product</a>
+        </nav>
+        <div class="site-header__actions">
+            <a class="btn btn--ghost site-header__get" href="#contact">Get help</a>
+            <a class="btn btn--primary web-only" href="/">Open web app</a>
+            <details class="menu">
+                <summary class="menu__toggle" aria-label="Menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </summary>
+                <nav class="menu__panel" aria-label="Support page menu">
+                    <a href="#contact">Contact</a>
+                    <a href="#report">Report a problem</a>
+                    <a href="#faq">Answers</a>
+                    <a href="/product/">Product</a>
+                </nav>
+            </details>
+        </div>
+    </div>
+</header>
+
+<main id="main">
+
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="container hero__grid">
+            <div class="hero__copy">
+                <p class="eyebrow eyebrow--dark"><span class="node" aria-hidden="true"></span>Support</p>
+                <h1 id="hero-title">Help with Syrmos.</h1>
+                <p class="hero__lead">One person builds Syrmos. Email gets a real reply, usually within a couple of days. Below: how to reach me, how to report a problem, and quick answers.</p>
+                <div class="platforms" role="group" aria-label="Contact">
+                    <a class="btn btn--primary btn--lg" href="mailto:info@peterdsp.dev?subject=Syrmos%20support">Email support</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="contact" aria-labelledby="contact-title">
+        <div class="container">
+            <header class="section-head" data-reveal>
+                <p class="eyebrow eyebrow--dark"><span class="node" aria-hidden="true"></span>Contact</p>
+                <h2 id="contact-title">Reach the developer.</h2>
+                <p class="section-lead">No ticket system, no bot. Email <a href="mailto:info@peterdsp.dev">info@peterdsp.dev</a> and you reach the person who makes the app.</p>
+            </header>
+            <div class="practical">
+                <article class="practical__item" data-reveal>
+                    <h3>Email</h3>
+                    <p><a href="mailto:info@peterdsp.dev?subject=Syrmos%20support">info@peterdsp.dev</a>. Say your device (iPhone, Android or web) and the app version if you can find it in Settings.</p>
+                </article>
+                <article class="practical__item" data-reveal>
+                    <h3>Response time</h3>
+                    <p>Usually within two days. Syrmos is an independent project, so thanks for your patience.</p>
+                </article>
+                <article class="practical__item" data-reveal>
+                    <h3>Privacy</h3>
+                    <p>No account needed. Location is optional and stays on your device. <a href="/privacy">Read the privacy policy</a>.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="report" aria-labelledby="report-title">
+        <div class="container">
+            <header class="section-head" data-reveal>
+                <p class="eyebrow eyebrow--dark"><span class="node" aria-hidden="true"></span>Report a problem</p>
+                <h2 id="report-title">Something wrong? Tell me what and where.</h2>
+                <p class="section-lead">The more precise, the faster the fix.</p>
+            </header>
+            <div class="practical">
+                <article class="practical__item" data-reveal>
+                    <h3>Wrong times or data</h3>
+                    <p>Name the line and station, what Syrmos showed, and what it should have been. Schedule and fare data comes from official operator sources, so some fixes happen at the source.</p>
+                    <p><a class="btn btn--ghost" href="mailto:info@peterdsp.dev?subject=Syrmos%20data%20issue&body=Line%2Fstation%3A%0AWhat%20I%20saw%3A%0AWhat%20I%20expected%3A%0ADevice%2Fversion%3A">Report wrong data</a></p>
+                </article>
+                <article class="practical__item" data-reveal>
+                    <h3>A bug or crash</h3>
+                    <p>Tell me what you did and what happened. A screenshot helps. Include your device and the app version.</p>
+                    <p><a class="btn btn--ghost" href="mailto:info@peterdsp.dev?subject=Syrmos%20bug&body=What%20I%20did%3A%0AWhat%20happened%3A%0ADevice%2Fversion%3A">Report a bug</a></p>
+                </article>
+                <article class="practical__item" data-reveal>
+                    <h3>Request a feature</h3>
+                    <p>Missing a line, a city or a feature? Tell me what you need and why.</p>
+                    <p><a class="btn btn--ghost" href="mailto:info@peterdsp.dev?subject=Syrmos%20feature%20request">Request a feature</a></p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="section railed railed--end" id="faq" aria-labelledby="faq-head">
+        <div class="container">
+            <header class="section-head section-head--center" data-reveal>
+                <p class="eyebrow eyebrow--dark"><span class="node node--terminus" aria-hidden="true"></span>Answers</p>
+                <h2 id="faq-head">Common questions.</h2>
+            </header>
+            <div class="faq" aria-labelledby="faq-head">
+                <details>
+                    <summary>Does Syrmos work offline?</summary>
+                    <p>Yes, for stored information. Schedules and station details ship with the iOS and Android apps; the web app stores them after your first online visit. Live times, positions and alerts need a connection, and every time is labelled live or scheduled.</p>
+                </details>
+                <details>
+                    <summary>Which regions are supported?</summary>
+                    <p>Athens metro, tram and suburban railway and the airport buses; Thessaloniki, including its airport buses; and national rail corridors. Syrmos does not cover every transport service in Greece.</p>
+                </details>
+                <details>
+                    <summary>Can I buy tickets in Syrmos?</summary>
+                    <p>No. Syrmos shows fare information and links to the operator, such as Hellenic Train, where you complete the purchase.</p>
+                </details>
+                <details>
+                    <summary>Do I need an account, and what happens to my data?</summary>
+                    <p>No account. Location is optional and used only on your device to find nearby stations. Community (Ichnos) reports are anonymous. To remove everything, delete the app.</p>
+                </details>
+                <details>
+                    <summary>What is Ariadne?</summary>
+                    <p>The in-app assistant. She answers in plain language, fully offline, from the schedule on your device, in English, Greek, Albanian or Italian, and never invents a time.</p>
+                </details>
+                <details>
+                    <summary>How do I change the language?</summary>
+                    <p>Open Settings in the app and choose English, Greek, Albanian or Italian. Widgets and the Apple Watch app follow the same choice.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="container site-footer__inner">
+        <div class="site-footer__brand">
+            <img src="/product/img/syrmos-icon-96.webp" alt="" width="28" height="28" loading="lazy">
+            <span>Syrmos</span>
+        </div>
+        <nav class="site-footer__links" aria-label="Footer">
+            <a href="/product/">Product</a>
+            <a class="web-only" href="/">Open web app</a>
+            <a href="/privacy">Privacy policy</a>
+            <a href="/press.html">Press kit</a>
+            <a href="https://peterdsp.dev">Developer: Petros Dhespollari</a>
+            <a href="https://github.com/peterdsp/Syrmos">Source code</a>
+        </nav>
+        <p class="site-footer__legal">Syrmos is an independent app. It is not affiliated with, endorsed by or connected to STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE or Hellenic Train. Schedule and fare information comes from official operator sources and can change without notice.</p>
+    </div>
+</footer>
+</body>
+</html>

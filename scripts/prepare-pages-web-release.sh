@@ -66,6 +66,14 @@ if [[ ! -f "$TARGET_DIR/product/index.html" ]]; then
     exit 1
 fi
 
+# The support page is a STANDALONE static page too (App Store / Play Support
+# URL at /support/). Like product/, it is kept out of the workspace loop and
+# must stay a real 200. Fail the release if it is missing.
+if [[ ! -f "$TARGET_DIR/support/index.html" ]]; then
+    echo "error: support/index.html is missing from the web release" >&2
+    exit 1
+fi
+
 # The web app is desktop only: index.html redirects phones and tablets to the
 # standalone download screen get-app/index.html (also kept out of the route
 # loop). Without it, every handheld visit would land on a 404.
