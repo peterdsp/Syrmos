@@ -73,8 +73,13 @@ puts "in-flight submissions: #{subs.map { |s| [s["id"], s.dig("attributes", "sta
 subs.each do |s|
   c, d = api(:patch, "/v1/reviewSubmissions/#{s["id"]}",
              { data: { type: "reviewSubmissions", id: s["id"], attributes: { canceled: true } } })
-  die("cancel #{s["id"]}", c, d) unless ok?(c)
-  puts "canceled #{s["id"]} -> #{d.dig("data", "attributes", "state")}"
+  if ok?(c)
+    puts "canceled #{s["id"]} -> #{d.dig("data", "attributes", "state")}"
+  else
+    # Already canceling/terminal (e.g. ENTITY_STATE_INVALID from a prior run):
+    # not fatal, the editable-version check below is the real gate.
+    puts "cancel #{s["id"]} returned HTTP #{c}; continuing (likely already canceling)"
+  end
 end
 
 # --- wait until a version is editable --------------------------------------
@@ -172,11 +177,20 @@ end
 die("screenshots still processing after timeout") unless processed
 
 # --- resubmit for review ---------------------------------------------------
-c, d = api(:post, "/v1/reviewSubmissions",
-           { data: { type: "reviewSubmissions", attributes: { platform: "IOS" },
-                     relationships: { app: { data: { type: "apps", id: app_id } } } } })
-die("create review submission", c, d) unless ok?(c)
-new_sub = d.dig("data", "id")
+new_sub = nil
+8.times do
+  c, d = api(:post, "/v1/reviewSubmissions",
+             { data: { type: "reviewSubmissions", attributes: { platform: "IOS" },
+                       relationships: { app: { data: { type: "apps", id: app_id } } } } })
+  if ok?(c)
+    new_sub = d.dig("data", "id")
+    break
+  end
+  # A still-canceling prior submission can block a new one; wait and retry.
+  puts "create review submission HTTP #{c}; retrying..."
+  sleep 10
+end
+die("create review submission (after retries)") unless new_sub
 c, d = api(:post, "/v1/reviewSubmissionItems",
            { data: { type: "reviewSubmissionItems",
                      relationships: { reviewSubmission: { data: { type: "reviewSubmissions", id: new_sub } },
