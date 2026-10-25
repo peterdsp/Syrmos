@@ -25,6 +25,9 @@ DISPLAY  = "APP_IPHONE_DUO"
 LOCALE   = "en-US"
 BASE     = "https://api.appstoreconnect.apple.com"
 SHOT_DIR = File.expand_path("../fastlane/screenshots/#{LOCALE}", __dir__)
+# RESUBMIT_ONLY=true skips cancel/delete/upload and just resubmits the version
+# whose screenshots were already uploaded by a prior run.
+SKIP_UPLOAD = ENV["RESUBMIT_ONLY"] == "true"
 
 def jwt
   kid = ENV.fetch("ASC_KEY_ID")
@@ -121,6 +124,7 @@ else
   puts "created #{DISPLAY} set: #{set_id}"
 end
 
+unless SKIP_UPLOAD
 # --- delete existing Duo screenshots ---------------------------------------
 code, data = api(:get, "/v1/appScreenshotSets/#{set_id}/appScreenshots?limit=50")
 die("list screenshots", code, data) unless ok?(code)
@@ -157,13 +161,14 @@ files.each do |path|
   die("commit #{name}", c, d) unless ok?(c)
   puts "uploaded #{name} (#{bytes.bytesize} bytes) -> #{sid}"
 end
+end # unless SKIP_UPLOAD
 
 # --- wait for screenshots to finish post-processing ------------------------
 # Resubmitting while an asset is still processing fails with
 # STATE_ERROR.ASSET_IN_POST_PROCESSING, so poll until all are COMPLETE.
 puts "waiting for screenshot processing..."
 processed = false
-60.times do
+120.times do
   code, data = api(:get, "/v1/appScreenshotSets/#{set_id}/appScreenshots?limit=50")
   states = (data["data"] || []).map { |s| s.dig("attributes", "assetDeliveryState", "state") }
   die("a screenshot failed processing: #{states}") if states.include?("FAILED")

@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "list = read-only inspect; replace = un-submit, swap Duo screenshots, resubmit"
+        description: "list = inspect; replace = swap Duo screenshots + resubmit; resubmit = resubmit already-uploaded shots"
         type: choice
-        options: [list, replace]
+        options: [list, replace, resubmit]
         default: list
       confirm:
         description: "For replace only: type 'yes' to un-submit and resubmit the version"
@@ -38,6 +38,11 @@ jobs:
               echo "replace requires confirm=yes; aborting"; exit 1
             fi
             bundle exec ruby scripts/asc_duo_screenshots.rb
+          elif [ "${{ inputs.mode }}" = "resubmit" ]; then
+            if [ "${{ inputs.confirm }}" != "yes" ]; then
+              echo "resubmit requires confirm=yes; aborting"; exit 1
+            fi
+            RESUBMIT_ONLY=true bundle exec ruby scripts/asc_duo_screenshots.rb
           else
             bundle exec ruby scripts/asc_list_screenshots.rb
           fi
