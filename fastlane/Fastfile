@@ -43,7 +43,9 @@ platform :ios do
       run_precheck_before_submit: false,
       precheck_include_in_app_purchases: false,
       submit_for_review: (submit && !dry_run),
-      automatic_release: false,
+      # Auto-release the moment Apple approves, instead of waiting for a manual
+      # "Release" tap (pending developer release).
+      automatic_release: true,
       submission_information: { add_id_info_uses_idfa: false }
     )
   end
