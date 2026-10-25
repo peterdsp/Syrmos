@@ -31,6 +31,8 @@ function stage(withProduct) {
   }
   fs.mkdirSync(path.join(src, 'get-app'));
   fs.copyFileSync(path.join(RES, 'get-app', 'index.html'), path.join(src, 'get-app', 'index.html'));
+  fs.mkdirSync(path.join(src, 'support'));
+  fs.copyFileSync(path.join(RES, 'support', 'index.html'), path.join(src, 'support', 'index.html'));
   return { tmp, src, out };
 }
 
