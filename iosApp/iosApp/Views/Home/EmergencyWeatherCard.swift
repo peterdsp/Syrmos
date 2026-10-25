@@ -8,6 +8,9 @@ import SwiftUI
 /// EmergencyWeatherCard so the two platforms match.
 struct EmergencyWeatherCard: View {
     let condition: WeatherCondition
+    /// What the warning leads with. Defaults to rain so existing call sites and
+    /// previews keep working.
+    var warningKind: WeatherWarningKind = .rain
     let language: AppLanguage
 
     @Environment(\.colorScheme) private var colorScheme
@@ -65,6 +68,10 @@ struct EmergencyWeatherCard: View {
                         .foregroundStyle(.primary)
                 }
             }
+
+            Text(caution)
+                .font(.subheadline).fontWeight(.medium)
+                .foregroundStyle(.primary)
 
             Text(body_)
                 .font(.subheadline)
@@ -134,12 +141,21 @@ struct EmergencyWeatherCard: View {
     }
 
     private var title: String {
-        let storm = condition == .thunderstorm
         switch language {
-        case .greek: return storm ? "Καταιγίδα σε εξέλιξη" : "Έντονη κακοκαιρία"
-        case .albanian: return storm ? "Stuhi në zhvillim" : "Mot i keq"
-        case .italian: return storm ? "Temporale in corso" : "Maltempo grave"
-        case .english: return storm ? "Storm in progress" : "Severe weather"
+        case .greek: return warningKind == .storm ? "Καταιγίδα σε εξέλιξη" : warningKind == .wind ? "Ισχυροί άνεμοι" : "Έντονη κακοκαιρία"
+        case .albanian: return warningKind == .storm ? "Stuhi në zhvillim" : warningKind == .wind ? "Erëra të forta" : "Mot i keq"
+        case .italian: return warningKind == .storm ? "Temporale in corso" : warningKind == .wind ? "Vento forte" : "Maltempo grave"
+        case .english: return warningKind == .storm ? "Storm in progress" : warningKind == .wind ? "Strong winds" : "Severe weather"
+        }
+    }
+    /// Explicit caution the user asked for: isolated showers can build locally
+    /// into storms with lightning, and strong gusts are dangerous. Always shown.
+    private var caution: String {
+        switch language {
+        case .greek: return "Μικρής κλίμακας μπόρες μπορεί κατά τόπους να ενταθούν σε καταιγίδες με κεραυνούς και ριπές ανέμου. Μείνε προσεκτικός και απόφυγε ανοιχτούς χώρους όταν αστράφτει."
+        case .albanian: return "Reshjet lokale mund të forcohen vende-vende në stuhi me vetëtima dhe erëra të forta. Ki kujdes dhe shmang hapësirat e hapura kur ka vetëtima."
+        case .italian: return "Rovesci isolati possono intensificarsi a tratti in temporali con fulmini e forti raffiche. Fai attenzione ed evita spazi aperti durante i lampi."
+        case .english: return "Isolated showers can build in places into storms with lightning and strong gusts. Stay careful and avoid open spaces when it is lightning."
         }
     }
     private var subtitle: String {

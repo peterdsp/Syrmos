@@ -524,16 +524,17 @@ struct HomeView: View {
     @ViewBuilder
     private var weatherContextSection: some View {
         if let snapshot = weather.snapshot {
-            if snapshot.current.condition.isSevere || forceEmergencyPreview {
+            if snapshot.showsWeatherWarning || forceEmergencyPreview {
                 EmergencyWeatherCard(
                     condition: forceEmergencyPreview ? .thunderstorm : snapshot.current.condition,
+                    warningKind: forceEmergencyPreview ? .storm : snapshot.weatherWarningKind,
                     language: loc.language
                 )
             } else if snapshot.current.condition.isWet {
                 WeatherCard(snapshot: snapshot)
             }
         } else if forceEmergencyPreview {
-            EmergencyWeatherCard(condition: .thunderstorm, language: loc.language)
+            EmergencyWeatherCard(condition: .thunderstorm, warningKind: .storm, language: loc.language)
         }
     }
 

@@ -63,6 +63,13 @@ struct HourlyForecast: Identifiable {
     var condition: WeatherCondition { .fromCode(weatherCode) }
 }
 
+/// What the on-Home weather warning is about, so the card can speak plainly.
+enum WeatherWarningKind {
+    case storm   // thunderstorm now or imminent
+    case wind    // dangerous wind, rain or not
+    case rain    // rain / showers / drizzle / snow
+}
+
 struct WeatherSnapshot {
     let current: CurrentWeather
     let placeName: String
@@ -70,6 +77,33 @@ struct WeatherSnapshot {
     var highC: Double?
     var lowC: Double?
     var hourly: [HourlyForecast] = []
+
+    /// Sustained wind at or above this (km/h) is a warning on its own. Open-Meteo
+    /// reports wind_speed_10m; 45+ is a strong, umbrella-wrecking wind in Athens.
+    private var windyThresholdKph: Double { 45 }
+
+    /// Whether any severe weather is happening now OR within the next few hours.
+    /// Keyed off the forecast, not just the current instant, so the warning stays
+    /// up through the dry gaps between showers instead of flickering off, and so a
+    /// rainy day reads as a rainy day from the morning.
+    var showsWeatherWarning: Bool {
+        if current.condition.isSevere { return true }
+        if current.precipitationMm >= 0.1 { return true }
+        if current.windKph >= windyThresholdKph { return true }
+        return hourly.prefix(4).contains { $0.condition.isSevere }
+    }
+
+    /// The headline the warning should lead with.
+    var weatherWarningKind: WeatherWarningKind {
+        if current.condition == .thunderstorm
+            || hourly.prefix(4).contains(where: { $0.condition == .thunderstorm }) {
+            return .storm
+        }
+        if current.windKph >= windyThresholdKph && !current.condition.isWet {
+            return .wind
+        }
+        return .rain
+    }
 }
 
 @MainActor
