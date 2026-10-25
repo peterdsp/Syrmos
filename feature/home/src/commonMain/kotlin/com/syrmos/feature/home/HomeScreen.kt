@@ -110,6 +110,8 @@ import com.syrmos.core.model.transit.LineType
 import com.syrmos.core.model.transit.LiveSuburbanTrain
 import com.syrmos.core.model.transit.Station
 import com.syrmos.core.model.weather.WeatherSnapshot
+import com.syrmos.core.model.weather.showsWeatherWarning
+import com.syrmos.core.model.weather.weatherWarningKind
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.RailNewsItem
 import com.syrmos.core.network.STASYAnnouncement
@@ -371,8 +373,8 @@ fun HomeScreen(
 
         val weather = uiState.weather
         if (weather != null) {
-            if (weather.current.condition.isSevere) {
-                item { Box(Modifier.staggeredEntrance(2)) { EmergencyWeatherCard(condition = weather.current.condition, lang = lang) } }
+            if (weather.showsWeatherWarning) {
+                item { Box(Modifier.staggeredEntrance(2)) { EmergencyWeatherCard(condition = weather.current.condition, warningKind = weather.weatherWarningKind, lang = lang) } }
             } else if (weather.current.condition.isWet) {
                 item { Box(Modifier.staggeredEntrance(2)) { WeatherCard(snapshot = weather, lang = lang) } }
             }
@@ -538,6 +540,8 @@ private fun trackAnyLabel(lang: AppLanguage) = when (lang) {
 @Composable
 private fun EmergencyWeatherCard(
     condition: com.syrmos.core.model.weather.WeatherCondition,
+    warningKind: com.syrmos.core.model.weather.WeatherWarningKind =
+        com.syrmos.core.model.weather.WeatherWarningKind.RAIN,
     lang: AppLanguage,
 ) {
     val infinite = rememberInfiniteTransition(label = "rainDrops")
@@ -604,7 +608,7 @@ private fun EmergencyWeatherCard(
                 }
                 Column {
                     Text(
-                        text = emergencyTitle(condition, lang),
+                        text = emergencyTitle(warningKind, lang),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = amber,
@@ -616,6 +620,12 @@ private fun EmergencyWeatherCard(
                     )
                 }
             }
+            Text(
+                text = emergencyCaution(lang),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
             Text(
                 text = emergencyBody(lang),
                 style = MaterialTheme.typography.bodyMedium,
@@ -687,14 +697,22 @@ private fun tapHintLabel(lang: AppLanguage): String = when (lang) {
     else -> "Tap a number to call."
 }
 
-private fun emergencyTitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String {
-    val storm = condition == com.syrmos.core.model.weather.WeatherCondition.THUNDERSTORM
+private fun emergencyTitle(kind: com.syrmos.core.model.weather.WeatherWarningKind, lang: AppLanguage): String {
+    val storm = kind == com.syrmos.core.model.weather.WeatherWarningKind.STORM
+    val wind = kind == com.syrmos.core.model.weather.WeatherWarningKind.WIND
     return when (lang) {
-        AppLanguage.GREEK -> if (storm) "Καταιγίδα σε εξέλιξη" else "Έντονη κακοκαιρία"
-        AppLanguage.ALBANIAN -> if (storm) "Stuhi në zhvillim" else "Mot i keq"
-        AppLanguage.ITALIAN -> if (storm) "Temporale in corso" else "Maltempo severo"
-        else -> if (storm) "Storm in progress" else "Severe weather"
+        AppLanguage.GREEK -> if (storm) "Καταιγίδα σε εξέλιξη" else if (wind) "Ισχυροί άνεμοι" else "Έντονη κακοκαιρία"
+        AppLanguage.ALBANIAN -> if (storm) "Stuhi në zhvillim" else if (wind) "Erëra të forta" else "Mot i keq"
+        AppLanguage.ITALIAN -> if (storm) "Temporale in corso" else if (wind) "Vento forte" else "Maltempo severo"
+        else -> if (storm) "Storm in progress" else if (wind) "Strong winds" else "Severe weather"
     }
+}
+/** The explicit caution: isolated showers can build into storms with lightning. */
+private fun emergencyCaution(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> "Μικρής κλίμακας μπόρες μπορεί κατά τόπους να ενταθούν σε καταιγίδες με κεραυνούς και ριπές ανέμου. Μείνε προσεκτικός και απόφυγε ανοιχτούς χώρους όταν αστράφτει."
+    AppLanguage.ALBANIAN -> "Reshjet lokale mund të forcohen vende-vende në stuhi me vetëtima dhe erëra të forta. Ki kujdes dhe shmang hapësirat e hapura kur ka vetëtima."
+    AppLanguage.ITALIAN -> "Rovesci isolati possono intensificarsi a tratti in temporali con fulmini e forti raffiche. Fai attenzione ed evita spazi aperti durante i lampi."
+    else -> "Isolated showers can build in places into storms with lightning and strong gusts. Stay careful and avoid open spaces during lightning."
 }
 private fun emergencySubtitle(condition: com.syrmos.core.model.weather.WeatherCondition, lang: AppLanguage): String = when (lang) {
     AppLanguage.GREEK -> "Πρόσεχε στη μετακίνηση."

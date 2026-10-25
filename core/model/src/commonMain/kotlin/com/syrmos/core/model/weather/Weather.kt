@@ -29,6 +29,41 @@ data class WeatherSnapshot(
     val hourly: List<HourlyForecast> = emptyList(),
 )
 
+/** What the on-Home weather warning leads with, so the card can speak plainly. */
+enum class WeatherWarningKind { STORM, WIND, RAIN }
+
+/** Sustained wind at or above this (km/h) is a warning on its own. */
+private const val WINDY_THRESHOLD_KPH = 45.0
+
+/**
+ * Whether the Home warning should show: severe now OR within the next few
+ * hours, measurable precipitation, or dangerous wind. Keyed off the forecast,
+ * not just the current instant, so a rainy/windy day reads as one all day
+ * instead of flickering off in the dry gaps between showers. Unlike
+ * [WeatherCondition.isSevere] this also covers plain rain and drizzle.
+ */
+val WeatherSnapshot.showsWeatherWarning: Boolean
+    get() {
+        val c = current.condition
+        if (c.isSevere || c == WeatherCondition.RAIN || c == WeatherCondition.DRIZZLE) return true
+        if (current.precipitationMm >= 0.1) return true
+        if (current.windKph >= WINDY_THRESHOLD_KPH) return true
+        return hourly.take(4).any {
+            it.condition.isSevere || it.condition == WeatherCondition.RAIN
+        }
+    }
+
+/** The headline the warning leads with. */
+val WeatherSnapshot.weatherWarningKind: WeatherWarningKind
+    get() = when {
+        current.condition == WeatherCondition.THUNDERSTORM ||
+            hourly.take(4).any { it.condition == WeatherCondition.THUNDERSTORM } ->
+            WeatherWarningKind.STORM
+        current.windKph >= WINDY_THRESHOLD_KPH && !current.condition.isWet ->
+            WeatherWarningKind.WIND
+        else -> WeatherWarningKind.RAIN
+    }
+
 /** One point in the next-hours strip shown on the weather card. */
 data class HourlyForecast(
     /** "14:00" style label. */
