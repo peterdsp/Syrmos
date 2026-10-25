@@ -153,6 +153,24 @@ files.each do |path|
   puts "uploaded #{name} (#{bytes.bytesize} bytes) -> #{sid}"
 end
 
+# --- wait for screenshots to finish post-processing ------------------------
+# Resubmitting while an asset is still processing fails with
+# STATE_ERROR.ASSET_IN_POST_PROCESSING, so poll until all are COMPLETE.
+puts "waiting for screenshot processing..."
+processed = false
+60.times do
+  code, data = api(:get, "/v1/appScreenshotSets/#{set_id}/appScreenshots?limit=50")
+  states = (data["data"] || []).map { |s| s.dig("attributes", "assetDeliveryState", "state") }
+  die("a screenshot failed processing: #{states}") if states.include?("FAILED")
+  if !states.empty? && states.all? { |s| s == "COMPLETE" }
+    processed = true
+    puts "all screenshots COMPLETE"
+    break
+  end
+  sleep 5
+end
+die("screenshots still processing after timeout") unless processed
+
 # --- resubmit for review ---------------------------------------------------
 c, d = api(:post, "/v1/reviewSubmissions",
            { data: { type: "reviewSubmissions", attributes: { platform: "IOS" },
