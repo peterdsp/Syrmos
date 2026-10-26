@@ -22,7 +22,11 @@
 // web-station-board.js module and the station-complex registry must all reach an
 // ALREADY-INSTALLED worker, so the version bump is what makes returning users
 // receive the update rather than a cached single-direction card.
-const VERSION = "v4";
+// v5: the airport-bus route lines + stops on the web map (Athens X93/95/96/97
+// and Thessaloniki OSETH) shipped in web-map.js, but returning users were still
+// served a cached shell pointing at the pre-airport web-map hash. Bump so an
+// already-installed worker re-precaches the real shell and picks up the new map.
+const VERSION = "v5";
 const CACHE = `syrmos-${VERSION}`;
 const TILE_CACHE = `syrmos-tiles-${VERSION}`;
 const TILE_MAX = 300; // opportunistic, capped: only tiles the user actually viewed
