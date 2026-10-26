@@ -50,19 +50,32 @@ code, data = api(:get, "/v1/apps?filter[bundleId]=#{BUNDLE}")
 app_id = data.dig("data", 0, "id") or die("app lookup", code, data)
 puts "app: #{app_id}"
 
-# Cancel any in-flight review submission (tolerant of already-canceling).
-_, subs = api(:get, "/v1/reviewSubmissions?filter[app]=#{app_id}&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES")
-(subs["data"] || []).each do |s|
-  c, _ = api(:patch, "/v1/reviewSubmissions/#{s["id"]}", { data: { type: "reviewSubmissions", id: s["id"], attributes: { canceled: true } } })
-  puts "cancel #{s["id"]}: HTTP #{c}"
+# Diagnose + clear EVERY in-flight review submission. A submission stuck in
+# CANCELING holds the version hostage, so delete that one outright; cancel the
+# rest. Terminal COMPLETE submissions are left alone.
+_, allsubs = api(:get, "/v1/reviewSubmissions?filter[app]=#{app_id}&limit=50")
+(allsubs["data"] || []).each do |s|
+  st = s.dig("attributes", "state")
+  puts "submission #{s["id"]} state=#{st}"
+  next if st == "COMPLETE"
+  if st == "CANCELING"
+    c, _ = api(:delete, "/v1/reviewSubmissions/#{s["id"]}")
+    puts "  delete stuck CANCELING -> HTTP #{c}"
+  else
+    c, _ = api(:patch, "/v1/reviewSubmissions/#{s["id"]}",
+               { data: { type: "reviewSubmissions", id: s["id"], attributes: { canceled: true } } })
+    puts "  cancel -> HTTP #{c}"
+  end
 end
 
 # Wait for the version to be editable.
 editable = %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED METADATA_REJECTED REJECTED]
 version_id = nil
-30.times do
+48.times do |i|
   _, v = api(:get, "/v1/apps/#{app_id}/appStoreVersions?limit=10")
-  hit = (v["data"] || []).find { |x| x.dig("attributes", "versionString") == VERSION && editable.include?(x.dig("attributes", "appStoreState")) }
+  mine = (v["data"] || []).select { |x| x.dig("attributes", "versionString") == VERSION }
+  puts "  [#{i}] #{VERSION} states: #{mine.map { |x| x.dig("attributes", "appStoreState") }}" if i % 4 == 0
+  hit = mine.find { |x| editable.include?(x.dig("attributes", "appStoreState")) }
   if hit
     version_id = hit["id"]
     puts "editable version #{VERSION}: #{version_id} (#{hit.dig("attributes", "appStoreState")})"
