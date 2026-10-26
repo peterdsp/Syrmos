@@ -83,9 +83,25 @@ def _adjust_daily_aggregate(
     )
 
 
+def _normalize_scope_id(raw: Any) -> str:
+    """Coerce any scope into a backend-valid ASCII id so a report is never lost
+    over encoding. A Greek station name (e.g. the origin label) is hashed to a
+    stable scope_<hex> (FNV-1a, matching the iOS/Android client hash)."""
+    value = str(raw or "").strip()
+    if not value:
+        return "network"
+    if SCOPE_ID_RE.fullmatch(value):
+        return value
+    h = 14695981039346656037
+    for b in value.encode("utf-8"):
+        h ^= b
+        h = (h * 1099511628211) & 0xFFFFFFFFFFFFFFFF
+    return f"scope_{h:x}"
+
+
 def validate_report(payload: dict[str, Any]) -> dict[str, str]:
     report_id = str(payload.get("reportId", "")).strip()
-    scope_id = str(payload.get("scopeId", "")).strip()
+    scope_id = _normalize_scope_id(payload.get("scopeId"))
     scope_label = str(payload.get("scopeLabel", "")).strip()
     signal = str(payload.get("signal", "")).strip().lower()
     detail = str(payload.get("detail", "")).strip()
@@ -94,8 +110,6 @@ def validate_report(payload: dict[str, Any]) -> dict[str, str]:
 
     if not REPORT_ID_RE.fullmatch(report_id):
         raise ValueError("invalid reportId")
-    if not SCOPE_ID_RE.fullmatch(scope_id):
-        raise ValueError("invalid scopeId")
     if not scope_label or len(scope_label) > 160:
         raise ValueError("scopeLabel required")
     if signal not in VALID_SIGNALS:
@@ -345,8 +359,8 @@ def history(
         raise ValueError("period must be day, month, or year")
     if not 1 <= limit <= 366:
         raise ValueError("limit must be between 1 and 366")
-    if scope_id is not None and not SCOPE_ID_RE.fullmatch(scope_id):
-        raise ValueError("invalid scopeId")
+    if scope_id is not None:
+        scope_id = _normalize_scope_id(scope_id)
 
     period_expression = {
         "day": "report_day",

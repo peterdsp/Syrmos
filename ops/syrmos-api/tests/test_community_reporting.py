@@ -130,3 +130,30 @@ class CommunityReportingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NormalizeScopeTests(unittest.TestCase):
+    def test_greek_scope_is_normalized_not_rejected(self):
+        from syrmos_admin.community import validate_report
+        row = validate_report({
+            "reportId": "report_0123456789abcdef",
+            "scopeId": "Νίκαια",
+            "scopeLabel": "Νίκαια",
+            "signal": "normal",
+            "platform": "ios",
+            "locale": "sq",
+        })
+        self.assertTrue(row["scope_id"].startswith("scope_"))
+        self.assertRegex(row["scope_id"], r"^[A-Za-z0-9_.:-]{1,96}$")
+
+    def test_ascii_scope_passes_through(self):
+        from syrmos_admin.community import validate_report
+        row = validate_report({
+            "reportId": "report_0123456789abcdef",
+            "scopeId": "M2_SYN",
+            "scopeLabel": "Syntagma",
+            "signal": "delayed",
+            "platform": "android",
+            "locale": "it",
+        })
+        self.assertEqual(row["scope_id"], "M2_SYN")
