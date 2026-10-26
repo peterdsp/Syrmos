@@ -16,6 +16,10 @@ on:
         description: "For replace only: type 'yes' to un-submit and resubmit the version"
         required: false
         default: "no"
+      version:
+        description: "resubmit-build only: the App Store version string to target (creates it if missing)"
+        required: false
+        default: "3.0.0"
 
 jobs:
   duo:
@@ -45,7 +49,7 @@ jobs:
             RESUBMIT_ONLY=true bundle exec ruby scripts/asc_duo_screenshots.rb
           elif [ "${{ inputs.mode }}" = "resubmit-build" ]; then
             if [ "${{ inputs.confirm }}" != "yes" ]; then echo "needs confirm=yes"; exit 1; fi
-            bundle exec ruby scripts/asc_resubmit_build.rb
+            VERSION="${{ inputs.version }}" bundle exec ruby scripts/asc_resubmit_build.rb
           else
             bundle exec ruby scripts/asc_list_screenshots.rb
           fi

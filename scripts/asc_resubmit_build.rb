@@ -84,6 +84,18 @@ _, allsubs = api(:get, "/v1/reviewSubmissions?filter[app]=#{app_id}&limit=50")
   end
 end
 
+# Ensure the target version exists. For a fresh point release (e.g. 3.0.1 after
+# 3.0.0 has gone live) there is no version yet, so create an editable one.
+_, vchk = api(:get, "/v1/apps/#{app_id}/appStoreVersions?limit=20")
+unless (vchk["data"] || []).any? { |x| x.dig("attributes", "versionString") == VERSION }
+  c, d = api(:post, "/v1/appStoreVersions",
+             { data: { type: "appStoreVersions",
+                       attributes: { platform: "IOS", versionString: VERSION, releaseType: "AFTER_APPROVAL" },
+                       relationships: { app: { data: { type: "apps", id: app_id } } } } })
+  die("create #{VERSION} version", c, d) unless ok?(c)
+  puts "created #{VERSION} version #{d.dig("data", "id")}"
+end
+
 # Wait for the version to be editable.
 editable = %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED METADATA_REJECTED REJECTED]
 version_id = nil
@@ -114,6 +126,19 @@ die("attach build", c, d) unless ok?(c)
 c, d = api(:patch, "/v1/appStoreVersions/#{version_id}", { data: { type: "appStoreVersions", id: version_id, attributes: { releaseType: "AFTER_APPROVAL" } } })
 die("set auto-release", c, d) unless ok?(c)
 puts "build attached + releaseType=AFTER_APPROVAL (auto-release on approval)"
+
+# Set "What's New" from the release-notes file across every localization so a
+# fresh version does not carry the previous release's notes into review.
+notes_path = File.join(__dir__, "..", "fastlane", "metadata", "ios", "en-US", "release_notes.txt")
+if File.exist?(notes_path)
+  notes = File.read(notes_path).strip
+  _, locs = api(:get, "/v1/appStoreVersions/#{version_id}/appStoreVersionLocalizations?limit=50")
+  (locs["data"] || []).each do |loc|
+    c, _ = api(:patch, "/v1/appStoreVersionLocalizations/#{loc["id"]}",
+               { data: { type: "appStoreVersionLocalizations", id: loc["id"], attributes: { whatsNew: notes } } })
+    puts "  whatsNew #{loc.dig("attributes", "locale")} -> HTTP #{c}"
+  end
+end
 
 # Resubmit for review (retry if a canceling submission is still clearing).
 new_sub = nil
