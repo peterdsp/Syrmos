@@ -50,6 +50,22 @@ code, data = api(:get, "/v1/apps?filter[bundleId]=#{BUNDLE}")
 app_id = data.dig("data", 0, "id") or die("app lookup", code, data)
 puts "app: #{app_id}"
 
+# If the version is already APPROVED and waiting (PENDING_DEVELOPER_RELEASE),
+# you cannot swap a build onto it. Release it now; the new build ships as 3.0.1.
+_, v0 = api(:get, "/v1/apps/#{app_id}/appStoreVersions?limit=10")
+cur = (v0["data"] || []).find { |x| x.dig("attributes", "versionString") == VERSION }
+state0 = cur&.dig("attributes", "appStoreState")
+puts "#{VERSION} current state: #{state0}"
+if state0 == "PENDING_DEVELOPER_RELEASE"
+  c, d = api(:post, "/v1/appStoreVersionReleaseRequests",
+             { data: { type: "appStoreVersionReleaseRequests",
+                       relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: cur["id"] } } } } })
+  die("release approved version", c, d) unless ok?(c)
+  puts "RELEASED #{VERSION} (it was approved + pending). It is going live now."
+  puts "NOTE: iOS cannot add the newer build to an approved version; the weather fix ships as 3.0.1."
+  exit 0
+end
+
 # Diagnose + clear EVERY in-flight review submission. A submission stuck in
 # CANCELING holds the version hostage, so delete that one outright; cancel the
 # rest. Terminal COMPLETE submissions are left alone.
