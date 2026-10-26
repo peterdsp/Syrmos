@@ -109,7 +109,9 @@ final class NotificationService: ObservableObject {
     func checkWeather(_ snapshot: WeatherSnapshot?) {
         guard NotificationPreferences.weatherAlertsEnabled else { return }
         guard isAuthorized else { return }
-        guard let snapshot, snapshot.current.condition.isSevere else { return }
+        // Fire whenever the Home banner shows a warning (severe now, rain, strong
+        // wind, or severe within the next few hours), so the push matches the card.
+        guard let snapshot, snapshot.showsWeatherWarning else { return }
 
         let today = Calendar.current.startOfDay(for: SyrmosClock.now)
         let lastNotifDate = UserDefaults.standard.object(forKey: lastWeatherNotifKey) as? Date

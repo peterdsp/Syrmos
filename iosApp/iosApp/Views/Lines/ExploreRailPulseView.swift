@@ -281,7 +281,7 @@ struct ExploreRailPulseContent: View {
             )
         }
         return RailPulseReportContext(
-            scopeId: originId ?? stableIchnosScopeId(selectedOriginName),
+            scopeId: ichnosScopeId(originId ?? selectedOriginName),
             title: pulseText(language, "Ichnos at \(selectedOriginName)", "Ichnos στο \(selectedOriginName)", "Ichnos në \(selectedOriginName)", "Ichnos a \(selectedOriginName)"),
             subtitle: pulseText(language, "Community rail status near your origin", "Σιδηροδρομική κατάσταση κοντά στην αφετηρία σου", "Gjendja hekurudhore pranë nisjes tënde", "Stato ferroviario vicino alla partenza")
         )
@@ -803,6 +803,16 @@ struct RailPulseQuickReportSheet: View {
         default: return pulseText(language, "Standing", "Όρθιοι", "Në këmbë", "In piedi")
         }
     }
+}
+
+/// A backend-valid Ichnos scope id. The server accepts `^[A-Za-z0-9_.:-]{1,96}$`;
+/// a Greek station id/name (e.g. "Νίκαια") is hashed to a stable `scope_<hex>`,
+/// matching the backend's own normalization, so the report is never rejected.
+private func ichnosScopeId(_ raw: String) -> String {
+    if raw.range(of: "^[A-Za-z0-9_.:-]{1,96}$", options: .regularExpression) != nil {
+        return raw
+    }
+    return stableIchnosScopeId(raw)
 }
 
 private func stableIchnosScopeId(_ value: String) -> String {

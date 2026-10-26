@@ -45,14 +45,21 @@ struct EmergencyWeatherCard: View {
             HStack(alignment: .center, spacing: 10) {
                 ZStack(alignment: .top) {
                     Text("☁️").font(.title2).accessibilityHidden(true)
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(amber.opacity(dropOpacity))
-                        .frame(width: 4, height: 10)
-                        .offset(y: 22 + dropOffset)
+                    if warningKind == .storm {
+                        // A thunderstorm gets a lightning bolt that snaps bright
+                        // and fades, so the card reads "storm" at a glance.
+                        StormLightning(active: !SyrmosClock.animationsSuppressed)
+                            .offset(y: 19)
+                    } else {
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(amber.opacity(dropOpacity))
+                            .frame(width: 4, height: 10)
+                            .offset(y: 22 + dropOffset)
+                    }
                 }
                 .frame(width: 44, height: 48)
                 .onAppear {
-                    guard !SyrmosClock.animationsSuppressed else { return }
+                    guard warningKind != .storm, !SyrmosClock.animationsSuppressed else { return }
                     withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) {
                         dropOffset = 16
                         dropOpacity = 0
@@ -204,6 +211,30 @@ struct EmergencyWeatherCard: View {
         case .albanian: return "Informacione OASA"
         case .italian: return "Info trasporti OASA"
         case .english: return "OASA transit info"
+        }
+    }
+}
+
+/// A lightning bolt that snaps bright then fades, looping, so the severe-weather
+/// card reads "thunderstorm" at a glance. Honors reduced-motion via `active`.
+private struct StormLightning: View {
+    let active: Bool
+
+    var body: some View {
+        let bolt = Image(systemName: "bolt.fill")
+            .font(.system(size: 17, weight: .black))
+            .foregroundStyle(.yellow)
+            .accessibilityHidden(true)
+        if active {
+            bolt.phaseAnimator([0.25, 1.0, 0.3, 0.9, 0.25]) { view, phase in
+                view
+                    .opacity(phase)
+                    .shadow(color: .yellow.opacity(phase * 0.85), radius: 7)
+            } animation: { phase in
+                phase >= 0.9 ? .easeOut(duration: 0.07) : .easeIn(duration: 0.55)
+            }
+        } else {
+            bolt.opacity(0.9)
         }
     }
 }

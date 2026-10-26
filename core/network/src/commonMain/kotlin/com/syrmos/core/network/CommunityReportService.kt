@@ -116,7 +116,7 @@ class CommunityReportService(private val httpClient: HttpClient) {
             setBody(
                 CommunityReportRequest(
                     reportId = reportId,
-                    scopeId = scopeId,
+                    scopeId = normalizeScopeId(scopeId),
                     scopeLabel = scopeLabel,
                     signal = signal,
                     detail = detail,
@@ -143,7 +143,23 @@ class CommunityReportService(private val httpClient: HttpClient) {
         return "report_$token"
     }
 
+    /// A backend-valid scope id. The server accepts `^[A-Za-z0-9_.:-]{1,96}$`;
+    /// a Greek station id/name is hashed to a stable `scope_<hex>` (FNV-1a,
+    /// matching iOS and the backend) so the report is never rejected.
+    private fun normalizeScopeId(raw: String): String {
+        val value = raw.trim()
+        if (value.isEmpty()) return "network"
+        if (SCOPE_ID_RE.matches(value)) return value
+        var hash = 14695981039346656037UL
+        for (b in value.encodeToByteArray()) {
+            hash = hash xor b.toUByte().toULong()
+            hash *= 1099511628211UL
+        }
+        return "scope_${hash.toString(16)}"
+    }
+
     private companion object {
         private const val BASE_URL = "https://api-syrmos.peterdsp.dev"
+        private val SCOPE_ID_RE = Regex("^[A-Za-z0-9_.:-]{1,96}$")
     }
 }
