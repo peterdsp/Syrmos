@@ -1,0 +1,1 @@
+Smarter severe-weather warnings: the Home banner now stays up through a rainy or windy day, warns when isolated showers can build into storms with lightning and strong gusts, and flags dangerous wind on its own. Plus stability and polish.

@@ -6,6 +6,8 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.ui.draw.alpha
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -563,6 +565,25 @@ private fun EmergencyWeatherCard(
         ),
         label = "rainDropsAlpha",
     )
+    // A thunderstorm gets a lightning bolt that snaps bright then fades, looping,
+    // so the card reads "storm" at a glance (mirrors the iOS StormLightning).
+    val boltAlpha by infinite.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 2600
+                0.25f at 0
+                1f at 200
+                0.3f at 520
+                0.95f at 640
+                0.25f at 1150
+                0.25f at 2600
+            },
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "lightningFlash",
+    )
 
     // Title, raindrop, and border accent. Brighter in dark mode so the thin
     // strokes and headline don't muddy against the dark card. The bg flips to
@@ -597,14 +618,22 @@ private fun EmergencyWeatherCard(
                         text = "☁️",
                         style = MaterialTheme.typography.headlineSmall,
                     )
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 22.dp + dropOffset.dp)
-                            .width(4.dp)
-                            .height(10.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(amber.copy(alpha = dropAlpha)),
-                    )
+                    if (warningKind == com.syrmos.core.model.weather.WeatherWarningKind.STORM) {
+                        Text(
+                            text = "⚡",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(top = 18.dp).alpha(boltAlpha),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 22.dp + dropOffset.dp)
+                                .width(4.dp)
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(amber.copy(alpha = dropAlpha)),
+                        )
+                    }
                 }
                 Column {
                     Text(
