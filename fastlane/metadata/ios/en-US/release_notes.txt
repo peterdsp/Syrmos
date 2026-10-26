@@ -1,9 +1,3 @@
-3.0.0
+Smarter severe-weather warnings.
 
-- Live airport buses: X93, X95, X96, X97 in Athens and OSETH in Thessaloniki, on the map and at the stop
-- Thessaloniki is in
-- Plan a route, with guidance and a leave-now reminder
-- Ichnos: flag a crowded or disrupted stop, anonymously
-- Italian joins English, Greek and Albanian
-
-Widgets, the Watch app and the Lock Screen countdown are still here. Ariadne still won't invent a train time.
+The Home weather banner now stays up through a rainy or windy day instead of flickering off between showers, warns you when isolated showers can build into storms with lightning and strong gusts, and flags dangerous wind on its own. Stay careful out there.
