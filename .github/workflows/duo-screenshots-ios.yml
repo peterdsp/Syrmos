@@ -10,7 +10,7 @@ on:
       mode:
         description: "list = inspect; replace = swap Duo screenshots + resubmit; resubmit = resubmit already-uploaded shots"
         type: choice
-        options: [list, replace, resubmit]
+        options: [list, replace, resubmit, resubmit-build]
         default: list
       confirm:
         description: "For replace only: type 'yes' to un-submit and resubmit the version"
@@ -43,6 +43,9 @@ jobs:
               echo "resubmit requires confirm=yes; aborting"; exit 1
             fi
             RESUBMIT_ONLY=true bundle exec ruby scripts/asc_duo_screenshots.rb
+          elif [ "${{ inputs.mode }}" = "resubmit-build" ]; then
+            if [ "${{ inputs.confirm }}" != "yes" ]; then echo "needs confirm=yes"; exit 1; fi
+            bundle exec ruby scripts/asc_resubmit_build.rb
           else
             bundle exec ruby scripts/asc_list_screenshots.rb
           fi

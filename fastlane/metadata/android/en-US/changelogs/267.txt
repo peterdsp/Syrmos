@@ -1,0 +1,7 @@
+3.0.0
+- Live airport buses for Athens (X93/X95/X96/X97) and Thessaloniki, on the map and at the stop
+- Thessaloniki is in
+- Plan a route, with guidance and a leave-now reminder
+- Ichnos: flag a crowded or disrupted stop, anonymously
+- Italian joins English, Greek and Albanian
+Widgets, the Watch app and offline Ariadne are still here.
