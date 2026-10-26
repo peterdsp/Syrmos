@@ -61,7 +61,10 @@ class WeatherService(
         internal fun buildForecastUrl(latitude: Double, longitude: Double): String =
             "https://api.open-meteo.com/v1/forecast" +
                 "?latitude=${coarsen(latitude)}&longitude=${coarsen(longitude)}" +
-                "&current=time,temperature_2m,apparent_temperature,is_day,precipitation," +
+                // `time` comes back with `current` automatically; listing it as a
+                // variable makes Open-Meteo reject the whole request, which
+                // silently killed the weather fetch and its severe-weather warning.
+                "&current=temperature_2m,apparent_temperature,is_day,precipitation," +
                 "relative_humidity_2m,weather_code,wind_speed_10m" +
                 "&hourly=temperature_2m,weather_code" +
                 "&daily=temperature_2m_max,temperature_2m_min" +

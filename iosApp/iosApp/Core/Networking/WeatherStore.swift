@@ -151,7 +151,10 @@ final class WeatherStore: ObservableObject {
         comps.queryItems = [
             .init(name: "latitude", value: String(latitude)),
             .init(name: "longitude", value: String(longitude)),
-            .init(name: "current", value: "time,temperature_2m,apparent_temperature,is_day,precipitation,relative_humidity_2m,weather_code,wind_speed_10m"),
+            // `time` is always returned with `current`; listing it as a variable
+            // makes Open-Meteo reject the whole request (error: invalid value
+            // "time"), which silently killed the weather fetch and its warning.
+            .init(name: "current", value: "temperature_2m,apparent_temperature,is_day,precipitation,relative_humidity_2m,weather_code,wind_speed_10m"),
             .init(name: "hourly", value: "temperature_2m,weather_code"),
             .init(name: "daily", value: "temperature_2m_max,temperature_2m_min"),
             .init(name: "forecast_days", value: "1"),
