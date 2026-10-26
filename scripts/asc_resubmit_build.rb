@@ -113,11 +113,25 @@ version_id = nil
 end
 version_id or die("no editable #{VERSION} version")
 
-# Latest processed build for this version train.
-_, builds = api(:get, "/v1/builds?filter[app]=#{app_id}&filter[preReleaseVersion.version]=#{VERSION}&sort=-version&limit=20&include=buildBundles")
-valid = (builds["data"] || []).find { |b| b.dig("attributes", "processingState") == "VALID" }
-valid ||= (builds["data"] || []).first
-build_id = valid && valid["id"] or die("no processed build for #{VERSION}", nil, builds)
+# Latest processed build for this version train. Wait for the newest build to
+# finish processing first, so we attach the binary just uploaded (highest
+# version) and never fall back to an older VALID build still on the train.
+valid = nil
+30.times do |i|
+  _, builds = api(:get, "/v1/builds?filter[app]=#{app_id}&filter[preReleaseVersion.version]=#{VERSION}&sort=-version&limit=20")
+  list = builds["data"] || []
+  top = list.first
+  if top && top.dig("attributes", "processingState") == "PROCESSING"
+    puts "  [#{i}] newest #{VERSION} build #{top.dig("attributes", "version")} still PROCESSING; waiting..."
+    sleep 30
+    next
+  end
+  valid = list.find { |b| b.dig("attributes", "processingState") == "VALID" }
+  break if valid
+  puts "  [#{i}] no VALID #{VERSION} build yet; waiting..."
+  sleep 30
+end
+build_id = valid && valid["id"] or die("no processed build for #{VERSION}")
 puts "selecting build: #{valid.dig("attributes", "version")} (#{build_id}, #{valid.dig("attributes", "processingState")})"
 
 # Attach the build + set auto-release.
