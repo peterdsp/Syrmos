@@ -1,5 +1,7 @@
 package com.syrmos.feature.lines
 
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -382,7 +384,7 @@ private fun LineDetailHeader(
             LineColorIndicator(lineColor = line.color, size = 16.dp)
             Column {
                 Text(
-                    text = "${line.terminalA} - ${line.terminalB}",
+                    text = line.localizedTerminals(lang),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -711,13 +713,3 @@ private fun lineIdToColor(lineId: String): LineColor = when {
 // Matches the localizedName used on the other line screens (LinesScreen etc).
 // TODO(parity): these per-file copies should be consolidated into one shared
 // helper; tracked as a separate refactor.
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
-}

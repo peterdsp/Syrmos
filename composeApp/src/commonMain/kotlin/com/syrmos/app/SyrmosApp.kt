@@ -1,5 +1,6 @@
 package com.syrmos.app
 
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -124,6 +125,7 @@ fun SyrmosApp() {
     val fares = koinInject<FaresRepository>()
     val announcements = koinInject<AnnouncementsRepository>()
     val visualOverrides = koinInject<VisualOverridesRepository>()
+    val stationRepositoryForTitles = koinInject<com.syrmos.core.data.repository.StationRepositoryImpl>()
     var isSeeded by remember { mutableStateOf(false) }
     var hasCompletedOnboarding by remember { mutableStateOf(readOnboardingCompleted()) }
 
@@ -136,6 +138,12 @@ fun SyrmosApp() {
         val held = startedAt.elapsedNow().inWholeMilliseconds
         if (held < 3500L) {
             kotlinx.coroutines.delay(3500L - held)
+        }
+        // Station names for the shared line titles (Greek terminal names).
+        runCatching {
+            com.syrmos.core.domain.station.LineTitles.setStations(
+                stationRepositoryForTitles.getAllStations().first(),
+            )
         }
         isSeeded = true
         // Hydrate from bundled snapshot first so the projector + visuals have

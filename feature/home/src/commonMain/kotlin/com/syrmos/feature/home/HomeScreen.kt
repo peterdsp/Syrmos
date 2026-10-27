@@ -1,5 +1,7 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -2269,7 +2271,7 @@ private fun LineCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "${line.terminalA} - ${line.terminalB}",
+                    text = line.localizedTerminals(lang),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -2375,17 +2377,6 @@ private fun LiveTrainsSection(
             }
         }
     }
-}
-
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
 }
 
 private fun formatDistance(meters: Int): String = when {

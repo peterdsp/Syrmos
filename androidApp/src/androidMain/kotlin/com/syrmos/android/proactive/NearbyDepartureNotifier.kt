@@ -105,13 +105,9 @@ object NearbyDepartureNotifier {
         // Terminal names come in English; show the station's own Greek name in Greek.
         val allStations = runCatching { koin.get<StationRepositoryImpl>().getAllStations().firstOrNull().orEmpty() }
             .getOrDefault(emptyList())
-        val byName = allStations.associateBy { it.name.lowercase() }
-        // Seed names abbreviate ("Douk. Plakentias" for the "Doukissis Plakentias" terminal).
-        fun matchTerminal(terminal: String): Station? = byName[terminal.lowercase()] ?: allStations.firstOrNull { st ->
-            val a = st.name.lowercase().split(' ').filter { it.isNotBlank() }
-            val b = terminal.lowercase().split(' ').filter { it.isNotBlank() }
-            a.size == b.size && a.zip(b).all { (x, y) -> y.startsWith(x.trimEnd('.')) }
-        }
+        // Seed names abbreviate ("Douk. Plakentias"); the shared line-title matcher handles it.
+        fun matchTerminal(terminal: String, lineId: String): Station? =
+            com.syrmos.core.domain.station.LineTitles.matchTerminal(terminal, lineId, allStations)
         val out = mutableListOf<NearbyDirection>()
         for (lineId in station.lineIds.distinct()) {
             val line = lines.firstOrNull { it.id == lineId }
@@ -128,7 +124,7 @@ object NearbyDepartureNotifier {
                         val terminal = if (direction == Direction.OUTBOUND) line?.terminalB else line?.terminalA
                         val destination = when {
                             airport -> airportLabel(lang)
-                            !terminal.isNullOrBlank() -> matchTerminal(terminal)?.let { stationLabel(it, lang) }
+                            !terminal.isNullOrBlank() -> matchTerminal(terminal, lineId)?.let { stationLabel(it, lang) }
                                 ?: com.syrmos.core.common.StationNameTranslator.localizeEnglish(terminal, lang)
                             else -> return@forEach
                         }

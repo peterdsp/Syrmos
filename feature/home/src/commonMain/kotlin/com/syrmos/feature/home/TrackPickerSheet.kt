@@ -1,5 +1,7 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -452,7 +454,7 @@ private fun LineList(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "${line.terminalA} - ${line.terminalB}",
+                        text = line.localizedTerminals(lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -710,17 +712,6 @@ private fun stationAllSubtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.ITALIAN -> "Monitora le partenze in continuo"
     else -> "Continuously track departures"
 }
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
-}
-
 private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
     AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevojë për ndjekje"

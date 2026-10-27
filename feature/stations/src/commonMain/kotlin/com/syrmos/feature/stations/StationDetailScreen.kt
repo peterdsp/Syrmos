@@ -1,5 +1,7 @@
 package com.syrmos.feature.stations
 
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedNameWithTerminals
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -175,7 +177,7 @@ fun StationDetailScreen(
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             LineColorIndicator(lineColor = line.color, size = 14.dp)
                                             Text(
-                                                text = "${line.localizedName(lang)} (${line.terminalA} - ${line.terminalB})",
+                                                text = line.localizedNameWithTerminals(lang),
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
                                         }
@@ -250,7 +252,7 @@ fun StationDetailScreen(
                                 ) {
                                     LineColorIndicator(lineColor = target.line.color, size = 14.dp)
                                     Text(
-                                        text = "${target.line.localizedName(lang)} (${target.line.terminalA} - ${target.line.terminalB})",
+                                        text = target.line.localizedNameWithTerminals(lang),
                                         style = MaterialTheme.typography.bodyMedium,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -577,17 +579,6 @@ private fun LinePill(lineId: String) {
             maxLines = 1,
         )
     }
-}
-
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
 }
 
 private fun lineIdToColor(lineId: String): LineColor = when {
