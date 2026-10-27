@@ -731,9 +731,21 @@ def icons_save(id: int = Form(...), override_url: str = Form(""), scope: str = F
 
 # Line drawing: editable polyline parameters
 
+def ensure_line_display_rows(conn) -> int:
+    """Create a default line_display row for any line that lacks one (same
+    defaults as migration 0033, which match what the apps draw unstyled)."""
+    return conn.execute(
+        "INSERT OR IGNORE INTO line_display"
+        "(line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes)"
+        " SELECT id, color, CASE WHEN mode IN ('metro', 'tram') THEN 5 ELSE 4 END,"
+        " NULL, NULL, 0, name_en FROM lines"
+    ).rowcount
+
+
 @app.get("/line-display", response_class=HTMLResponse)
 def line_display_page(_: str = Depends(auth)) -> HTMLResponse:
     with get_db() as conn:
+        ensure_line_display_rows(conn)
         rows = conn.execute(
             "SELECT line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes"
             " FROM line_display ORDER BY line_id"

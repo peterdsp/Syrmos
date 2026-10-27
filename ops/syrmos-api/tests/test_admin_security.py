@@ -108,7 +108,8 @@ def test_csrf_round_trip_and_binding():
     assert security.check_csrf_token("a@example.com", tok, now=1001)
     assert not security.check_csrf_token("b@example.com", tok, now=1001)
     assert not security.check_csrf_token("a@example.com", tok, now=1000 + security.CSRF_TTL_SECONDS + 1)
-    assert not security.check_csrf_token("a@example.com", tok[:-1] + "0", now=1001)
+    tampered = tok[:-1] + ("1" if tok[-1] == "0" else "0")
+    assert not security.check_csrf_token("a@example.com", tampered, now=1001)
     assert not security.check_csrf_token("a@example.com", None)
     assert not security.check_csrf_token("a@example.com", "garbage")
 
