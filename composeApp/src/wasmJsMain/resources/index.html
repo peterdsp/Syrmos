@@ -570,6 +570,11 @@
      web-map.js, which wires the board, opt-in and the departure-card action. -->
 <script src="/web-reminders.js"></script>
 <script src="/web-reminders-runtime.js"></script>
+<!-- 3.0.2 station closures (SyrmosClosures, mirrors fixtures/closures/effect.json)
+     and broadcasts (SyrmosBroadcasts: audience filter, expiry, dismissed ids).
+     Loaded before web-map.js, which wires the sheet, map, planner and banner. -->
+<script src="/web-closures.js"></script>
+<script src="/web-broadcasts.js"></script>
 <script src="/web-map.js"></script>
 <!-- Offline Service Worker: caches the app shell + bundled seed so a reload or a
      dropped connection keeps the app usable with no network. Registered on load

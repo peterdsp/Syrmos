@@ -184,6 +184,35 @@
         });
     }
 
+    // campaign:start
+    // ?src=<code> from a printed QR or a shared link becomes the store campaign
+    // token (App Store ct, Play utm_source), so installs can be counted per
+    // placement in the store consoles. Nothing is stored or sent from this page.
+    // An absent or malformed code leaves the plain store links untouched.
+    var APP_STORE_URL = "https://apps.apple.com/app/id6777650671";
+    var PLAY_URL = "https://play.google.com/store/apps/details?id=com.syrmos.android";
+    function campaignSource(search) {
+        var m = /[?&]src=([^&#]*)/.exec(search || "");
+        if (!m) return null;
+        var v;
+        try { v = decodeURIComponent(m[1].replace(/\+/g, " ")); } catch (_) { return null; }
+        v = v.trim().toLowerCase();
+        return /^[a-z0-9-]{1,32}$/.test(v) ? v : null;
+    }
+    function storeUrls(src) {
+        if (!src) return { ios: APP_STORE_URL, android: PLAY_URL };
+        return {
+            // No provider token (pt) yet: it lives in App Store Connect and is
+            // added here once known.
+            ios: APP_STORE_URL + "?ct=" + src + "&mt=8",
+            android: PLAY_URL + "&referrer=utm_source%3D" + src + "%26utm_medium%3Dprint"
+        };
+    }
+    // campaign:end
+    var urls = storeUrls(campaignSource(location.search));
+    document.getElementById("storeIos").href = urls.ios;
+    document.getElementById("storeAndroid").href = urls.android;
+
     // Lead with the store for this device, and show that platform's real screen.
     if (isAndroid) {
         var stores = document.getElementById("stores");

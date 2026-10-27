@@ -27,6 +27,8 @@ const MODULES = [
   ['web-airport.js', 'SyrmosAirport', []],
   ['web-go.js', 'SyrmosGO', []],
   ['web-planner.js', 'SyrmosPlanner', []],
+  ['web-closures.js', 'SyrmosClosures', ['effect', 'nodeEffect', 'filterDepartures', 'filterOptions', 'windowText', 'pickText', 'parsePayload']],
+  ['web-broadcasts.js', 'SyrmosBroadcasts', ['audienceMatches', 'visible', 'merge', 'nextSince', 'encodeIds', 'decodeIds']],
 ];
 
 for (const [file, globalName, members] of MODULES) {
