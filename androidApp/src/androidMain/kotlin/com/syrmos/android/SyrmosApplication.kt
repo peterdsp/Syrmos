@@ -37,6 +37,11 @@ class SyrmosApplication : Application() {
         // when new service alerts appear or severe weather is detected.
         com.syrmos.android.notification.AlertCheckWorker.enqueuePeriodic(this)
 
+        // 3.0.2 "Announcements from Syrmos": FCM initialised from BuildConfig
+        // values (no google-services.json); a no-op when they are not set, and the
+        // AlertCheckWorker polling fallback covers that case.
+        com.syrmos.android.push.SyrmosPush.init(this)
+
         // Refresh the moment the device is back online instead of waiting for
         // the next 60s freshness poll. Mirrors the iOS NWPathMonitor (parity #7).
         ConnectivityObserver(this).start()

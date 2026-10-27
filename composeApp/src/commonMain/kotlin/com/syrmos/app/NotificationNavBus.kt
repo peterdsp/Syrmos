@@ -26,7 +26,7 @@ object NotificationNavBus {
             "service_alert" -> contentId?.takeIf { it.isNotBlank() }
                 ?.let(NotificationNavEvent::Alert) ?: NotificationNavEvent.Home
             "weather_alert" -> NotificationNavEvent.Weather
-            "nearby_alert", "station" -> contentId?.takeIf { it.isNotBlank() }
+            "nearby_alert", "nearby_station", "station" -> contentId?.takeIf { it.isNotBlank() }
                 ?.let(NotificationNavEvent::Station) ?: NotificationNavEvent.Home
             else -> NotificationNavEvent.Home
         }

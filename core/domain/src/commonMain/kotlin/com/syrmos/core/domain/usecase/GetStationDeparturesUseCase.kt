@@ -13,6 +13,9 @@ class GetStationDeparturesUseCase(
         val allDepartures = mutableListOf<UpcomingDeparture>()
 
         lineIds.forEach { lineId ->
+            // 3.0.2: a closed (station, line) has no departures at all, not even
+            // the synthetic-pattern last resort below; the UI shows the closure card.
+            if (getNextDepartures.boardingClosed(stationId, lineId)) return@forEach
             // Source of truth: the server projector when online, the bundled
             // frequency_bands + station_offsets when offline. Either way we
             // ask per direction so both terminals get a fair shot at the

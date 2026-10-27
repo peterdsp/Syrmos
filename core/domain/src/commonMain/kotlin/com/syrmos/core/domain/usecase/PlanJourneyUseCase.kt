@@ -1,6 +1,9 @@
 package com.syrmos.core.domain.usecase
 
+import com.syrmos.core.common.ClosureEffect
+import com.syrmos.core.common.StationClosures
 import com.syrmos.core.common.extensions.distanceInMeters
+import com.syrmos.core.data.sync.ClosuresRepository
 import com.syrmos.core.data.repository.LineRepositoryImpl
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.model.planner.JourneyResult
@@ -27,6 +30,10 @@ import kotlinx.coroutines.flow.flow
 class PlanJourneyUseCase(
     private val stationRepository: StationRepositoryImpl,
     private val lineRepository: LineRepositoryImpl,
+    // 3.0.2: active station closures. The planner never boards where boarding is
+    // forbidden and never alights where alighting is forbidden; pass_through keeps
+    // the line's ride edges, so trains still run through the station.
+    private val closures: ClosuresRepository? = null,
 ) {
     /**
      * Fastest route across the whole network.
@@ -149,6 +156,17 @@ class PlanJourneyUseCase(
             }
         }
 
+        closures?.let { repo ->
+            if (repo.closures.value.isNotEmpty()) {
+                val now = ClosuresRepository.nowEpochSeconds()
+                val firstLine = mutableMapOf<String, String>()
+                lineOrder.forEach { (lineId, ids) -> ids.forEach { firstLine.getOrPut(it) { lineId } } }
+                applyClosureRestrictions(graph, fromStationId, toStationId) { id ->
+                    repo.effect(id, StationClosures.lineIdOfStation(id) ?: firstLine[id], now)
+                }
+            }
+        }
+
         // Dijkstra
         val distances = mutableMapOf<String, Int>()
         val previous = mutableMapOf<String, Pair<String, Edge>>()
@@ -266,6 +284,37 @@ internal fun foldStationName(name: String): String =
             }
         }
         .replace(Regex("[^a-z0-9α-ω]"), "")
+
+/**
+ * Removes the edges a rider cannot take while a closure is active (3.0.2). Station
+ * ids are per line, so a node is reached either on a train (a ride edge) or on
+ * foot (a transfer edge or the origin):
+ * - a ride edge out of the origin is a boarding: forbidden when !canBoard;
+ * - a ride edge into the destination is an alighting: forbidden when !canAlight;
+ * - a transfer edge out of a station the rider rode into is an alighting, and the
+ *   far platform is a boarding (unless it is the destination itself).
+ * Ride edges through a station are kept, so pass_through leaves the line whole.
+ */
+internal fun applyClosureRestrictions(
+    graph: MutableMap<String, MutableList<Edge>>,
+    fromStationId: String,
+    toStationId: String,
+    effectOf: (String) -> ClosureEffect,
+) {
+    val cache = mutableMapOf<String, ClosureEffect>()
+    fun e(id: String) = cache.getOrPut(id) { effectOf(id) }
+    for ((node, edges) in graph) {
+        edges.removeAll { edge ->
+            if (edge.isTransfer) {
+                (node != fromStationId && !e(node).canAlight) ||
+                    (edge.toStationId != toStationId && !e(edge.toStationId).canBoard)
+            } else {
+                (node == fromStationId && !e(node).canBoard) ||
+                    (edge.toStationId == toStationId && !e(toStationId).canAlight)
+            }
+        }
+    }
+}
 
 internal data class Edge(
     val toStationId: String,

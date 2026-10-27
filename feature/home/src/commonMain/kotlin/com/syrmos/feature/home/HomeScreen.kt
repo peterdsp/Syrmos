@@ -149,6 +149,36 @@ fun HomeScreen(
         }
     }
 
+    // 3.0.2: closures (badges on nearby stations) and admin broadcasts (banner).
+    val closuresRepository = koinInject<com.syrmos.core.data.sync.ClosuresRepository>()
+    val broadcastsRepository = koinInject<com.syrmos.core.data.sync.BroadcastsRepository>()
+    val favoritesRepository = koinInject<com.syrmos.core.data.repository.FavoritesRepository>()
+    val closures by closuresRepository.closures.collectAsState()
+    val allBroadcasts by broadcastsRepository.broadcasts.collectAsState()
+    val dismissedBroadcasts by broadcastsRepository.dismissed.collectAsState()
+    val region by com.syrmos.core.common.MapPreferences.defaultRegion.collectAsState()
+    var broadcastsExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        runCatching { closuresRepository.hydrateFromBundleIfNeeded() }
+        runCatching { closuresRepository.refresh() }
+        runCatching { broadcastsRepository.refresh() }
+    }
+    val closureMinute = nowEpoch / 30
+    val closedBadges = remember(closures, closureMinute, uiState.nearestStations, lang) {
+        val now = closureMinute * 30
+        uiState.nearestStations.mapNotNull { st ->
+            val effect = com.syrmos.core.common.StationClosures.effect(
+                closures, st.stationId, com.syrmos.core.common.StationClosures.lineIdOfStation(st.stationId), now,
+            )
+            val mode = effect.mode
+            if (effect.active && mode != null && !effect.canBoard) st.stationId to com.syrmos.core.common.ClosureCopy.modeChip(mode, lang) else null
+        }.toMap()
+    }
+    val visibleBroadcasts = remember(allBroadcasts, dismissedBroadcasts, region, closureMinute) {
+        val favs = runCatching { favoritesRepository.favoriteStationIds().toSet() }.getOrDefault(emptySet())
+        broadcastsRepository.visible(favs, region)
+    }
+
     val livePositionsService: SyrmosLivePositionsService = koinInject()
     val suburbanTracker: RailwayGovLiveTrackerService = koinInject()
     val gpsLineIds = setOf("A1", "A2", "A3", "A4")
@@ -384,6 +414,17 @@ fun HomeScreen(
 
     }
     val contextItems: LazyListScope.() -> Unit = {
+        if (visibleBroadcasts.isNotEmpty()) {
+            item {
+                BroadcastBanner(
+                    broadcasts = visibleBroadcasts,
+                    lang = lang,
+                    expanded = broadcastsExpanded,
+                    onToggle = { broadcastsExpanded = !broadcastsExpanded },
+                    onDismiss = { broadcastsRepository.dismiss(it) },
+                )
+            }
+        }
         val alerts = uiState.announcements.filter { it.isServiceAlert }
         val status = uiState.serviceStatus
         if (alerts.isNotEmpty() || uiState.announcements.isNotEmpty() || uiState.railNews.isNotEmpty() || status != null) {
@@ -407,6 +448,7 @@ fun HomeScreen(
                     lineDisruptions = lineDisruptions,
                     lang = lang,
                     onStationClick = onStationClick,
+                    closedBadges = closedBadges,
                 )
             }
         } else {

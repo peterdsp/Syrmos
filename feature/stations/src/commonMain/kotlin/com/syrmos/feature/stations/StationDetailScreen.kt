@@ -55,6 +55,8 @@ import com.syrmos.core.domain.departures.groupDepartures
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.designsystem.component.GroupedDepartureCard
 import com.syrmos.core.designsystem.component.AlertBannerInfo
+import com.syrmos.core.designsystem.component.ClosureCardInfo
+import com.syrmos.core.designsystem.component.StationClosureCard
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
 import com.syrmos.core.designsystem.component.ServiceAlertBanner
@@ -69,6 +71,9 @@ import com.syrmos.core.model.alerts.AlertSeverity
 fun StationDetailScreen(
     viewModel: StationDetailViewModel,
     alertBanner: AlertBannerInfo? = null,
+    // 3.0.2: active (or within 24 h) station closure. When active, the board is
+    // already empty (the projector hides departures where boarding is forbidden).
+    closureCard: ClosureCardInfo? = null,
     lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
     onBack: () -> Unit = {},
     // Carries BOTH the line and the resolver's per-line station id so the caller
@@ -130,6 +135,11 @@ fun StationDetailScreen(
             contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (closureCard != null) {
+                item {
+                    StationClosureCard(info = closureCard)
+                }
+            }
             if (alertBanner != null) {
                 item {
                     ServiceAlertBanner(info = alertBanner)
@@ -313,7 +323,17 @@ fun StationDetailScreen(
                 SectionHeader(title = title)
             }
 
-            if (uiState.departures.isEmpty()) {
+            if (uiState.departures.isEmpty() && closureCard != null && !closureCard.upcoming) {
+                // Never an empty section: say why in one line (web/iOS parity).
+                item {
+                    Text(
+                        text = com.syrmos.core.common.ClosureCopy.noDeparturesClosed(lang),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            } else if (uiState.departures.isEmpty()) {
                 item {
                     Text(
                         text = if (uiState.hasLoadedDepartures) {

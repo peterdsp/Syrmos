@@ -135,7 +135,8 @@ class PlanScreenRoute : Screen {
         val lineRepo = koinInject<LineRepositoryImpl>()
         val departuresUseCase = koinInject<ComputeDeparturesFromBandsUseCase>()
         val announcementsRepo = koinInject<AnnouncementsRepository>()
-        val useCase = remember { PlanJourneyUseCase(stationRepo, lineRepo) }
+        val closuresRepo = koinInject<com.syrmos.core.data.sync.ClosuresRepository>()
+        val useCase = remember { PlanJourneyUseCase(stationRepo, lineRepo, closuresRepo) }
         val scope = rememberCoroutineScope()
         val lang by LocalizationManager.language.collectAsState()
 

@@ -33,9 +33,52 @@ class AlertCheckWorker(
 
     override suspend fun doWork(): Result {
         ensureChannels()
-        checkServiceAlerts()
-        checkWeather()
+        if (!inputData.getBoolean(KEY_BROADCASTS_ONLY, false)) {
+            checkServiceAlerts()
+            checkWeather()
+            // 3.0.2: keep closures fresh for the offline projector and the nearby
+            // coach, re-pick the monitored stations, and re-plan calendar trips.
+            runCatching { org.koin.core.context.GlobalContext.get().get<com.syrmos.core.data.sync.ClosuresRepository>().refresh() }
+            runCatching { com.syrmos.android.proactive.StationGeofenceManager.refresh(appContext) }
+            runCatching { com.syrmos.android.proactive.CalendarLeaveByScheduler.planAll(appContext) }
+        }
+        checkBroadcasts()
         return Result.success()
+    }
+
+    /**
+     * 3.0.2 polling fallback for "Announcements from Syrmos" (contract): fetch
+     * since the last seen sentAt, post one local notification for each unseen
+     * broadcast that push did not already deliver and that has not expired, dedupe
+     * by id. Runs on app open and on every periodic check.
+     */
+    private suspend fun checkBroadcasts() {
+        if (!com.syrmos.core.common.NotificationSettings.broadcasts.value) return
+        try {
+            val now = System.currentTimeMillis() / 1000
+            val since = com.syrmos.android.push.BroadcastPrefs.since(appContext, now)
+            val body = fetchUrl("$BROADCASTS_URL?since=$since") ?: return
+            val fetched = com.syrmos.core.data.sync.ClosuresPayloadParser.parseBroadcasts(body) ?: return
+            val favorites = runCatching {
+                org.koin.core.context.GlobalContext.get()
+                    .get<com.syrmos.core.data.repository.FavoritesRepository>().favoriteStationIds().toSet()
+            }.getOrDefault(emptySet())
+            val toNotify = com.syrmos.core.common.Broadcasts.toNotify(
+                fetched = fetched,
+                deliveredIds = com.syrmos.android.push.BroadcastPrefs.delivered(appContext),
+                seenIds = com.syrmos.android.push.BroadcastPrefs.seen(appContext),
+                now = now,
+                favoriteStationIds = favorites,
+                region = com.syrmos.core.common.MapPreferences.defaultRegion.value,
+            )
+            val lang = LocalizationManager.language.value
+            toNotify.take(3).forEach { b ->
+                com.syrmos.android.push.BroadcastNotifier.post(appContext, b.id, b.title.text(lang), b.body.text(lang), b.deepLink)
+            }
+            com.syrmos.android.push.BroadcastPrefs.addSeen(appContext, fetched.map { it.id })
+            com.syrmos.android.push.BroadcastPrefs.setSince(appContext, com.syrmos.core.common.Broadcasts.nextSince(since, fetched))
+        } catch (_: Exception) {
+        }
     }
 
     private suspend fun checkServiceAlerts() {
@@ -241,6 +284,8 @@ class AlertCheckWorker(
 
     companion object {
         private const val ANNOUNCEMENTS_URL = "https://api-syrmos.peterdsp.dev/api/announcements"
+        private const val BROADCASTS_URL = "https://api-syrmos.peterdsp.dev/api/broadcasts"
+        private const val KEY_BROADCASTS_ONLY = "broadcasts_only"
         private const val WEATHER_URL =
             "https://api.open-meteo.com/v1/forecast?latitude=37.9838&longitude=23.7275&current=temperature_2m,weather_code&timezone=auto"
 
@@ -252,6 +297,15 @@ class AlertCheckWorker(
         private const val NOTIF_WEATHER = 5500
 
         private const val UNIQUE_PERIODIC = "syrmos_alert_check"
+
+        /** Poll broadcasts once now (app open), without re-running the other checks. */
+        fun pollBroadcastsNow(context: Context) {
+            val request = androidx.work.OneTimeWorkRequestBuilder<AlertCheckWorker>()
+                .setInputData(androidx.work.workDataOf(KEY_BROADCASTS_ONLY to true))
+                .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork("syrmos_broadcast_poll", androidx.work.ExistingWorkPolicy.KEEP, request)
+        }
 
         fun enqueuePeriodic(context: Context) {
             val request = PeriodicWorkRequestBuilder<AlertCheckWorker>(30, TimeUnit.MINUTES).build()

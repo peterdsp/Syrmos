@@ -1,5 +1,6 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.designsystem.component.ClosureChip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -329,6 +330,9 @@ internal fun RadialNearbySection(
     lineDisruptions: Map<String, AlertSeverity>,
     lang: AppLanguage,
     onStationClick: (String) -> Unit,
+    // 3.0.2: stationId -> short closure chip ("Closed", "No stop") for stations
+    // whose board is empty right now because of an active closure.
+    closedBadges: Map<String, String> = emptyMap(),
 ) {
     var listMode by remember { mutableStateOf(false) }
     var selectedIndex by remember(stations) { mutableStateOf(0) }
@@ -354,7 +358,7 @@ internal fun RadialNearbySection(
 
         if (listMode) {
             stations.take(4).forEach { station ->
-                NearbyListRow(station, lines, lang) { onStationClick(station.stationId) }
+                NearbyListRow(station, lines, lang, closedBadges[station.stationId]) { onStationClick(station.stationId) }
             }
         } else {
             Box(
@@ -419,6 +423,9 @@ internal fun RadialNearbySection(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f),
                             )
+                            closedBadges[station.stationId]?.let {
+                                ClosureChip(it, modifier = Modifier.padding(end = 8.dp))
+                            }
                             Text(formatNearbyDistance(station.distanceMeters), style = MaterialTheme.typography.labelMedium)
                         }
                         // Group by line so a line with two imminent departures reads
@@ -459,6 +466,7 @@ private fun NearbyListRow(
     station: NearestStationResult,
     lines: List<Line>,
     lang: AppLanguage,
+    closedBadge: String?,
     onClick: () -> Unit,
 ) {
     val color = station.lineIds.firstOrNull()
@@ -481,6 +489,7 @@ private fun NearbyListRow(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
+        closedBadge?.let { ClosureChip(it) }
         Text(formatNearbyDistance(station.distanceMeters), style = MaterialTheme.typography.labelSmall)
     }
 }

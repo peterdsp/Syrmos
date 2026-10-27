@@ -6,6 +6,7 @@ import com.syrmos.core.common.extensions.minutesUntil
 import com.syrmos.core.common.extensions.parseTime
 import com.syrmos.core.common.extensions.toDisplayString
 import com.syrmos.core.data.repository.ScheduleRepositoryImpl
+import com.syrmos.core.data.sync.ClosuresRepository
 import com.syrmos.core.domain.schedule.ServiceDayResolver
 import com.syrmos.core.model.schedule.DayType
 import com.syrmos.core.model.schedule.Departure
@@ -33,12 +34,40 @@ class GetNextDeparturesUseCase(
     private val scheduleRepository: ScheduleRepositoryImpl,
     private val bandProjector: ComputeDeparturesFromBandsUseCase? = null,
     private val serverProjector: SyrmosSchedulesService? = null,
+    private val closures: ClosuresRepository? = null,
 ) {
+    /**
+     * Next departures, with the 3.0.2 closure rule applied last: when boarding is
+     * not allowed at this (station, line) right now (closed, pass_through or
+     * exit_only), the board is empty and the UI shows the closure card instead.
+     * Evaluated at collection time on device, so the 08:00 flip needs no network.
+     */
     fun invoke(
         stationId: String,
         lineId: String,
         direction: Direction,
         limit: Int = 5,
+    ): Flow<List<UpcomingDeparture>> {
+        val source = invokeUnfiltered(stationId, lineId, direction, limit)
+        val repo = closures ?: return source
+        return source.gatedByClosure(
+            hydrate = { repo.hydrateFromBundleIfNeeded() },
+            canBoard = { repo.effect(stationId, lineId).canBoard },
+        )
+    }
+
+    /** True when an active closure forbids boarding at this (station, line) now. */
+    suspend fun boardingClosed(stationId: String, lineId: String): Boolean {
+        val repo = closures ?: return false
+        runCatching { repo.hydrateFromBundleIfNeeded() }
+        return !repo.effect(stationId, lineId).canBoard
+    }
+
+    private fun invokeUnfiltered(
+        stationId: String,
+        lineId: String,
+        direction: Direction,
+        limit: Int,
     ): Flow<List<UpcomingDeparture>> {
         val fallback = fallbackDepartures(
             stationId = stationId,
@@ -169,4 +198,18 @@ class GetNextDeparturesUseCase(
     // actually runs instead of the weekday service.
     private fun resolveCurrentDayType(): DayType =
         ServiceDayResolver.baseDayType(currentAthensDate())
+}
+
+/**
+ * The closure gate, applied inside the same flow that produces the departures:
+ * the cached/bundled closures are hydrated BEFORE the first list is judged, so a
+ * closed station never emits a departure, not even on the cold-start first frame.
+ * (Judging before hydration let the first board leak times at a closed station.)
+ */
+internal fun <T> Flow<List<T>>.gatedByClosure(
+    hydrate: suspend () -> Unit,
+    canBoard: () -> Boolean,
+): Flow<List<T>> = map { list ->
+    runCatching { hydrate() }
+    if (list.isNotEmpty() && !canBoard()) emptyList() else list
 }

@@ -16,6 +16,8 @@ androidx-work = "2.9.1"
 androidx-window = "1.3.0"
 turbine = "1.2.0"
 osmdroid = "6.1.20"
+firebase-messaging = "24.1.2"
+play-services-location = "21.3.0"
 
 [libraries]
 mlkit-genai-proofreading = { module = "com.google.mlkit:genai-proofreading", version = "1.0.0-beta1" }
@@ -63,6 +65,11 @@ androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
+# Push without google-services.json: FirebaseApp is initialised manually from
+# BuildConfig values (see androidApp PushConfig); the google-services plugin is
+# deliberately not applied.
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

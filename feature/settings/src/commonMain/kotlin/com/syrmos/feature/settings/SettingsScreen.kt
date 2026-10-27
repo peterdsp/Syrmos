@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,10 @@ import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.common.MapPreferences
 import com.syrmos.core.common.NotificationSettings
+import com.syrmos.core.common.ProactiveFeatureHooks
+import com.syrmos.core.common.ProactiveSettingsCopy
+import com.syrmos.core.common.CalendarEventKind
+import com.syrmos.core.common.CalendarLeaveBy
 import com.syrmos.core.common.ThemeManager
 import com.syrmos.core.data.sync.ScheduleSyncRepository
 import kotlin.time.ExperimentalTime
@@ -339,6 +344,11 @@ fun SettingsScreen(
             val weatherAlertsOn by NotificationSettings.weatherAlerts.collectAsState()
             val nearbyAlertsOn by NotificationSettings.nearbyAlerts.collectAsState()
             val leaveByOn by NotificationSettings.leaveByReminders.collectAsState()
+            val broadcastsOn by NotificationSettings.broadcasts.collectAsState()
+            val nearbyDeparturesOn by NotificationSettings.nearbyDepartures.collectAsState()
+            val calendarOn by NotificationSettings.calendarReminders.collectAsState()
+            val calendarKinds by NotificationSettings.calendarKinds.collectAsState()
+            val flightBuffer by NotificationSettings.flightBufferMinutes.collectAsState()
             // Morning digest (07:00) is implemented and wired on iOS but has no
             // consumer on Android yet: nothing schedules a 07:00 worker that reads
             // notif_morning_digest, so the toggle only persisted a dead flag. Hide
@@ -395,6 +405,60 @@ fun SettingsScreen(
                     onCheckedChange = { NotificationSettings.setLeaveByReminders(it) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                // 3.0.2: admin broadcasts by push, or polling when push is off.
+                NotifToggleRow(
+                    title = ProactiveSettingsCopy.broadcasts(lang),
+                    checked = broadcastsOn,
+                    onCheckedChange = {
+                        NotificationSettings.setBroadcasts(it)
+                        ProactiveFeatureHooks.onBroadcastsChanged?.invoke(it)
+                    },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                if (ProactiveFeatureHooks.proactiveSupported) {
+                    NotifToggleRow(
+                        title = ProactiveSettingsCopy.nearbyTitle(lang),
+                        subtitle = ProactiveSettingsCopy.nearbyExplain(lang) +
+                            if (!nearbyDeparturesOn) " " + ProactiveSettingsCopy.backgroundLocationStep(lang) else "",
+                        checked = nearbyDeparturesOn,
+                        onCheckedChange = {
+                            NotificationSettings.setNearbyDepartures(it)
+                            ProactiveFeatureHooks.onNearbyDeparturesChanged?.invoke(it)
+                        },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    NotifToggleRow(
+                        title = ProactiveSettingsCopy.calendarTitle(lang),
+                        subtitle = ProactiveSettingsCopy.calendarExplain(lang),
+                        checked = calendarOn,
+                        onCheckedChange = {
+                            NotificationSettings.setCalendarReminders(it)
+                            ProactiveFeatureHooks.onCalendarRemindersChanged?.invoke(it)
+                        },
+                    )
+                    if (calendarOn) {
+                        CalendarEventKind.entries.forEach { kind ->
+                            NotifToggleRow(
+                                title = ProactiveSettingsCopy.kind(kind, lang),
+                                checked = calendarKinds[kind] != false,
+                                onCheckedChange = {
+                                    NotificationSettings.setCalendarKind(kind, it)
+                                    ProactiveFeatureHooks.onCalendarRemindersChanged?.invoke(true)
+                                },
+                                indent = true,
+                            )
+                        }
+                        FlightBufferRow(
+                            title = ProactiveSettingsCopy.flightBuffer(lang),
+                            selected = flightBuffer,
+                            onSelect = {
+                                NotificationSettings.setFlightBufferMinutes(it)
+                                ProactiveFeatureHooks.onCalendarRemindersChanged?.invoke(true)
+                            },
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                }
                 SettingsRow(
                     title = when (lang) {
                         AppLanguage.GREEK -> "Αποθηκευμένες αναχωρήσεις"
@@ -747,24 +811,51 @@ private fun SettingsRow(
     }
 }
 
+/** 3.0.2: flight arrival buffer, 90 / 120 / 150 minutes (default 120). */
+@Composable
+private fun FlightBufferRow(title: String, selected: Int, onSelect: (Int) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 6.dp, bottom = 10.dp)) {
+        Text(text = title, style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+            CalendarLeaveBy.FLIGHT_BUFFER_CHOICES.forEach { minutes ->
+                FilterChip(
+                    selected = selected == minutes,
+                    onClick = { onSelect(minutes) },
+                    label = { Text("$minutes'", maxLines = 1, softWrap = false) },
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun NotifToggleRow(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    subtitle: String? = null,
+    indent: Boolean = false,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = if (indent) 32.dp else 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(
+                text = title,
+                style = if (indent) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

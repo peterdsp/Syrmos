@@ -33,6 +33,8 @@ data class WidgetSnapshot(
     val liveUpdatedEpoch: Long = 0,
     /** lineId -> severity ("warning" | "closure"); empty when all clear. */
     val disruptedLines: Map<String, String> = emptyMap(),
+    /** 3.0.2: the station is closed right now; [stationName] carries the label, rows are empty. */
+    val closed: Boolean = false,
 ) {
     val isLiveDataFresh: Boolean get() = liveTrainCount > 0 && (System.currentTimeMillis() - liveUpdatedEpoch) < 300_000
     companion object {
@@ -50,6 +52,7 @@ object SnapshotStore {
     private const val KEY_LIVE_COUNT = "live_count"
     private const val KEY_LIVE_UPDATED = "live_updated"
     private const val KEY_DISRUPTIONS = "disruptions"
+    private const val KEY_CLOSED = "closed"
     private const val ROW_SEP = ""
     private const val FIELD_SEP = ""
 
@@ -69,6 +72,7 @@ object SnapshotStore {
             .putInt(KEY_LIVE_COUNT, snapshot.liveTrainCount)
             .putLong(KEY_LIVE_UPDATED, snapshot.liveUpdatedEpoch)
             .putString(KEY_DISRUPTIONS, snapshot.disruptedLines.entries.joinToString(",") { "${it.key}|${it.value}" })
+            .putBoolean(KEY_CLOSED, snapshot.closed)
             .apply()
     }
 
@@ -102,6 +106,7 @@ object SnapshotStore {
             liveTrainCount = p.getInt(KEY_LIVE_COUNT, 0),
             liveUpdatedEpoch = p.getLong(KEY_LIVE_UPDATED, 0),
             disruptedLines = disrupted,
+            closed = p.getBoolean(KEY_CLOSED, false),
         )
     }
 
