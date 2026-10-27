@@ -324,6 +324,10 @@ block = """        # --- 3.0.2 station closures + broadcasts (public reads, app 
         }
 
         """
+if marker not in txt:
+    marker = "        location /admin/ {"
+if marker not in txt:
+    raise SystemExit("nginx.conf: no insertion point for the closures/broadcasts/push routes")
 p.write_text(txt.replace(marker, block + marker, 1))
 print("patched closures, broadcasts, push")
 PY
