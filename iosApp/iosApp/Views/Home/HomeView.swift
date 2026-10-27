@@ -15,6 +15,7 @@ struct HomeView: View {
     @ObservedObject private var tracking = DepartureTracking.shared
     @ObservedObject private var weather = WeatherStore.shared
     @ObservedObject private var deepLinkRouter = DeepLinkRouter.shared
+    @ObservedObject private var closuresStore = ClosuresStore.shared
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var navigationPath = NavigationPath()
     @State private var webViewURL: URL?
@@ -107,6 +108,7 @@ struct HomeView: View {
                     // around you and the live trains. Same data, no second poll.
                     ScrollView {
                         VStack(spacing: 20) {
+                            HomeNoticesSection()
                             insightsStream.syrmosEntrance(index: 1)
                             radialNearbySection.syrmosEntrance(index: 2).id(HomeAnchor.nearby)
                             liveTrainsSection.syrmosEntrance(index: 3)
@@ -122,6 +124,7 @@ struct HomeView: View {
                             answerSection.syrmosEntrance(index: 0).id(HomeAnchor.weather)
                             livingMapStrip.syrmosEntrance(index: 1)
                             weatherContextSection.syrmosEntrance(index: 2)
+                            HomeNoticesSection()
                             insightsStream.syrmosEntrance(index: 3)
                             radialNearbySection.syrmosEntrance(index: 4).id(HomeAnchor.nearby)
                             liveTrainsSection.syrmosEntrance(index: 5)
@@ -656,6 +659,7 @@ struct HomeView: View {
                             HStack {
                                 Text(localizedStationName(selected))
                                     .font(.headline)
+                                closureChip(for: selected.station)
                                 Spacer()
                                 Text(formatDistance(selected.distanceMeters))
                                     .font(.caption)
@@ -676,6 +680,16 @@ struct HomeView: View {
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    /// 3.0.2: "Closed" chip for a station node when any of its platforms is
+    /// closed right now (atomic chip, never wraps).
+    @ViewBuilder
+    private func closureChip(for node: MapStationNode) -> some View {
+        let effect = closuresStore.effect(stationIds: node.stationIds.isEmpty ? [node.id] : node.stationIds)
+        if effect.active {
+            ClosureStatusChip(mode: effect.mode, language: loc.language)
         }
     }
 
@@ -1453,6 +1467,8 @@ struct HomeView: View {
                             }
 
                             Spacer()
+
+                            closureChip(for: nearby.station)
 
                             Text(formatDistance(nearby.distanceMeters))
                                 .font(.caption)

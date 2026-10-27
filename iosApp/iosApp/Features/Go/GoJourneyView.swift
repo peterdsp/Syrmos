@@ -21,6 +21,7 @@ struct GoJourneyView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var model: GoJourneyViewModel
     @StateObject private var location = LocationService()
+    @ObservedObject private var closuresTick = ClosuresStore.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.syrmosReservedGeometryOverride) private var reservedGeometryOverride
     @State private var confirmEnd = false
@@ -90,6 +91,34 @@ struct GoJourneyView: View {
         return SyrmosData.line(for: id)?.color ?? .accentColor
     }
 
+    /// 3.0.2: the first stop on this journey with an active closure, if any.
+    private var closedStopName: String? {
+        let store = ClosuresStore.shared
+        _ = closuresTick.tick
+        for leg in model.journey.legs {
+            for stop in leg.stops where store.effect(stationId: stop.id).active {
+                return stop.name
+            }
+        }
+        return nil
+    }
+
+    @ViewBuilder
+    private var goClosureWarning: some View {
+        if let name = closedStopName {
+            Label {
+                Text(ClosureCopy.goWarning(stationName: name, language))
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } icon: {
+                Image(systemName: "exclamationmark.octagon.fill").foregroundStyle(Color.red)
+            }
+            .padding(12)
+            .background(Color.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
     var body: some View {
         NavigationStack {
         // Two-pane on a regular-width display (iPad, iPhone Duo inner display),
@@ -103,6 +132,7 @@ struct GoJourneyView: View {
                 SyrmosAxisReader { axis in
                     ScrollView {
                         VStack(spacing: 20) {
+                            goClosureWarning
                             goInstruction
                             // Stacked (a tall window, a horizontal fold): the map keeps
                             // the upper region to itself and the timeline reads here,
@@ -121,6 +151,7 @@ struct GoJourneyView: View {
                 // then the timeline. The disclosure is remembered for the session.
                 ScrollView {
                     VStack(spacing: 20) {
+                        goClosureWarning
                         goInstruction
                         compactMapDisclosure
                         if showCompactMap {

@@ -1030,6 +1030,9 @@ struct DestinationDetailView: View {
             VStack(spacing: 16) {
                 stationHeader
 
+                StationClosureCard(stationIds: [stationId])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 interchangeSection
 
                 DayPickerRow(selectedOffset: $dayOffset)

@@ -153,6 +153,10 @@ final class NotificationService: ObservableObject {
         let prefix = closeStations.map(\.id).sorted().joined(separator: ",")
         let lastPrefix = UserDefaults.standard.string(forKey: lastNearbyNotifKey) ?? ""
         if prefix == lastPrefix { return }
+        // 3.0.2: share the cooldown with the nearby next-train notification so the
+        // rider never gets both for the same station within 45 minutes.
+        let closeIds = closeStations.flatMap { $0.station.stationIds.isEmpty ? [$0.station.id] : $0.station.stationIds }
+        if NearbyNotificationLedger.inCooldown(stationIds: closeIds, now: SyrmosClock.now) { return }
 
         let stationName = closeStations.first?.station.name ?? ""
         let relevantAlert = activeAlerts.first
@@ -178,6 +182,7 @@ final class NotificationService: ObservableObject {
         )
         center.add(request)
         UserDefaults.standard.set(prefix, forKey: lastNearbyNotifKey)
+        NearbyNotificationLedger.record(stationIds: closeIds, now: SyrmosClock.now, countsTowardDailyCap: false)
     }
 
     // MARK: - Seen Alert Storage
@@ -353,5 +358,47 @@ enum NotificationPreferences {
     static var leaveByRemindersEnabled: Bool {
         get { UserDefaults.standard.object(forKey: leaveByKey) as? Bool ?? false }
         set { UserDefaults.standard.set(newValue, forKey: leaveByKey) }
+    }
+
+    // 3.0.2 "Announcements from Syrmos" (push + polled broadcasts). On by default.
+    static let broadcastsKey = "syrmos.notif.broadcasts"
+    static var broadcastsEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: broadcastsKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: broadcastsKey) }
+    }
+
+    // 3.0.2 nearby next-train notifications. Off by default (needs Always location).
+    static let nearbyTrainsKey = "syrmos.notif.nearbyTrains"
+    static var nearbyTrainsEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: nearbyTrainsKey) as? Bool ?? false }
+        set { UserDefaults.standard.set(newValue, forKey: nearbyTrainsKey) }
+    }
+
+    // 3.0.2 calendar leave-by reminders for every event with a location. Off by
+    // default; the per-type toggles default on once the master toggle is on.
+    static let calendarKey = "syrmos.notif.calendar"
+    static let calendarChecklistKey = "syrmos.notif.calendar.checklist"
+    static let calendarHeadsUpKey = "syrmos.notif.calendar.headsUp"
+    static let calendarLeaveNowKey = "syrmos.notif.calendar.leaveNow"
+    static let flightBufferKey = "syrmos.notif.calendar.flightBuffer"
+    static var calendarRemindersEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: calendarKey) as? Bool ?? false }
+        set { UserDefaults.standard.set(newValue, forKey: calendarKey) }
+    }
+    static func calendarTypeEnabled(_ kind: CalendarNotificationKind) -> Bool {
+        let key: String
+        switch kind {
+        case .flightChecklist: key = calendarChecklistKey
+        case .headsUp: key = calendarHeadsUpKey
+        case .leaveNow: key = calendarLeaveNowKey
+        }
+        return UserDefaults.standard.object(forKey: key) as? Bool ?? true
+    }
+    static var flightBufferMinutes: Int {
+        get {
+            let v = UserDefaults.standard.integer(forKey: flightBufferKey)
+            return CalendarLeaveBy.flightBufferChoices.contains(v) ? v : 120
+        }
+        set { UserDefaults.standard.set(newValue, forKey: flightBufferKey) }
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 struct STASYAnnouncement: Identifiable {
     let id: String
@@ -176,6 +177,7 @@ final class STASYService: ObservableObject {
             stationDisruptions = Self.deriveStationDisruptions(from: announcements, status: serviceStatus)
         }
     }
+    private var closuresObserver: AnyCancellable?
     @Published private(set) var lineDisruptions: [String: String] = [:]
     @Published private(set) var stationDisruptions: [String: String] = [:]
     @Published var isLoading = false
@@ -196,6 +198,19 @@ final class STASYService: ObservableObject {
         if announcements.isEmpty && serviceStatus == nil {
             hydrateFromBundleIfNeeded()
         }
+        // 3.0.2: a closure from /api/closures greys the station through the same
+        // stationDisruptions == "closure" path, so re-derive when closures change
+        // or a closure window opens or ends (the store ticks every minute).
+        closuresObserver = ClosuresStore.shared.$closures.combineLatest(ClosuresStore.shared.$tick)
+            .dropFirst()
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    let next = Self.deriveStationDisruptions(from: self.announcements, status: self.serviceStatus)
+                    if next != self.stationDisruptions { self.stationDisruptions = next }
+                }
+            }
+        stationDisruptions = Self.deriveStationDisruptions(from: announcements, status: serviceStatus)
     }
 
     private static func deriveLineDisruptions(from announcements: [STASYAnnouncement]) -> [String: String] {
@@ -239,6 +254,9 @@ final class STASYService: ObservableObject {
                     result[sid] = severity
                 }
             }
+        }
+        for sid in ClosuresStore.shared.closedStationIds() {
+            result[sid] = "closure"
         }
         return result
     }

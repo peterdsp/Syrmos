@@ -44,13 +44,34 @@ enum JourneyPlanner {
         let weight: Int
     }
 
+    /// Which stations a rider may board / alight at, from the closures active at
+    /// one instant (3.0.2). Ride edges through a closed or pass-through station
+    /// stay in the graph, so a closure never cuts a line in two; only boarding,
+    /// alighting and changing lines there are refused.
+    struct ClosureGate {
+        let closures: [StationClosure]
+        let now: Int64
+
+        static var current: ClosureGate {
+            ClosureGate(closures: ClosureSnapshot.current(), now: Int64(SyrmosClock.now.timeIntervalSince1970))
+        }
+
+        func canBoard(_ stationId: String) -> Bool {
+            closures.isEmpty || StationClosures.effect(closures, stationId: stationId, lineId: nil, now: now).canBoard
+        }
+
+        func canAlight(_ stationId: String) -> Bool {
+            closures.isEmpty || StationClosures.effect(closures, stationId: stationId, lineId: nil, now: now).canAlight
+        }
+    }
+
     /// Fastest route across the whole network.
-    static func plan(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
+    static func plan(from fromId: String, to toId: String, language: AppLanguage, gate: ClosureGate = .current) -> Plan? {
         // Operational only. Track that is built but not open renders on the map
         // because it is real, but routing through it would hand the user a plan
         // they cannot travel, which is worse than no plan. Mirrors KMP
         // PlanJourneyUseCase.
-        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines, language: language)
+        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines, language: language, gate: gate)
     }
 
     /// Metro-only alternative (M1/M2/M3), the sheltered option Ariadne can offer
@@ -58,13 +79,13 @@ enum JourneyPlanner {
     /// makes staying underground worth a few extra minutes. Nil when there's no
     /// all-metro path between the two stations. Mirrors KMP `metroOnly`.
     static func metroOnly(from fromId: String, to toId: String, language: AppLanguage) -> Plan? {
-        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines.filter { $0.type == .metro }, language: language)
+        compute(from: fromId, to: toId, lines: SyrmosData.operationalLines.filter { $0.type == .metro }, language: language, gate: .current)
     }
 
     /// The fastest route as a `DetailedPlan` (per-leg ordered stop ids), for the
     /// GO live-guidance engine. Operational lines only, like `plan`.
     static func planDetailed(from fromId: String, to toId: String, language: AppLanguage,
-                             bannedLineIds: Set<String> = []) -> DetailedPlan? {
+                             bannedLineIds: Set<String> = [], gate: ClosureGate = .current) -> DetailedPlan? {
         guard fromId != toId else { return nil }
         let stations = allStations()
         let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
@@ -74,7 +95,7 @@ enum JourneyPlanner {
         let usable = bannedLineIds.isEmpty ? SyrmosData.operationalLines
             : SyrmosData.operationalLines.filter { !bannedLineIds.contains($0.id) }
         let graph = buildGraph(usable, stations: stations)
-        guard let result = shortestPath(from: fromId, to: toId, graph: graph) else { return nil }
+        guard let result = shortestPath(from: fromId, to: toId, graph: graph, gate: gate) else { return nil }
 
         // Group the (stationId, edge) path into per-line legs, keeping every stop
         // id. A transfer edge (lineId == nil) ends the current leg and starts the
@@ -112,14 +133,14 @@ enum JourneyPlanner {
         return DetailedPlan(legs: legs, totalMinutes: result.total)
     }
 
-    private static func compute(from fromId: String, to toId: String, lines: [TransitLine], language: AppLanguage) -> Plan? {
+    private static func compute(from fromId: String, to toId: String, lines: [TransitLine], language: AppLanguage, gate: ClosureGate) -> Plan? {
         if fromId == toId { return nil }
         let stations = allStations()
         let byId = Dictionary(uniqueKeysWithValues: stations.map { ($0.id, $0) })
         guard byId[fromId] != nil, byId[toId] != nil else { return nil }
 
         let graph = buildGraph(lines, stations: stations)
-        guard let result = shortestPath(from: fromId, to: toId, graph: graph) else { return nil }
+        guard let result = shortestPath(from: fromId, to: toId, graph: graph, gate: gate) else { return nil }
         let path = result.path
 
         // Merge consecutive same-line edges into legs; transfer edges split legs.
@@ -213,7 +234,10 @@ enum JourneyPlanner {
 
     /// Dijkstra returning the ordered (stationId, edgeUsedToReachIt) path from
     /// `fromId` to `toId` (excluding the origin) and the total weight to `toId`.
-    private static func shortestPath(from fromId: String, to toId: String, graph: [String: [Edge]]) -> (path: [(String, Edge)], total: Int)? {
+    private static func shortestPath(from fromId: String, to toId: String, graph: [String: [Edge]], gate: ClosureGate) -> (path: [(String, Edge)], total: Int)? {
+        // A closed origin cannot be boarded and a closed destination cannot be
+        // left; pass-through stations are still ridden through.
+        guard gate.canBoard(fromId), gate.canAlight(toId) else { return nil }
         var dist: [String: Int] = [fromId: 0]
         var prev: [String: (String, Edge)] = [:]
         var visited = Set<String>()
@@ -226,6 +250,8 @@ enum JourneyPlanner {
             visited.insert(current)
             if current == toId { break }
             for edge in graph[current] ?? [] {
+                // Changing lines means leaving the train here and boarding there.
+                if edge.lineId == nil && !(gate.canAlight(current) && gate.canBoard(edge.to)) { continue }
                 let nd = d + edge.weight
                 if nd < (dist[edge.to] ?? Int.max) {
                     dist[edge.to] = nd

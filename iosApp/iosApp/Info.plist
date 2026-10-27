@@ -28,10 +28,12 @@
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Syrmos uses your location to find the nearest metro, tram, and suburban railway stations so you can see upcoming departures.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>If you turn on "Next trains when I'm near a station", Syrmos uses your location in the background to notice when you are within 1 km of a station and show its next trains. Your location never leaves your phone.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Syrmos reads upcoming airport trips from your calendar on this device to calculate when you should leave. Calendar events are never uploaded.</string>
+	<string>Syrmos reads your upcoming calendar events with a location (flights, appointments, concerts) on this device to tell you when to leave. Calendar events are never uploaded.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Syrmos reads upcoming airport trips from your calendar on this device to calculate when you should leave. Calendar events are never uploaded.</string>
+	<string>Syrmos reads your upcoming calendar events with a location (flights, appointments, concerts) on this device to tell you when to leave. Calendar events are never uploaded.</string>
 	<key>NSSiriUsageDescription</key>
 	<string>Syrmos uses Siri to let you ask about departures, service alerts, and ticket prices hands-free.</string>
 	<key>NSSupportsLiveActivities</key>

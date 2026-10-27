@@ -159,6 +159,10 @@ struct SyrmosEntry: TimelineEntry {
     let alerts: [String]
     var liveTrainCount: Int = 0
     var liveUpdatedEpoch: Double = 0
+    /// 3.0.2: set when the station is closed right now (from the closures the
+    /// app shares through the App Group), so the widget says Closed instead of
+    /// "No upcoming departures".
+    var closedLabel: String? = nil
     var isLiveDataFresh: Bool { liveTrainCount > 0 && (Date().timeIntervalSince1970 - liveUpdatedEpoch) < 300 }
 }
 
@@ -289,10 +293,15 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         let last = await MainActor.run { lastTrainString(for: station, lineFilter: lineFilter) }
         let stops = routeStops(for: station, lineFilter: lineFilter)
         widgetLog.debug("entry ready: \(station.name, privacy: .public), \(rows.count) rows")
+        let closure = StationClosures.effect(ClosureSnapshot.current(), stationId: station.id, lineId: lineFilter,
+                                             now: Int64(Date().timeIntervalSince1970))
+        let closed = closure.active && !closure.canBoard
+            ? WLoc.t("Closed", "Κλειστός", "I mbyllur", "Chiusa") : nil
         return SyrmosEntry(date: .now, stationName: station.name, rows: rows, routeStops: stops,
                            lastTrain: last, nearby: nearby, statuses: lineStatuses(),
                            weather: cachedWeather(), alerts: cachedAlerts(),
-                           liveTrainCount: live.count, liveUpdatedEpoch: live.updated)
+                           liveTrainCount: live.count, liveUpdatedEpoch: live.updated,
+                           closedLabel: closed)
     }
 
     /// The station to show: the user's pinned pick when nearest mode is off,
@@ -524,7 +533,17 @@ struct NextTrainView: View {
                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 } else {
                     Text(entry.stationName).font(.headline).lineLimit(1)
-                    Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme", "Nessuna partenza in arrivo")).font(.caption).foregroundStyle(.secondary)
+                    if let closed = entry.closedLabel {
+                        Text(closed)
+                            .font(.caption.weight(.bold))
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .foregroundStyle(.white)
+                            .background(Color.red, in: Capsule())
+                    } else {
+                        Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme", "Nessuna partenza in arrivo")).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 if family == .systemSmall {
                     if !entry.routeStops.isEmpty {
