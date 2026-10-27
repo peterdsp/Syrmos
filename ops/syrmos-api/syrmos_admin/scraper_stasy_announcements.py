@@ -1083,14 +1083,18 @@ def build_announcement(
     # line detection read the whole article body. Severity keeps using the
     # title + summary: a full-day *line* closure override is too costly to
     # risk on stray body wording, station closures are drafted separately.
-    full_text = " ".join((title_en, summary_en, extract_post_body(html)))
+    body = extract_post_body(html)
+    full_text = " ".join((title_en, summary_en, body))
     # Transit-relevance gate. Drop corporate / HR / tender / cultural junk
     # before it ever reaches the DB so the home screen stays signal-only.
     if not is_transit_relevant(classifier_text):
         return None
     severity = classify(classifier_text)
     affected_stations = detect_affected_stations(full_text)
-    station_closure = detect_station_closure(full_text) if affected_stations else None
+    # The closure sentence comes from the body when there is one: gluing the
+    # truncated summary onto it produced a mangled reason ("...οι συρμοί θα Σας
+    # ενημερώνουμε...").
+    station_closure = detect_station_closure(body or full_text) if affected_stations else None
     if station_closure and severity == "info":
         severity = "warning"  # a station closure is a service alert
     # Full-day line closures (date_overrides) keep using only the lines named in

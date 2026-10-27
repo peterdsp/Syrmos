@@ -304,6 +304,12 @@ button.ghost {{
 }}
 button.danger {{ background: var(--danger); }}
 form.inline {{ display: inline; }}
+a.action {{
+  display: inline-block; margin: 2px 4px 2px 0; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); text-decoration: none; font-size: 13px;
+}}
+a.action:hover {{ background: var(--panel-2); }}
 
 /* Small badges + meta */
 .small {{ font-size: 12px; color: var(--text-muted); }}
@@ -2402,8 +2408,8 @@ def closures_page(_: str = Depends(auth)) -> HTMLResponse:
     for r in rows:
         c = closures_mod.row_to_closure(r)
         actions = (
-            f"<a href='{ADMIN_PREFIX}/closures/{_h(r['id'])}/edit'>edit</a> "
-            f"<a href='{ADMIN_PREFIX}/broadcasts?closure={_h(r['id'])}'>broadcast</a> "
+            f"<a class=action href='{ADMIN_PREFIX}/closures/{_h(r['id'])}/edit'>edit</a> "
+            f"<a class=action href='{ADMIN_PREFIX}/broadcasts?closure={_h(r['id'])}'>broadcast</a> "
         )
         if r["status"] == "draft":
             actions += (

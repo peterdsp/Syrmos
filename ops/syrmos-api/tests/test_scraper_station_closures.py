@@ -112,6 +112,12 @@ def test_syntagma_article_becomes_service_alert(monkeypatch):
     assert item.station_closure["mode"] == "pass_through"
     # A station closure is not a full-day line closure: no date_overrides.
     assert item.closure_dates == []
+    # The reason is the full body sentence, not the truncated summary glued
+    # onto the start of the body.
+    reason = item.station_closure["reason"]
+    assert reason.startswith("Ο σταθμός του Μετρό «Σύνταγμα» θα κλείσει")
+    assert "χωρίς να πραγματοποιούν στάση" in reason
+    assert "Σας ενημερώνουμε" not in reason
 
 
 # --- drafts ------------------------------------------------------------------------
