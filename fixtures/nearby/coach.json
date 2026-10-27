@@ -1,0 +1,534 @@
+{
+  "schemaVersion": 1,
+  "description": "Nearby next-train coach, shared by Kotlin NearbyDepartureCoach and Swift NearbyDepartureCoach. walkMinutes = max(1, ceil(distanceMeters * 1.3 / 80)). Per (line, destination) direction, departures are minutes from now ascending with an isLast flag. case rules in order: stationClosed; noService if empty; if first < walk: no catchable -> missedLast when any listed departure isLast else noService; first catchable isLast -> lastTrain (tight = margin <= 2); wait = catchable - walk, wait <= 8 -> relaxNextOneIsClose else longGapTakeItEasy. If first >= walk: isLast -> lastTrain (tight = margin <= 2); margin <= 2 -> hurry; else comfortable. Headline = index of the direction whose case ranks first in stationClosed > lastTrain > missedLast > relaxNextOneIsClose > hurry > longGapTakeItEasy > comfortable > noService (tie: lowest index; empty -> null). Copy variant = fnv1a32(utf8(stationId + '|' + athensDate yyyy-MM-dd)) mod variantCount. Guards return the first blocking reason in order disabled, goActive, quietHours (hour >= 23 or < 7, Athens), moving (speed > 25 km/h; null speed allowed), cooldown (< 45 min since last for this station), dailyCap (>= 4 today), else allow. Geofence radius 1000 m, dwell 60 s, nearest 20 stations monitored.",
+  "walkCases": [
+    {
+      "distanceMeters": 0,
+      "expected": 1
+    },
+    {
+      "distanceMeters": 30,
+      "expected": 1
+    },
+    {
+      "distanceMeters": 61,
+      "expected": 1
+    },
+    {
+      "distanceMeters": 62,
+      "expected": 2
+    },
+    {
+      "distanceMeters": 400,
+      "expected": 7
+    },
+    {
+      "distanceMeters": 615,
+      "expected": 10
+    },
+    {
+      "distanceMeters": 1000,
+      "expected": 17
+    },
+    {
+      "distanceMeters": 1500,
+      "expected": 25
+    }
+  ],
+  "coachCases": [
+    {
+      "id": "owner_example_relax",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 2,
+          "isLast": false
+        },
+        {
+          "minutes": 10,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "relaxNextOneIsClose",
+        "nextMinutes": 2,
+        "followingMinutes": 10,
+        "waitMinutes": 5
+      }
+    },
+    {
+      "id": "relax_boundary_wait_8",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 2,
+          "isLast": false
+        },
+        {
+          "minutes": 13,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "relaxNextOneIsClose",
+        "nextMinutes": 2,
+        "followingMinutes": 13,
+        "waitMinutes": 8
+      }
+    },
+    {
+      "id": "long_gap_wait_9",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 2,
+          "isLast": false
+        },
+        {
+          "minutes": 14,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "longGapTakeItEasy",
+        "nextMinutes": 2,
+        "followingMinutes": 14,
+        "waitMinutes": 9
+      }
+    },
+    {
+      "id": "hurry_margin_0",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 5,
+          "isLast": false
+        },
+        {
+          "minutes": 12,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "hurry",
+        "nextMinutes": 5,
+        "marginMinutes": 0
+      }
+    },
+    {
+      "id": "hurry_margin_2",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 7,
+          "isLast": false
+        },
+        {
+          "minutes": 15,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "hurry",
+        "nextMinutes": 7,
+        "marginMinutes": 2
+      }
+    },
+    {
+      "id": "comfortable_margin_3",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 8,
+          "isLast": false
+        },
+        {
+          "minutes": 15,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "comfortable",
+        "nextMinutes": 8,
+        "marginMinutes": 3
+      }
+    },
+    {
+      "id": "last_train_catchable_tight",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 6,
+          "isLast": true
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "lastTrain",
+        "nextMinutes": 6,
+        "tight": true
+      }
+    },
+    {
+      "id": "last_train_catchable_relaxed",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 12,
+          "isLast": true
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "lastTrain",
+        "nextMinutes": 12,
+        "tight": false
+      }
+    },
+    {
+      "id": "missed_first_next_is_last",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 2,
+          "isLast": false
+        },
+        {
+          "minutes": 9,
+          "isLast": true
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "lastTrain",
+        "nextMinutes": 9,
+        "tight": false
+      }
+    },
+    {
+      "id": "missed_last_train",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 3,
+          "isLast": true
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "missedLast",
+        "nextMinutes": 3
+      }
+    },
+    {
+      "id": "missed_all_not_last",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 1,
+          "isLast": false
+        },
+        {
+          "minutes": 3,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "noService",
+        "nextMinutes": 1
+      }
+    },
+    {
+      "id": "no_departures",
+      "walkMinutes": 5,
+      "departures": [],
+      "stationClosed": false,
+      "expected": {
+        "case": "noService"
+      }
+    },
+    {
+      "id": "station_closed_wins",
+      "walkMinutes": 5,
+      "departures": [
+        {
+          "minutes": 8,
+          "isLast": false
+        },
+        {
+          "minutes": 15,
+          "isLast": false
+        }
+      ],
+      "stationClosed": true,
+      "expected": {
+        "case": "stationClosed"
+      }
+    },
+    {
+      "id": "departing_now_walk_1",
+      "walkMinutes": 1,
+      "departures": [
+        {
+          "minutes": 0,
+          "isLast": false
+        },
+        {
+          "minutes": 6,
+          "isLast": false
+        }
+      ],
+      "stationClosed": false,
+      "expected": {
+        "case": "relaxNextOneIsClose",
+        "nextMinutes": 0,
+        "followingMinutes": 6,
+        "waitMinutes": 5
+      }
+    }
+  ],
+  "headlineCases": [
+    {
+      "cases": [
+        "comfortable",
+        "relaxNextOneIsClose"
+      ],
+      "expected": 1
+    },
+    {
+      "cases": [
+        "hurry",
+        "longGapTakeItEasy",
+        "comfortable"
+      ],
+      "expected": 0
+    },
+    {
+      "cases": [
+        "comfortable",
+        "lastTrain"
+      ],
+      "expected": 1
+    },
+    {
+      "cases": [
+        "noService",
+        "comfortable"
+      ],
+      "expected": 1
+    },
+    {
+      "cases": [
+        "comfortable",
+        "comfortable"
+      ],
+      "expected": 0
+    },
+    {
+      "cases": [],
+      "expected": null
+    }
+  ],
+  "variantCases": [
+    {
+      "stationId": "M3_NIK",
+      "athensDate": "2026-10-27",
+      "variantCount": 3,
+      "expectedHash": 40465884,
+      "expected": 0
+    },
+    {
+      "stationId": "M3_NIK",
+      "athensDate": "2026-10-28",
+      "variantCount": 3,
+      "expectedHash": 157909217,
+      "expected": 2
+    },
+    {
+      "stationId": "M2_SYN",
+      "athensDate": "2026-10-27",
+      "variantCount": 3,
+      "expectedHash": 3267926017,
+      "expected": 1
+    },
+    {
+      "stationId": "T6_SYN",
+      "athensDate": "2026-12-31",
+      "variantCount": 4,
+      "expectedHash": 2072798215,
+      "expected": 3
+    },
+    {
+      "stationId": "Νίκαια",
+      "athensDate": "2026-10-27",
+      "variantCount": 3,
+      "expectedHash": 914645290,
+      "expected": 1
+    }
+  ],
+  "guardCases": [
+    {
+      "id": "allow_default",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "allow"
+    },
+    {
+      "id": "disabled_first",
+      "input": {
+        "enabled": false,
+        "goJourneyActive": true,
+        "athensHour": 2,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "disabled"
+    },
+    {
+      "id": "go_active",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": true,
+        "athensHour": 12,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "goActive"
+    },
+    {
+      "id": "quiet_23",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 23,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "quietHours"
+    },
+    {
+      "id": "quiet_6",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 6,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "quietHours"
+    },
+    {
+      "id": "hour_7_allowed",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 7,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "allow"
+    },
+    {
+      "id": "moving_fast",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 40.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "moving"
+    },
+    {
+      "id": "speed_25_allowed",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 25.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "allow"
+    },
+    {
+      "id": "speed_unknown_allowed",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": null,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "allow"
+    },
+    {
+      "id": "cooldown_44min",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": 1793164560,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "cooldown"
+    },
+    {
+      "id": "cooldown_45min_allowed",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": 1793164500,
+        "notificationsToday": 0,
+        "now": 1793167200
+      },
+      "expected": "allow"
+    },
+    {
+      "id": "daily_cap",
+      "input": {
+        "enabled": true,
+        "goJourneyActive": false,
+        "athensHour": 12,
+        "speedKmh": 3.0,
+        "lastNotifiedForStationEpochSeconds": null,
+        "notificationsToday": 4,
+        "now": 1793167200
+      },
+      "expected": "dailyCap"
+    }
+  ]
+}
