@@ -19,6 +19,7 @@ rsync -avz --delete \
   --exclude __pycache__ \
   --exclude '*.pyc' \
   --exclude admin.env \
+  --exclude secrets \
   "$HERE"/ "$PI:$REMOTE_HOME"/
 
 echo ">>> syncing icon package to $PI"
@@ -106,6 +107,8 @@ ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-oseth.service /etc/system
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-oseth.timer /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-thessmetro.service /etc/systemd/system/"
 ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-scraper-thessmetro.timer /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-broadcasts.service /etc/systemd/system/"
+ssh "$PI" "sudo cp ~/syrmos-api/systemd/syrmos-broadcasts.timer /etc/systemd/system/"
 ssh "$PI" "sudo systemctl daemon-reload"
 ssh "$PI" "sudo systemctl enable --now syrmos-admin.service"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-24mmm.timer"
@@ -117,6 +120,7 @@ ssh "$PI" "sudo systemctl enable --now syrmos-scraper-hellenic-train.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-ht-important-info.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-oseth.timer"
 ssh "$PI" "sudo systemctl enable --now syrmos-scraper-thessmetro.timer"
+ssh "$PI" "sudo systemctl enable --now syrmos-broadcasts.timer"
 
 echo ">>> patching ~/syrmos-proxy/nginx.conf with dynamic API routes + reloading nginx"
 ssh "$PI" bash <<'REMOTE'
@@ -269,6 +273,55 @@ block = """        # --- permanent anonymous Ichnos aggregate history ---
         """
 p.write_text(txt.replace(marker, block + marker, 1))
 print("patched community history")
+PY
+fi
+if ! grep -q "/api/closures" "$conf"; then
+  cp "$conf" "$conf.bak.closures.$(date +%s)"
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "syrmos-proxy/nginx.conf"
+txt = p.read_text()
+marker = "# --- admin UI (FastAPI"
+block = """        # --- 3.0.2 station closures + broadcasts (public reads, app sets ETag/Cache-Control) ---
+        location = /api/closures {
+            proxy_pass http://127.0.0.1:8092/api/closures;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Cf-Access-Jwt-Assertion "";
+            proxy_set_header Cf-Access-Authenticated-User-Email "";
+            add_header Access-Control-Allow-Origin "*" always;
+        }
+
+        location = /api/broadcasts {
+            proxy_pass http://127.0.0.1:8092/api/broadcasts$is_args$args;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Cf-Access-Jwt-Assertion "";
+            proxy_set_header Cf-Access-Authenticated-User-Email "";
+            add_header Access-Control-Allow-Origin "*" always;
+        }
+
+        # --- 3.0.2 anonymous push registration (native apps only, no CORS) ---
+        location ~ ^/api/push/(register|unregister)$ {
+            proxy_pass http://127.0.0.1:8092/api/push/$1;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Content-Type $content_type;
+            proxy_set_header Cf-Access-Jwt-Assertion "";
+            proxy_set_header Cf-Access-Authenticated-User-Email "";
+            add_header Cache-Control "no-store" always;
+            client_max_body_size 16k;
+        }
+
+        """
+p.write_text(txt.replace(marker, block + marker, 1))
+print("patched closures, broadcasts, push")
 PY
 fi
 /usr/sbin/nginx -t -c "$conf" -p ~/syrmos-proxy/

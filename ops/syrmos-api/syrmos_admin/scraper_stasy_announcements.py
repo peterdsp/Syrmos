@@ -21,11 +21,13 @@ Cron: hourly via systemd timer (see systemd/syrmos-scraper-stasy.timer)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sqlite3
+import unicodedata
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.parse import quote, urlparse, urlunparse
@@ -102,48 +104,72 @@ LINE_KEYWORDS: list[tuple[str, str]] = [
 
 # Severity keywords (Greek + English).
 
-# Station-level detection for the M3 airport extension (the most common
-# partial-closure announcement). Maps Greek + English keywords to canonical
-# station IDs used by the client apps.
+# Station-level detection. Maps Greek + English keywords to canonical station
+# ids used by the client apps (the ids in lines.json: M3_CHO, M3_AG3, ...).
+# Matching runs on accent-folded lowercase text (see _fold), so «Χαλάνδρι»,
+# ΧΑΛΑΝΔΡΙ and the genitive Χαλανδρίου all match the stem 'χαλανδρ'. Several
+# entries may share a keyword: Syntagma is one interchange with an id per line.
+# A few generic phrases keep legacy pseudo-ids (AIRPORT, PENTELI, DOUK_PLAK);
+# they never match a real station, so they never create a draft closure.
 STATION_KEYWORDS: list[tuple[str, str]] = [
-    ('δουκίσσης πλακεντίας', 'DOUK_PLAK'),
-    ('doukissis plakentias', 'DOUK_PLAK'),
-    ('δουκ. πλακεντίας', 'DOUK_PLAK'),
-    ('παλλήνη', 'PALLINI'),
-    ('pallini', 'PALLINI'),
-    ('κάντζα', 'KANTZA'),
-    ('kantza', 'KANTZA'),
-    ('κορωπί', 'KOROPI'),
-    ('koropi', 'KOROPI'),
+    ('δουκίσσης πλακεντίας', 'M3_DOY'),
+    ('doukissis plakentias', 'M3_DOY'),
+    ('δουκ. πλακεντίας', 'M3_DOY'),
+    ('παλλήνη', 'M3_PAL'),
+    ('pallini', 'M3_PAL'),
+    ('κάντζα', 'M3_PEA'),
+    ('kantza', 'M3_PEA'),
+    ('κορωπί', 'M3_KO2'),
+    ('koropi', 'M3_KO2'),
     ('αεροδρόμιο', 'AIRPORT'),
     ('airport', 'AIRPORT'),
     ('πεντέλη', 'PENTELI'),
     ('penteli', 'PENTELI'),
-    # M3 central stations
+    # Syntagma: M2 and M3 platforms are one station complex
+    ('σύνταγμα', 'M2_SYN'),
     ('σύνταγμα', 'M3_SYN'),
+    ('syntagma', 'M2_SYN'),
     ('syntagma', 'M3_SYN'),
-    ('ευαγγελισμός', 'M3_EVA'),
-    ('ευαγγελισμος', 'M3_EVA'),
+    # M3 central and eastern stations
+    ('ευαγγελισμ', 'M3_EVA'),
     ('evangelismos', 'M3_EVA'),
     ('μέγαρο μουσικής', 'M3_MEG'),
-    ('μεγαρο μουσικης', 'M3_MEG'),
+    ('μεγάρου μουσικής', 'M3_MEG'),
     ('megaro mousikis', 'M3_MEG'),
     ('megaro musikis', 'M3_MEG'),
     ('εθνική άμυνα', 'M3_ETH'),
-    ('εθνικη αμυνα', 'M3_ETH'),
+    ('εθνικής άμυνας', 'M3_ETH'),
     ('ethniki amyna', 'M3_ETH'),
-    ('χολαργός', 'M3_HOL'),
-    ('holargos', 'M3_HOL'),
-    ('νομισματοκοπείο', 'M3_NOM'),
+    ('χολαργ', 'M3_CHO'),
+    ('cholargos', 'M3_CHO'),
+    ('holargos', 'M3_CHO'),
+    ('νομισματοκοπεί', 'M3_NOM'),
     ('nomismatokopeio', 'M3_NOM'),
-    ('αγ. μαρίνα', 'M3_AGM'),
-    ('agia marina', 'M3_AGM'),
+    ('nomismatokopio', 'M3_NOM'),
+    ('αγία παρασκευή', 'M3_AG3'),
+    ('αγίας παρασκευής', 'M3_AG3'),
+    ('agia paraskevi', 'M3_AG3'),
+    ('χαλάνδρ', 'M3_CHA'),
+    ('chalandri', 'M3_CHA'),
+    ('halandri', 'M3_CHA'),
+    ('αγ. μαρίνα', 'M3_AG2'),
+    ('αγία μαρίνα', 'M3_AG2'),
+    ('agia marina', 'M3_AG2'),
     ('μοναστηράκι', 'M3_MON'),
     ('monastiraki', 'M3_MON'),
     # Generic M3 extension stations
     ('σταθμοί επέκτασης', 'DOUK_PLAK'),
     ('extension stations', 'DOUK_PLAK'),
 ]
+
+
+def _fold(text: str) -> str:
+    """Lowercase, strip Greek accents/diaeresis and normalise final sigma, so
+    keyword matching survives tonos, capitals and the final-sigma form."""
+    decomposed = unicodedata.normalize("NFD", text.lower())
+    stripped = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return stripped.replace("ς", "σ")
+
 
 _SERVICE_UNTIL_RE = re.compile(
     r'(?:μέχρι|έως|ως|κλείνουν στις|until|closes? at|service until)\s*(\d{1,2}[:.:]\d{2})',
@@ -152,10 +178,10 @@ _SERVICE_UNTIL_RE = re.compile(
 
 
 def detect_affected_stations(text: str) -> list[str]:
-    lowered = text.lower()
+    folded = _fold(text)
     found: set[str] = set()
     for keyword, station_id in STATION_KEYWORDS:
-        if keyword in lowered:
+        if _fold(keyword) in folded:
             found.add(station_id)
     return sorted(found)
 
@@ -356,6 +382,12 @@ class AnnouncementItem:
     closure_dates: list[str] = field(default_factory=list)
     affected_station_ids: list[str] = field(default_factory=list)
     service_until_time: str | None = None
+    # Station-level closure parsed from the text (detect_station_closure), used
+    # to draft a station_closures row for the owner to approve.
+    station_closure: dict | None = None
+    # Lines a full-day closure applies to (date_overrides), from title + summary
+    # only. Never derived from the article body or from detected stations.
+    closure_line_ids: list[str] = field(default_factory=list)
 
 
 def _ascii_url(url: str) -> str:
@@ -691,6 +723,12 @@ _DMY_NUMERIC_RE = re.compile(
     r"(?<!\d)(\d{1,2})[/\-.](\d{1,2})(?:[/\-.](\d{2,4}))?(?!\d)"
 )
 _TIME_OF_DAY_RE = re.compile(r"\b(\d{1,2}):(\d{2})\b")
+# "από την Κυριακή 25 έως και την Πέμπτη 29 Οκτωβρίου": the first day of a
+# range carries no month of its own. Matched on _fold()ed text.
+_RANGE_GREEK_RE = re.compile(
+    r"(\d{1,2})(?:η|ησ)?\s+(?:εωσ|μεχρι)\s+(?:και\s+)?(?:την?\s+)?(?:[α-ω]+\s+)?"
+    r"(\d{1,2})(?:η|ησ)?\s+(ιαν|φεβ|μαρ|απρ|μαι|ιουν|ιουλ|αυγ|σεπ|οκτ|νοε|δεκ)"
+)
 _GREEK_MONTHS = {
     "ιαν": 1, "φεβ": 2, "μαρ": 3, "απρ": 4, "μαΐ": 5, "μαϊ": 5, "μαι": 5,
     "ιουν": 6, "ιουλ": 7, "αυγ": 8, "σεπ": 9, "οκτ": 10, "νοε": 11, "δεκ": 12,
@@ -735,6 +773,14 @@ def detect_dates(text: str, today: date | None = None) -> tuple[str | None, str 
         if candidate is not None:
             iso_dates.add(candidate.isoformat())
 
+    for first_str, _last_str, m_str in _RANGE_GREEK_RE.findall(_fold(text)):
+        month = _GREEK_MONTHS.get(m_str)
+        day = int(first_str)
+        if month and 1 <= day <= 31:
+            candidate = _nearest_year(today, month, day)
+            if candidate is not None:
+                iso_dates.add(candidate.isoformat())
+
     for d_str, m_str, y_str in _DMY_NUMERIC_RE.findall(text):
         try:
             day = int(d_str)
@@ -776,6 +822,238 @@ def has_time_of_day(text: str) -> bool:
     return False
 
 
+# --- Station-level closures -> draft station_closures rows ------------------
+#
+# STASY often closes single stations ("ο σταθμός «Σύνταγμα» θα κλείσει στις 8
+# το πρωί και οι συρμοί θα διέρχονται χωρίς να πραγματοποιούν στάση", "οι
+# σταθμοί ... θα κλείνουν στις 21:40"). Those are station closures, not line
+# closures, so they never write date_overrides. Instead the scraper drafts a
+# station_closures row (status 'draft', source 'stasy') that the owner
+# approves with one click in /admin/closures. Nothing goes live from a scrape.
+# All keywords below are matched against _fold()ed text.
+
+_PASS_THROUGH_KEYWORDS = (
+    "διερχονται", "θα διερχονται", "χωρισ να πραγματοποιουν σταση", "χωρισ σταση",
+    "without stopping", "pass through",
+)
+_STATION_CLOSE_KEYWORDS = (
+    "θα κλεισει", "θα κλεισουν", "κλεινουν", "κλεινει", "παραμενει κλειστ",
+    "παραμενουν κλειστ", "θα παραμεινει κλειστ", "θα παραμεινουν κλειστ",
+    "will close", "will be closed", "remain closed", "remains closed",
+    "δεν θα λειτουργ", "will not operate",
+)
+_OPEN_ENDED_KEYWORDS = ("νεωτερασ", "αναμενεται μετα", "until further notice")
+_HABITUAL_CLOSE_KEYWORDS = ("κλεινουν", "κλεινει")
+_MORNING_RE = re.compile(r"στισ (\d{1,2})(?:[:.](\d{2}))? ?(?:το πρωι|π\.? ?μ)")
+_EVENING_RE = re.compile(r"στισ (\d{1,2})(?:[:.](\d{2}))? ?(?:το βραδυ|το απογευμα|μ\.? ?μ)")
+_BUS_RE = re.compile(r"λεωφορει|\bbus\b")
+_SEGMENT_SPLIT_RE = re.compile(r"\s+[\u2013\u2014-]\s+|(?<=[.;])\s+")
+# Pseudo-ids from generic phrases; never a real station.
+_PSEUDO_STATION_IDS = {"AIRPORT", "PENTELI", "DOUK_PLAK"}
+DRAFT_DAY_END = "05:00"  # a draft window ends before the next morning's first train
+
+
+def _closure_time(text: str) -> str | None:
+    m = _TIME_OF_DAY_RE.search(text)
+    if m and 0 <= int(m.group(1)) <= 23 and 0 <= int(m.group(2)) <= 59:
+        return f"{int(m.group(1)):02d}:{int(m.group(2)):02d}"
+    folded = _fold(text)
+    for pattern, offset in ((_MORNING_RE, 0), (_EVENING_RE, 12)):
+        m = pattern.search(folded)
+        if m:
+            hour = int(m.group(1))
+            if offset and hour < 12:
+                hour += offset
+            if 0 <= hour <= 23:
+                return f"{hour:02d}:{int(m.group(2) or 0):02d}"
+    return None
+
+
+def _closure_sentence(text: str) -> str:
+    """The sentence(s) that state the station closure, for the reason text."""
+    segments = [seg.strip(" -\u2013\u2014\u00a0") for seg in _SEGMENT_SPLIT_RE.split(text)]
+    picked = [
+        seg for seg in segments
+        if any(k in _fold(seg) for k in _STATION_CLOSE_KEYWORDS + _PASS_THROUGH_KEYWORDS)
+    ]
+    return " ".join(" ".join(picked).split())[:600]
+
+
+def detect_station_closure(text: str) -> dict | None:
+    """Parse a station closure from Greek or English text, or None.
+
+    Returns {"mode", "time", "nightly", "openEnded", "replacementBus", "reason"}.
+    pass_through when trains run through without stopping, else closed.
+    nightly = an evening closing time with habitual wording ("θα κλείνουν στις
+    21:40"), meaning the stations close every evening of the date range.
+    """
+    folded = _fold(text)
+    passes = any(k in folded for k in _PASS_THROUGH_KEYWORDS)
+    closes = any(k in folded for k in _STATION_CLOSE_KEYWORDS)
+    if not (passes or closes):
+        return None
+    time_hhmm = _closure_time(text)
+    nightly = bool(
+        time_hhmm and time_hhmm >= "18:00"
+        and any(k in folded for k in _HABITUAL_CLOSE_KEYWORDS)
+    )
+    return {
+        "mode": "pass_through" if passes else "closed",
+        "time": time_hhmm,
+        "nightly": nightly,
+        "openEnded": any(k in folded for k in _OPEN_ENDED_KEYWORDS),
+        "replacementBus": bool(_BUS_RE.search(folded)),
+        "reason": _closure_sentence(text),
+    }
+
+
+def extract_post_body(html: str) -> str:
+    """Plain text of the article body (the Elementor post-content widget), so
+    classification sees the whole notice and not just the truncated
+    og:description. Returns "" when the page has no such widget."""
+    i = html.find("elementor-widget-theme-post-content")
+    if i == -1:
+        return ""
+    start = html.find(">", i)
+    end_candidates = [
+        j for j in (
+            html.find("<section", start),
+            html.find("ΚΟΙΝΟΠΟΙΗΣΗ", start),
+            html.find("elementor-share-buttons", start),
+        ) if j != -1
+    ]
+    end = min(end_candidates) if end_candidates else min(len(html), start + 20000)
+    fragment = re.sub(r"</(div|p|li|h[1-6])>|<br\s*/?>", "\n", html[start + 1:end], flags=re.I)
+    return " ".join(strip_html(fragment).split())
+
+
+def _lines_for_stations(station_ids: list[str]) -> list[str]:
+    out: list[str] = []
+    for sid in station_ids:
+        prefix = sid.split("_", 1)[0]
+        if "_" in sid and sid not in _PSEUDO_STATION_IDS and prefix not in out:
+            out.append(prefix)
+    return out
+
+
+def _athens_epoch(day: date, hhmm: str) -> int:
+    from zoneinfo import ZoneInfo
+
+    hour, minute = (int(x) for x in hhmm.split(":"))
+    return int(datetime(day.year, day.month, day.day, hour, minute, tzinfo=ZoneInfo("Europe/Athens")).timestamp())
+
+
+def draft_closure_for_item(item: "AnnouncementItem", today: date) -> dict | None:
+    """The draft station_closures row an announcement suggests, or None.
+
+    Pure (no DB): station ids are not checked against the stations table here.
+    A nightly closure drafts tonight's window only (source_ref carries the
+    date), so each evening of a multi-day notice gets its own draft.
+    """
+    info = item.station_closure
+    stations = [s for s in item.affected_station_ids if s not in _PSEUDO_STATION_IDS]
+    if not info or not stations:
+        return None
+
+    def parse(d: str | None) -> date | None:
+        try:
+            return date.fromisoformat(d) if d else None
+        except ValueError:
+            return None
+
+    valid_from, valid_until = parse(item.valid_from), parse(item.valid_until)
+    if valid_until and valid_until < today:
+        return None
+    start_day = valid_from or today
+    source_ref = item.slug
+    if item.slug == "stasy-homepage-alert":
+        # The inline banner reuses one slug for every alert; key on its text.
+        source_ref += ":" + hashlib.sha1(item.title.encode("utf-8")).hexdigest()[:8]
+    if info["nightly"]:
+        start_day = max(start_day, today)
+        source_ref = f"{item.slug}@{start_day.isoformat()}"
+        ends = _athens_epoch(start_day + timedelta(days=1), DRAFT_DAY_END)
+    elif info["openEnded"] or not valid_until:
+        ends = None
+    else:
+        ends = _athens_epoch(valid_until + timedelta(days=1), DRAFT_DAY_END)
+    starts = _athens_epoch(start_day, info["time"] or "00:00")
+    if ends is not None and ends <= starts:
+        return None
+    bus = None
+    if info["replacementBus"]:
+        bus = {
+            "label": {"el": "Προσωρινή λεωφορειακή γραμμή", "en": "Temporary bus line"},
+            "fromStop": {}, "toStop": {}, "headwayMinutes": None, "stops": [],
+        }
+    reason_el = info["reason"] if _has_greek(info["reason"]) else ""
+    reason_el = reason_el or (item.title if _has_greek(item.title) else "")
+    reason_en = item.title_en if (item.title_en and not _has_greek(item.title_en)) else ""
+    if not reason_el and not _has_greek(info["reason"]):
+        reason_en = reason_en or info["reason"]
+    digest = hashlib.sha1(source_ref.encode("utf-8")).hexdigest()[:12]
+    return {
+        "id": f"stasy-{digest}",
+        "station_ids": sorted(stations),
+        "line_ids": [],
+        "mode": info["mode"],
+        "starts_at": starts,
+        "ends_at": ends,
+        "reason_el": reason_el,
+        "reason_en": reason_en,
+        "replacement_bus": bus,
+        "source_ref": source_ref,
+    }
+
+
+def upsert_draft_closures(conn: sqlite3.Connection, items: list["AnnouncementItem"], today: date) -> int:
+    """Insert one draft closure per qualifying announcement (idempotent per
+    announcement, per night for nightly closures). Never overwrites an
+    existing row, so the owner's edits and approvals stick. Returns how many
+    drafts were created."""
+    from . import closures as closures_mod
+    from . import schedule_invariants
+
+    try:
+        known = {r[0] for r in conn.execute("SELECT id FROM stations")}
+    except sqlite3.OperationalError:
+        known = set()
+    created = 0
+    for item in items:
+        draft = draft_closure_for_item(item, today)
+        if draft is None:
+            continue
+        if known:
+            draft["station_ids"] = [s for s in draft["station_ids"] if s in known]
+            if not draft["station_ids"]:
+                continue
+        probe = {
+            "id": draft["id"], "stationIds": draft["station_ids"], "lineIds": draft["line_ids"],
+            "mode": draft["mode"], "startsAtEpochSeconds": draft["starts_at"],
+            "endsAtEpochSeconds": draft["ends_at"], "status": "scheduled",
+        }
+        try:
+            if schedule_invariants.closure_emptied_lines(conn, probe, closures_mod.load_closures(conn)):
+                continue
+            cur = conn.execute(
+                "INSERT OR IGNORE INTO station_closures"
+                "(id, station_ids, line_ids, mode, starts_at, ends_at, reason_el, reason_en,"
+                " replacement_bus, source, source_ref, status, created_by)"
+                " VALUES(?,?,?,?,?,?,?,?,?,'stasy',?,'draft','stasy-scraper')",
+                (
+                    draft["id"], json.dumps(draft["station_ids"]), json.dumps(draft["line_ids"]),
+                    draft["mode"], draft["starts_at"], draft["ends_at"],
+                    draft["reason_el"], draft["reason_en"],
+                    json.dumps(draft["replacement_bus"], ensure_ascii=False) if draft["replacement_bus"] else None,
+                    draft["source_ref"],
+                ),
+            )
+        except sqlite3.OperationalError:
+            return created  # station_closures not migrated yet on this host
+        created += cur.rowcount
+    return created
+
+
 def build_announcement(
     english_url: str, english_title_fallback: str, today: date | None = None
 ) -> AnnouncementItem | None:
@@ -800,12 +1078,34 @@ def build_announcement(
             return None
         summary_en = _summary(body)
     classifier_text = " ".join((title_en, summary_en)).lower()
+    # og:description is truncated (the 28 Oct 2026 notice was cut before the
+    # "trains pass without stopping" clause and the tram lines), so station and
+    # line detection read the whole article body. Severity keeps using the
+    # title + summary: a full-day *line* closure override is too costly to
+    # risk on stray body wording, station closures are drafted separately.
+    full_text = " ".join((title_en, summary_en, extract_post_body(html)))
     # Transit-relevance gate. Drop corporate / HR / tender / cultural junk
     # before it ever reaches the DB so the home screen stays signal-only.
     if not is_transit_relevant(classifier_text):
         return None
     severity = classify(classifier_text)
-    affected = detect_affected_lines(classifier_text)
+    affected_stations = detect_affected_stations(full_text)
+    station_closure = detect_station_closure(full_text) if affected_stations else None
+    if station_closure and severity == "info":
+        severity = "warning"  # a station closure is a service alert
+    # Full-day line closures (date_overrides) keep using only the lines named in
+    # the title + summary, exactly as before the full-body read: a single-station
+    # notice whose body says "use M1 or the tram" must never close M1 for the day.
+    # When the title + summary name a station but no line, it is a station
+    # closure: the draft station closure covers it, and the all-lines fallback
+    # (meant for network-wide notices) must not close every line for the day.
+    closure_lines = detect_affected_lines(classifier_text)
+    if not closure_lines and severity == "closure" and not detect_affected_stations(classifier_text):
+        closure_lines = ["M1", "M2", "M3", "M3_AIR", "T6", "T7"]
+    # Body-derived lines and station lines only feed the alert display.
+    affected = detect_affected_lines(full_text.lower())
+    if station_closure:
+        affected += [l for l in _lines_for_stations(affected_stations) if l not in affected]
     if not affected and severity in ("warning", "closure"):
         affected = ["M1", "M2", "M3", "M3_AIR", "T6", "T7"]
     valid_from, valid_until, closure_dates = detect_dates(classifier_text, today=today)
@@ -860,14 +1160,16 @@ def build_announcement(
         title_it=title_it,
         summary_it=summary_it,
         affected_lines=affected,
-        affected_station_ids=detect_affected_stations(classifier_text),
+        affected_station_ids=affected_stations,
         service_until_time=detect_service_until_time(classifier_text),
         severity=severity,
         valid_from=valid_from,
         valid_until=valid_until,
+        station_closure=station_closure,
     )
     if severity == "closure":
         item.closure_dates = closure_dates
+        item.closure_line_ids = closure_lines
     return item
 
 
@@ -945,7 +1247,7 @@ def upsert(conn: sqlite3.Connection, items: list[AnnouncementItem]) -> int:
                 )
             # Closure overrides: one (line, date) row per affected line per date.
             for d in item.closure_dates:
-                for line_id in item.affected_lines:
+                for line_id in item.closure_line_ids:
                     payload = json.dumps({
                         "closed": True,
                         "reason": item.title,
@@ -1014,6 +1316,7 @@ def run_once(now: date | None = None) -> int:
         # so anchor valid_from to today — the banner only exists while STASY
         # publishes it, so "fresh as of today" is the right semantics.
         station_text = banner_gr + " " + banner_en
+        banner_stations = detect_affected_stations(station_text)
         synthetic = AnnouncementItem(
             slug="stasy-homepage-alert",
             title=banner_gr,
@@ -1026,11 +1329,12 @@ def run_once(now: date | None = None) -> int:
             title_it=banner_it,
             summary_it=banner_it,
             affected_lines=affected,
-            affected_station_ids=detect_affected_stations(station_text),
+            affected_station_ids=banner_stations,
             service_until_time=homepage_status.get("service_until") or detect_service_until_time(station_text),
             severity="warning",
             valid_from=vf_detected or now.isoformat(),
             valid_until=vu_detected,
+            station_closure=detect_station_closure(banner_gr) if banner_stations else None,
         )
         if synthetic.slug not in seen_slugs:
             items.append(synthetic)
@@ -1050,6 +1354,7 @@ def run_once(now: date | None = None) -> int:
             seen_slugs.add(item.slug)
     with dbmod.connect() as conn:
         count = upsert(conn, items)
+        upsert_draft_closures(conn, items, now)
         if homepage_status is not None:
             upsert_homepage_status(conn, homepage_status)
         conn.execute(

@@ -510,3 +510,129 @@ class ScheduledTripActiveMidnightTest(unittest.TestCase):
     def test_overnight_train_active_before_midnight(self):
         trains = {o["trainNo"] for o in self._run(23 * 60 + 40)}  # 23:40
         self.assertIn("3203", trains)
+
+
+# --- station closures (3.0.2) -------------------------------------------------
+
+def _with_closures(conn, *closures):
+    """Add the real station_closures table (migration 0029) and rows to a projector conn."""
+    import json
+    from pathlib import Path
+
+    conn.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT)")
+    sql = (Path(__file__).resolve().parent.parent / "migrations" / "0029_station_closures.sql").read_text()
+    conn.executescript(sql)
+    for c in closures:
+        conn.execute(
+            "INSERT INTO station_closures(id, station_ids, line_ids, mode, starts_at, ends_at, status)"
+            " VALUES(?,?,?,?,?,?,?)",
+            (c["id"], json.dumps(c["stations"]), json.dumps(c.get("lines", [])), c["mode"],
+             c["starts"], c.get("ends"), c.get("status", "active")),
+        )
+    return conn
+
+
+SUNDAY_0343 = datetime(2026, 6, 14, 3, 43, tzinfo=ATHENS)
+SUNDAY_0540 = datetime(2026, 6, 14, 5, 40, tzinfo=ATHENS)
+
+
+def _epoch(dt):
+    return int(dt.timestamp())
+
+
+class ProjectorClosureTest(unittest.TestCase):
+    def test_pass_through_station_has_no_departures(self):
+        conn = _with_closures(make_conn(), {
+            "id": "syn", "stations": ["M2_SYN", "M3_SYN"], "mode": "pass_through",
+            "starts": _epoch(SUNDAY_0343) - 60,
+        })
+        self.assertEqual(project_next_departures(conn, "M2_SYN", ["M2", "M3"], now=SUNDAY_0343), [])
+        from syrmos_admin.projector import station_closure_effect
+
+        effect = station_closure_effect(conn, "M2_SYN", SUNDAY_0343)
+        self.assertTrue(effect["active"])
+        self.assertEqual(effect["mode"], "pass_through")
+        self.assertEqual(effect["closureId"], "syn")
+
+    def test_before_start_departures_still_show(self):
+        conn = _with_closures(make_conn(), {
+            "id": "syn", "stations": ["M2_SYN"], "mode": "closed",
+            "starts": _epoch(SUNDAY_0343) + 3600, "status": "scheduled",
+        })
+        rows = project_next_departures(conn, "M2_SYN", ["M2"], now=SUNDAY_0343)
+        self.assertTrue(rows)
+
+    def test_drafts_and_cancelled_do_not_hide_departures(self):
+        for status in ("draft", "cancelled"):
+            conn = _with_closures(make_conn(), {
+                "id": "x", "stations": ["M2_SYN"], "mode": "closed",
+                "starts": _epoch(SUNDAY_0343) - 60, "status": status,
+            })
+            self.assertTrue(project_next_departures(conn, "M2_SYN", ["M2"], now=SUNDAY_0343), status)
+
+    def test_line_scoped_closure_only_hides_that_line(self):
+        conn = _with_closures(make_conn(), {
+            "id": "m3-only", "stations": ["M2_SYN", "M3_SYN"], "lines": ["M3"], "mode": "closed",
+            "starts": _epoch(SUNDAY_0343) - 60,
+        })
+        rows = project_next_departures(conn, "M2_SYN", ["M2", "M3"], now=SUNDAY_0343, limit=6)
+        self.assertTrue(rows)
+        self.assertEqual({r["lineId"] for r in rows}, {"M2"})
+
+    def test_exit_only_hides_entry_only_keeps(self):
+        exit_conn = _with_closures(make_conn(), {
+            "id": "exit", "stations": ["M2_SYN"], "mode": "exit_only", "starts": _epoch(SUNDAY_0343) - 60,
+        })
+        self.assertEqual(project_next_departures(exit_conn, "M2_SYN", ["M2"], now=SUNDAY_0343), [])
+        entry_conn = _with_closures(make_conn(), {
+            "id": "entry", "stations": ["M2_SYN"], "mode": "entry_only", "starts": _epoch(SUNDAY_0343) - 60,
+        })
+        self.assertTrue(project_next_departures(entry_conn, "M2_SYN", ["M2"], now=SUNDAY_0343))
+
+    def test_ended_closure_no_longer_applies(self):
+        conn = _with_closures(make_conn(), {
+            "id": "old", "stations": ["M2_SYN"], "mode": "closed",
+            "starts": _epoch(SUNDAY_0343) - 7200, "ends": _epoch(SUNDAY_0343) - 60,
+        })
+        self.assertTrue(project_next_departures(conn, "M2_SYN", ["M2"], now=SUNDAY_0343))
+
+    def test_airport_rows_hidden_at_closed_m3_station(self):
+        conn = _with_closures(make_conn(), {
+            "id": "syn", "stations": ["M3_SYN"], "mode": "closed", "starts": _epoch(SUNDAY_0540) - 60,
+        })
+        self.assertEqual(project_next_departures(conn, "M3_SYN", ["M3_AIR"], now=SUNDAY_0540), [])
+        self.assertEqual(project_next_departures(conn, "M3_SYN", ["M3"], now=SUNDAY_0540), [])
+
+    def test_no_closures_table_is_harmless(self):
+        # make_conn() has no station_closures table (a Pi before migration 0029).
+        self.assertTrue(project_next_departures(make_conn(), "M2_SYN", ["M2"], now=SUNDAY_0343))
+
+
+class ProjectorClosureDepartureTimeTest(unittest.TestCase):
+    """Closures are evaluated at each departure's own time, not at 'now'."""
+
+    def test_departures_after_a_future_start_are_hidden(self):
+        start = datetime(2026, 6, 14, 4, 0, tzinfo=ATHENS)  # now is 03:43
+        conn = _with_closures(make_conn(), {
+            "id": "later", "stations": ["M2_SYN"], "mode": "closed",
+            "starts": _epoch(start), "status": "scheduled",
+        })
+        rows = project_next_departures(conn, "M2_SYN", ["M2"], now=SUNDAY_0343, limit=8)
+        self.assertTrue(rows)
+        self.assertTrue(all(r["time"] < "04:00" for r in rows), rows)
+
+    def test_departures_after_the_end_show_while_closure_is_active(self):
+        conn = _with_closures(make_conn(), {
+            "id": "now", "stations": ["M2_SYN"], "mode": "closed",
+            "starts": _epoch(SUNDAY_0343) - 3600,
+            "ends": _epoch(datetime(2026, 6, 14, 4, 0, tzinfo=ATHENS)),
+        })
+        rows = project_next_departures(conn, "M2_SYN", ["M2"], now=SUNDAY_0343, limit=8)
+        self.assertTrue(rows)
+        self.assertTrue(all(r["time"] >= "04:00" for r in rows), rows)
+
+    def test_departure_epoch_counts_from_the_current_minute(self):
+        from syrmos_admin.projector import Departure, _departure_epoch
+
+        d = Departure("M2", "M2", "outbound", "X", "08:05", 15, "regular")
+        self.assertEqual(_departure_epoch(1_000_000 - 1_000_000 % 60, d), 1_000_000 - 1_000_000 % 60 + 900)

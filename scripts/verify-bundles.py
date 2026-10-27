@@ -13,6 +13,7 @@ Adds a check whenever a new always-bundled data type ships.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -70,6 +71,9 @@ def check_bundle(root: Path) -> list[str]:
         fares = check_file(root / "fares.json")
         shapes = check_file(root / "shapes.json")
         offsets = check_file(root / "station-offsets.json")
+        closures_raw = (root / "closures.json").read_bytes() if (root / "closures.json").exists() else None
+        if closures_raw is None:
+            raise BundleError(f"missing: {root / 'closures.json'}")
     except BundleError as e:
         add(str(e))
         return problems  # no point continuing past structural missing files
@@ -79,6 +83,19 @@ def check_bundle(root: Path) -> list[str]:
     for lid in SCHEDULE_IDS:
         if lid not in manifest_ids:
             add(f"manifest.json perLineHashes missing {lid!r}")
+
+    # closures.json (3.0.2) is the offline fallback for /api/closures: same
+    # shape, an empty list is valid. Its manifest hash must match the bytes or
+    # clients would treat the bundled copy as stale.
+    try:
+        closures = json.loads(closures_raw)
+        if closures.get("schemaVersion") != 1 or not isinstance(closures.get("closures"), list):
+            add("closures.json must be {schemaVersion: 1, closures: [...]}")
+    except ValueError as e:
+        add(f"closures.json is not valid JSON: {e}")
+    expected_hash = manifest.get("closuresHash")
+    if expected_hash and hashlib.sha256(closures_raw).hexdigest() != expected_hash:
+        add("manifest.json closuresHash does not match closures.json")
 
     # lines.json must include the canonical line list and station counts.
     line_index = {l["id"]: l for l in lines.get("lines", [])}

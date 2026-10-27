@@ -1,0 +1,11 @@
+[Unit]
+Description=Syrmos broadcasts and closures dispatcher, every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=true
+Unit=syrmos-broadcasts.service
+
+[Install]
+WantedBy=timers.target
