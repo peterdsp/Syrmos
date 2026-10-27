@@ -149,3 +149,43 @@ final class CalendarPlanRetentionTests: XCTestCase {
         XCTAssertEqual(CalendarPlanRetention.keysToCancel(planned: [], replanned: ["a"], retained: ["b"]), [])
     }
 }
+
+/// Station board destinations at Syntagma (M2 and M3) in all four languages,
+/// through the same lookup the board rows use.
+@MainActor
+final class StationBoardDestinationNamesTests: XCTestCase {
+    private let cases: [(line: String, direction: String, names: [AppLanguage: String])] = [
+        ("M3", "Airport", [.greek: "Αεροδρόμιο", .english: "Airport", .albanian: "Aeroporti", .italian: "Aeroporto"]),
+        ("M3", "Doukissis Plakentias", [.greek: "Δουκίσσης Πλακεντίας", .english: "Douk. Plakentias",
+                                        .albanian: "Dukisës Plakendias", .italian: "Douk. Plakentias"]),
+        ("M3", "Dimotiko Theatro", [.greek: "Δημοτικό Θέατρο", .english: "Dimotiko Theatro",
+                                    .albanian: "Dimotiko Theatro", .italian: "Dimotiko Theatro"]),
+        ("M2", "Anthoupoli", [.greek: "Ανθούπολη", .english: "Anthoupoli", .albanian: "Anthoupoli", .italian: "Anthoupoli"]),
+        ("M2", "Elliniko", [.greek: "Ελληνικό", .english: "Elliniko", .albanian: "Elliniko", .italian: "Elliniko"]),
+    ]
+
+    func testSyntagmaDestinationsInAllLanguages() {
+        for c in cases {
+            for (lang, want) in c.names {
+                XCTAssertEqual(NearbyPlaceNames.destination(lineId: c.line, direction: c.direction, lang), want,
+                               "\(c.line) \(c.direction) \(lang)")
+            }
+        }
+    }
+
+    /// Whatever direction strings the offline schedule projects at Syntagma
+    /// today resolve to a localized name: Greek output has no Latin letters.
+    func testProjectedSyntagmaDirectionsResolveInGreek() throws {
+        var deps: [Departure] = []
+        for (sid, line) in [("M2_SYN", "M2"), ("M3_SYN", "M3")] {
+            deps += ScheduleProjector.nextDepartures(for: sid, lineIds: [line], limit: 400,
+                                                     timeHorizonMinutes: 12 * 60)
+        }
+        try XCTSkipIf(deps.isEmpty, "offline schedule has no departures")
+        for d in Set(deps.map { "\($0.lineId)|\($0.direction)" }) {
+            let parts = d.split(separator: "|", maxSplits: 1).map(String.init)
+            let el = NearbyPlaceNames.destination(lineId: parts[0], direction: parts[1], .greek)
+            XCTAssertNil(el.range(of: "[A-Za-z]", options: .regularExpression), "\(d) -> \(el)")
+        }
+    }
+}

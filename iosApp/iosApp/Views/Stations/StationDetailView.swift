@@ -371,6 +371,13 @@ private struct GroupedDepartureRow: View {
         .accessibilityLabel(accessibilityText)
     }
 
+    /// The destination in the reader's language, through the same localized
+    /// station-name lookup as the nearby notification (the schedule supplies
+    /// it as a raw, usually romanized, terminal name).
+    private var destinationName: String {
+        NearbyPlaceNames.destination(lineId: group.lineId, direction: group.destination, language)
+    }
+
     @ViewBuilder private var iconView: some View {
         let iconName = TimetablesIcons.vehicleImageName(
             lineId: group.lineId, direction: group.destination, isAirport: group.serviceType == "airport"
@@ -398,7 +405,7 @@ private struct GroupedDepartureRow: View {
                     .clipShape(Capsule())
             }
             Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
-            Text(group.destination)
+            Text(destinationName)
                 .font(.subheadline).fontWeight(.semibold)
                 .lineLimit(1)
         }
@@ -471,7 +478,7 @@ private struct GroupedDepartureRow: View {
             t.time.isEmpty ? minutesLabel(t.minutesAway) : "\(minutesLabel(t.minutesAway)) at \(t.time)"
         }.joined(separator: ", ")
         let more = group.moreCount > 0 ? ", +\(group.moreCount) more" : ""
-        return "\(group.lineId) towards \(group.destination), \(times)\(more)"
+        return "\(group.lineId) towards \(destinationName), \(times)\(more)"
     }
 }
 
