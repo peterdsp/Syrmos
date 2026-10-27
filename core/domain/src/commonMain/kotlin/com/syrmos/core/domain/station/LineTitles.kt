@@ -59,10 +59,22 @@ object LineTitles {
 
     /** "Δημοτικό Θέατρο - Δουκίσσης Πλακεντίας" in Greek, the seed terminals otherwise. */
     fun terminals(line: Line, lang: AppLanguage, stations: List<Station>): String {
-        fun term(name: String): String =
-            if (lang == AppLanguage.GREEK) matchTerminal(name, line.id, stations)?.nameEl?.takeIf { it.isNotBlank() } ?: name
-            else name
+        fun term(name: String): String = stationName(name, line.id, lang, stations)
         return "${term(line.terminalA)} - ${term(line.terminalB)}"
+    }
+
+    fun stationName(name: String, lineId: String?, lang: AppLanguage): String =
+        stationName(name, lineId, lang, _stations.value)
+
+    /**
+     * A departure destination or terminal in the reader's language: the matched
+     * station's Greek name in Greek ("Syntagma" -> "Σύνταγμα", "Airport" ->
+     * "Αεροδρόμιο"), the given (seed or already localized) name otherwise or when
+     * nothing matches.
+     */
+    fun stationName(name: String, lineId: String?, lang: AppLanguage, stations: List<Station>): String {
+        if (lang != AppLanguage.GREEK || name.isBlank()) return name
+        return matchTerminal(name, lineId, stations)?.nameEl?.takeIf { it.isNotBlank() } ?: name
     }
 
     /**
@@ -95,3 +107,7 @@ fun Line.localizedNameWithTerminals(lang: AppLanguage): String = LineTitles.with
 
 /** Shared "terminal - terminal" subtitle, Greek station names in Greek. */
 fun Line.localizedTerminals(lang: AppLanguage): String = LineTitles.terminals(this, lang)
+
+/** The line's terminal in [lang]: terminalB when [outbound], else terminalA. */
+fun Line.localizedTerminal(outbound: Boolean, lang: AppLanguage): String =
+    LineTitles.stationName(if (outbound) terminalB else terminalA, id, lang)

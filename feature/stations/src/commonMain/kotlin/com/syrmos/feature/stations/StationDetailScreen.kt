@@ -1,5 +1,6 @@
 package com.syrmos.feature.stations
 
+import com.syrmos.core.domain.station.LineTitles
 import com.syrmos.core.domain.station.localizedName
 import com.syrmos.core.domain.station.localizedNameWithTerminals
 import androidx.compose.foundation.background
@@ -512,7 +513,7 @@ internal fun departureDirectionLabel(
     departure.notes
         ?.trim()
         ?.takeIf { it.isNotEmpty() && '_' !in it }
-        ?.let { return it }
+        ?.let { return LineTitles.stationName(it, departure.lineId.removeSuffix("_AIR"), language) }
 
     if (
         departure.direction == Direction.OUTBOUND &&
@@ -532,7 +533,7 @@ internal fun departureDirectionLabel(
         Direction.OUTBOUND -> line?.terminalB
         Direction.INBOUND -> line?.terminalA
     }
-    if (!terminal.isNullOrBlank()) return terminal
+    if (!terminal.isNullOrBlank()) return LineTitles.stationName(terminal, lineId, language)
 
     return when (departure.direction) {
         Direction.OUTBOUND -> when (language) {

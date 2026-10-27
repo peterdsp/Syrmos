@@ -1,5 +1,6 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.domain.station.localizedTerminal
 import com.syrmos.core.domain.station.localizedName
 import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.animation.animateContentSize
@@ -1374,10 +1375,7 @@ private fun LastTrainTeaser(
 
 private fun destinationName(line: Line?, direction: Direction, lang: AppLanguage): String {
     line ?: return ""
-    return when (direction) {
-        Direction.OUTBOUND -> line.terminalB
-        Direction.INBOUND -> line.terminalA
-    }
+    return line.localizedTerminal(outbound = direction == Direction.OUTBOUND, lang = lang)
 }
 
 // MARK: Track-this-departure (Tier 2 in-app surface)

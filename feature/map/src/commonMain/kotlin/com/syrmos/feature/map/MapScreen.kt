@@ -1,5 +1,6 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.domain.station.LineTitles
 import com.syrmos.core.domain.station.localizedName
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -720,7 +721,7 @@ private fun StationSheetCard(
                                         fontWeight = FontWeight.SemiBold,
                                     )
                                     Text(
-                                        text = "${vehicleText(lang, "to", "προς", "për", "per")} ${departure.destinationLabel}",
+                                        text = "${vehicleText(lang, "to", "προς", "për", "per")} ${LineTitles.stationName(departure.destinationLabel, departure.line.id, lang)}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )

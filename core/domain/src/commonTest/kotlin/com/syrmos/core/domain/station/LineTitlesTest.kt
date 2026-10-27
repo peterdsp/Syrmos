@@ -26,6 +26,7 @@ class LineTitlesTest {
         st("M1_KIF", "Kifissia", "Κηφισιά"),
         st("T6_SYN", "Syntagma", "Σύνταγμα"),
         st("T6_PIK", "Pikrodafni", "Πικροδάφνη"),
+        st("M3_AER", "Airport", "Αεροδρόμιο"),
     )
 
     @Test
@@ -70,4 +71,22 @@ class LineTitlesTest {
         assertEquals("M1_PIR", LineTitles.matchTerminal("Piraeus", "M1", stations)?.id)
         assertEquals(null, LineTitles.matchTerminal("Nowhere", "M1", stations))
     }
+
+    @Test
+    fun departureDestinations_inFourLanguages() {
+        val cases = listOf("Syntagma" to "T6", "Pikrodafni" to "T6", "Doukissis Plakentias" to "M3", "Airport" to "M3")
+        assertEquals(
+            listOf("Σύνταγμα", "Πικροδάφνη", "Δουκίσσης Πλακεντίας", "Αεροδρόμιο"),
+            cases.map { (n, l) -> LineTitles.stationName(n, l, AppLanguage.GREEK, stations) },
+        )
+        for (lang in listOf(AppLanguage.ENGLISH, AppLanguage.ALBANIAN, AppLanguage.ITALIAN)) {
+            assertEquals(cases.map { it.first }, cases.map { (n, l) -> LineTitles.stationName(n, l, lang, stations) }, lang.name)
+        }
+        // Already-localized or unknown labels pass through untouched.
+        assertEquals("Aeroporto", LineTitles.stationName("Aeroporto", "M3", AppLanguage.ITALIAN, stations))
+        assertEquals("Προς τέρμα", LineTitles.stationName("Προς τέρμα", "M3", AppLanguage.GREEK, stations))
+        assertEquals("Δουκίσσης Πλακεντίας", m3.localizedTerminalIn(AppLanguage.GREEK, stations))
+    }
+
+    private fun Line.localizedTerminalIn(lang: AppLanguage, st: List<Station>) = LineTitles.stationName(terminalB, id, lang, st)
 }
