@@ -9,6 +9,9 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$HERE/../.." && pwd)
 
 echo ">>> syncing code to $PI"
+# assets/ lives only on the Pi (icons and committed geometry are pushed below,
+# watcher state and OSM-generated geometry are produced there), so the mirror
+# must not --delete it.
 rsync -avz --delete \
   --exclude data \
   --exclude db \
@@ -20,6 +23,7 @@ rsync -avz --delete \
   --exclude '*.pyc' \
   --exclude admin.env \
   --exclude secrets \
+  --exclude assets \
   "$HERE"/ "$PI:$REMOTE_HOME"/
 
 echo ">>> syncing icon package to $PI"
