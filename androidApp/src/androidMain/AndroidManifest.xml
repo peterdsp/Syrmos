@@ -14,7 +14,6 @@
     <!-- 3.0.2 nearby next-train notifications: geofences around the nearest
          stations need "Allow all the time" location on Android 10+. Opt-in from
          Settings only; location never leaves the device. -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- Airport tab trips and 3.0.2 calendar leave-by reminders: events are read
          on device only. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />

@@ -146,7 +146,11 @@ class MainActivity : ComponentActivity() {
                 com.syrmos.android.push.SyrmosPush.unregister(app)
             }
         }
-        com.syrmos.core.common.ProactiveFeatureHooks.onNearbyDeparturesChanged = { on ->
+        // Nearby next-train notifications need ACCESS_BACKGROUND_LOCATION, which is
+        // held back until the Play Console location declaration is approved. Until
+        // then the hook stays unset (the Settings toggle hides) and geofences are
+        // never registered.
+        if (BuildConfig.NEARBY_NOTIFICATIONS) com.syrmos.core.common.ProactiveFeatureHooks.onNearbyDeparturesChanged = { on ->
             lifecycleScope.launch {
                 if (on) {
                     com.syrmos.app.platform.requestNotificationPermission()

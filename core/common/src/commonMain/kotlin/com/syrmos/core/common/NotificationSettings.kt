@@ -119,6 +119,9 @@ object ProactiveFeatureHooks {
     var onNearbyDeparturesChanged: ((Boolean) -> Unit)? = null
     var onCalendarRemindersChanged: ((Boolean) -> Unit)? = null
 
-    /** True when the platform supports nearby and calendar notifications (Android). */
-    val proactiveSupported: Boolean get() = onNearbyDeparturesChanged != null
+    /** True when the platform supports calendar leave-by notifications (Android). */
+    val proactiveSupported: Boolean get() = onCalendarRemindersChanged != null
+
+    /** True when the nearby next-train notification is wired (needs background location). */
+    val nearbySupported: Boolean get() = onNearbyDeparturesChanged != null
 }
