@@ -631,6 +631,16 @@ def apply(conn, dry_run: bool) -> dict:
         cur.execute(f"DELETE FROM schedule_rules WHERE line_id IN ({ph})", athens_line_ids)
         cur.execute(f"DELETE FROM frequency_bands WHERE line_id IN ({ph})", athens_line_ids)
         cur.execute("DELETE FROM holiday_rules")  # global calendar, safe to rebuild
+        # Deleting a line cascades (ON DELETE CASCADE) into tables this importer
+        # does not rebuild: admin-edited line styling and scraped date overrides.
+        # Keep them across the delete/re-insert, or every nightly run wipes them.
+        kept = {
+            table: (
+                [d[0] for d in cur.execute(f"SELECT * FROM {table} LIMIT 0").description],
+                cur.execute(f"SELECT * FROM {table} WHERE line_id IN ({ph})", athens_line_ids).fetchall(),
+            )
+            for table in ("line_display", "date_overrides")
+        }
         cur.execute(f"DELETE FROM lines WHERE id IN ({ph})", athens_line_ids)
         # Athens stations only. region defaults to 'athens' on re-insert below.
         cur.execute("DELETE FROM stations WHERE region='athens'")
@@ -639,6 +649,19 @@ def apply(conn, dry_run: bool) -> dict:
             "INSERT INTO lines(id,mode,name_en,name_el,color,terminal_a,terminal_b,sort_order)"
             " VALUES(?,?,?,?,?,?,?,?)",
             line_rows_final,
+        )
+        for table, (cols, rows) in kept.items():
+            if rows:
+                cur.executemany(
+                    f"INSERT OR IGNORE INTO {table}({','.join(cols)}) VALUES({','.join('?' for _ in cols)})",
+                    [tuple(r) for r in rows],
+                )
+        # Lines that never had styling get the unstyled defaults (migration 0033).
+        cur.execute(
+            "INSERT OR IGNORE INTO line_display"
+            "(line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes)"
+            " SELECT id, color, CASE WHEN mode IN ('metro', 'tram') THEN 5 ELSE 4 END,"
+            " NULL, NULL, 0, name_en FROM lines"
         )
         cur.executemany(
             "INSERT INTO stations(id,name_en,name_el,lat,lng) VALUES(?,?,?,?,?)",
