@@ -56,7 +56,7 @@ object Broadcasts {
         add("all")
         if (region == "athens" || region == "thessaloniki") add("region.$region")
         favoriteLineIds(favoriteStationIds).sorted().forEach { add("line.$it") }
-        favoriteStationIds.toSortedSet().forEach { add("station.$it") }
+        favoriteStationIds.toSet().sorted().forEach { add("station.$it") }
     }
 
     /** Active broadcasts for the Home banner/inbox, newest first, deduped by id. */
