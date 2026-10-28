@@ -52,7 +52,9 @@ object StationGeofenceManager {
     /** Re-registers the geofence set from the last known location, or clears it when off. */
     suspend fun refresh(context: Context) {
         val app = context.applicationContext
-        if (!NotificationSettings.nearbyDepartures.value || !hasPermissions(app)) {
+        if (!com.syrmos.android.BuildConfig.NEARBY_NOTIFICATIONS ||
+            !NotificationSettings.nearbyDepartures.value || !hasPermissions(app)
+        ) {
             stop(app)
             return
         }

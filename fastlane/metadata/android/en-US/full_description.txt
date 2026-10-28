@@ -10,7 +10,6 @@ WHERE IT WORKS
 
 NEW IN 3.0.2
 - Station closures: closed stations and trains passing without stopping show on the map, the station screen and in your routes, with the hours and any replacement bus. The planner routes around them.
-- Next train near you: an optional notification as you reach a station, with the next trains each way and an honest heads-up ("the next one is in 2 minutes, but another comes in 10, no need to run").
 - Leave on time: calendar events with a place get a reminder telling you when to leave. Flights default to two hours at the airport.
 - Announcements from Syrmos: important service news, such as a station closed by police order, as a notification in your language.
 

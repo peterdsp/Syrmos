@@ -1,0 +1,3 @@
+3.0.2: station closures on the map and in routes, with replacement buses. Leave-on-time reminders for calendar events (flights 2h early). Syrmos announcements. Greek station names everywhere.
+3.0.1: smarter storm and wind warnings.
+3.0.0: Thessaloniki, Patras and national rail, live Athens airport buses, journey planner with reminders, crowd reports, Italian.

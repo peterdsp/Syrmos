@@ -416,17 +416,19 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                 if (ProactiveFeatureHooks.proactiveSupported) {
-                    NotifToggleRow(
-                        title = ProactiveSettingsCopy.nearbyTitle(lang),
-                        subtitle = ProactiveSettingsCopy.nearbyExplain(lang) +
-                            if (!nearbyDeparturesOn) " " + ProactiveSettingsCopy.backgroundLocationStep(lang) else "",
-                        checked = nearbyDeparturesOn,
-                        onCheckedChange = {
-                            NotificationSettings.setNearbyDepartures(it)
-                            ProactiveFeatureHooks.onNearbyDeparturesChanged?.invoke(it)
-                        },
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    if (ProactiveFeatureHooks.nearbySupported) {
+                        NotifToggleRow(
+                            title = ProactiveSettingsCopy.nearbyTitle(lang),
+                            subtitle = ProactiveSettingsCopy.nearbyExplain(lang) +
+                                if (!nearbyDeparturesOn) " " + ProactiveSettingsCopy.backgroundLocationStep(lang) else "",
+                            checked = nearbyDeparturesOn,
+                            onCheckedChange = {
+                                NotificationSettings.setNearbyDepartures(it)
+                                ProactiveFeatureHooks.onNearbyDeparturesChanged?.invoke(it)
+                            },
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    }
                     NotifToggleRow(
                         title = ProactiveSettingsCopy.calendarTitle(lang),
                         subtitle = ProactiveSettingsCopy.calendarExplain(lang),
