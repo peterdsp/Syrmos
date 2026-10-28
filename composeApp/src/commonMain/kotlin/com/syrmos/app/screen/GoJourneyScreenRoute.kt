@@ -176,6 +176,25 @@ class GoJourneyScreenRoute(
         fun advance() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.advance(it, journey, Clock.System.now())) } }
         fun stepBack() { active?.let { ActiveJourneyRepository.set(ActiveJourneyStore.back(it, journey, Clock.System.now())) } }
 
+        // 3.0.2: warn when a remaining board or alight point is closed right now
+        // (pass_through, closed, or the wrong one of exit_only / entry_only).
+        val closuresRepo = koinInject<com.syrmos.core.data.sync.ClosuresRepository>()
+        val closureList by closuresRepo.closures.collectAsState()
+        val closureNow = rememberClosureClock()
+        val closedStop = remember(journey, position.legIndex, closureList, closureNow) {
+            journey.legs.drop(position.legIndex).flatMap { leg ->
+                listOfNotNull(
+                    leg.stops.firstOrNull()?.let { it to true },
+                    leg.stops.lastOrNull()?.let { it to false },
+                )
+            }.firstOrNull { (stop, boarding) ->
+                val e = com.syrmos.core.common.StationClosures.effect(
+                    closureList, stop.id, com.syrmos.core.common.StationClosures.lineIdOfStation(stop.id), closureNow,
+                )
+                e.active && if (boarding) !e.canBoard else !e.canAlight
+            }?.first
+        }
+
         val guidance = GoGuidance.guidance(journey, position)
         val arrived = GoGuidance.isArrived(journey, position)
         val canBack = position.legIndex > 0 || position.stopIndex > 0
@@ -307,6 +326,15 @@ class GoJourneyScreenRoute(
                 val alightStation = journey.legs.getOrNull(position.legIndex)?.stops?.lastOrNull()?.name ?: ""
                 val currentLineId = journey.legs.getOrNull(position.legIndex)?.lineId
                 heroCard(guidance, alightStation, ::t, lineColors[currentLineId] ?: MaterialTheme.colorScheme.primary)
+
+                closedStop?.let { stop ->
+                    com.syrmos.core.designsystem.component.ServiceAlertBanner(
+                        info = com.syrmos.core.designsystem.component.AlertBannerInfo(
+                            headline = com.syrmos.core.common.ClosureCopy.modeChip(com.syrmos.core.common.ClosureMode.CLOSED, lang),
+                            detail = com.syrmos.core.common.ClosureCopy.goWarning(stop.name, lang),
+                        ),
+                    )
+                }
 
                 // Phase R S07: inline connection-risk warning below the instruction.
                 val transferMoment = guidance is JourneyGuidance.Transfer ||

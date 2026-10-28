@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "description": "Station closure effect, shared by server projector, Kotlin StationClosures, Swift StationClosures and web. A closure is active when status is not draft/cancelled and startsAt <= now < endsAt (endsAt null = until further notice). It applies to a (station, line) when the station is listed and lineIds is empty, the line is listed, or line is null. canBoard = every active closure is entry_only; canAlight = every active closure is exit_only. mode = most restrictive active mode by order closed > pass_through > exit_only > entry_only, except exit_only + entry_only together report closed. closureId = the active closure with the most restrictive mode (tie: smallest id). endsAt = null if any active closure is open-ended, else the latest end. When nothing is active, the earliest non-draft closure starting within the next 24 h (now < startsAt <= now+86400) is reported as upcoming. Departures are hidden from a station board when canBoard is false; planner may not board where canBoard is false or alight where canAlight is false; pass_through trains keep running through the station.",
+  "closures": [
+    {
+      "id": "syn-parade",
+      "stationIds": [
+        "M2_SYN",
+        "M3_SYN"
+      ],
+      "lineIds": [],
+      "mode": "pass_through",
+      "startsAtEpochSeconds": 1793167200,
+      "endsAtEpochSeconds": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "eva-works",
+      "stationIds": [
+        "M3_EVA"
+      ],
+      "lineIds": [
+        "M3"
+      ],
+      "mode": "closed",
+      "startsAtEpochSeconds": 1793167200,
+      "endsAtEpochSeconds": 1793196000,
+      "status": "active"
+    },
+    {
+      "id": "nik-exit",
+      "stationIds": [
+        "M3_NIK"
+      ],
+      "lineIds": [],
+      "mode": "exit_only",
+      "startsAtEpochSeconds": 1793167200,
+      "endsAtEpochSeconds": 1793170800,
+      "status": "active"
+    },
+    {
+      "id": "nik-entry",
+      "stationIds": [
+        "M3_NIK"
+      ],
+      "lineIds": [],
+      "mode": "entry_only",
+      "startsAtEpochSeconds": 1793169000,
+      "endsAtEpochSeconds": 1793174400,
+      "status": "active"
+    },
+    {
+      "id": "draft-x",
+      "stationIds": [
+        "M3_EVA"
+      ],
+      "lineIds": [],
+      "mode": "closed",
+      "startsAtEpochSeconds": 1793163600,
+      "endsAtEpochSeconds": null,
+      "status": "draft"
+    }
+  ],
+  "cases": [
+    {
+      "id": "before_start_upcoming",
+      "stationId": "M2_SYN",
+      "lineId": "M2",
+      "now": 1793163600,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": "syn-parade",
+        "upcomingStartsAtEpochSeconds": 1793167200
+      }
+    },
+    {
+      "id": "before_window_far",
+      "stationId": "M2_SYN",
+      "lineId": "M2",
+      "now": 1793077200,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "at_start_active",
+      "stationId": "M2_SYN",
+      "lineId": "M2",
+      "now": 1793167200,
+      "expected": {
+        "active": true,
+        "mode": "pass_through",
+        "canBoard": false,
+        "canAlight": false,
+        "closureId": "syn-parade",
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "open_ended_still_active",
+      "stationId": "M3_SYN",
+      "lineId": "M3",
+      "now": 1795759200,
+      "expected": {
+        "active": true,
+        "mode": "pass_through",
+        "canBoard": false,
+        "canAlight": false,
+        "closureId": "syn-parade",
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "line_scoped_other_line_unaffected",
+      "stationId": "M3_EVA",
+      "lineId": "M1",
+      "now": 1793167260,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "line_scoped_matching_line",
+      "stationId": "M3_EVA",
+      "lineId": "M3",
+      "now": 1793167260,
+      "expected": {
+        "active": true,
+        "mode": "closed",
+        "canBoard": false,
+        "canAlight": false,
+        "closureId": "eva-works",
+        "endsAtEpochSeconds": 1793196000,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "line_null_means_any_line",
+      "stationId": "M3_EVA",
+      "lineId": null,
+      "now": 1793167260,
+      "expected": {
+        "active": true,
+        "mode": "closed",
+        "canBoard": false,
+        "canAlight": false,
+        "closureId": "eva-works",
+        "endsAtEpochSeconds": 1793196000,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "end_is_exclusive",
+      "stationId": "M3_EVA",
+      "lineId": "M3",
+      "now": 1793196000,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "draft_ignored",
+      "stationId": "M3_EVA",
+      "lineId": "M3",
+      "now": 1793167140,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": "eva-works",
+        "upcomingStartsAtEpochSeconds": 1793167200
+      }
+    },
+    {
+      "id": "exit_only_alone",
+      "stationId": "M3_NIK",
+      "lineId": "M3",
+      "now": 1793167260,
+      "expected": {
+        "active": true,
+        "mode": "exit_only",
+        "canBoard": false,
+        "canAlight": true,
+        "closureId": "nik-exit",
+        "endsAtEpochSeconds": 1793170800,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "exit_plus_entry_is_closed",
+      "stationId": "M3_NIK",
+      "lineId": "M3",
+      "now": 1793169000,
+      "expected": {
+        "active": true,
+        "mode": "closed",
+        "canBoard": false,
+        "canAlight": false,
+        "closureId": "nik-exit",
+        "endsAtEpochSeconds": 1793174400,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "entry_only_alone",
+      "stationId": "M3_NIK",
+      "lineId": "M3",
+      "now": 1793170800,
+      "expected": {
+        "active": true,
+        "mode": "entry_only",
+        "canBoard": true,
+        "canAlight": false,
+        "closureId": "nik-entry",
+        "endsAtEpochSeconds": 1793174400,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    },
+    {
+      "id": "unrelated_station",
+      "stationId": "M1_KIF",
+      "lineId": "M1",
+      "now": 1793167260,
+      "expected": {
+        "active": false,
+        "mode": null,
+        "canBoard": true,
+        "canAlight": true,
+        "closureId": null,
+        "endsAtEpochSeconds": null,
+        "upcomingClosureId": null,
+        "upcomingStartsAtEpochSeconds": null
+      }
+    }
+  ]
+}

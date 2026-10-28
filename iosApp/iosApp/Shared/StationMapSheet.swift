@@ -81,6 +81,9 @@ struct StationMapSheet: View {
                         Spacer()
                     }
 
+                    StationClosureCard(stationIds: [station.id])
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                     if !departures.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(loc.language == .greek ? "ΕΠΟΜΕΝΑ ΔΡΟΜΟΛΟΓΙΑ" : loc.language == .albanian ? "NISJET E ARDHSHME" : loc.language == .italian ? "PROSSIME PARTENZE" : "NEXT DEPARTURES")

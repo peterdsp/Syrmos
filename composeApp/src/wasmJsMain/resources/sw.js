@@ -26,7 +26,10 @@
 // and Thessaloniki OSETH) shipped in web-map.js, but returning users were still
 // served a cached shell pointing at the pre-airport web-map hash. Bump so an
 // already-installed worker re-precaches the real shell and picks up the new map.
-const VERSION = "v5";
+// v6: 3.0.2 station closures and broadcasts (web-closures.js, web-broadcasts.js,
+// the closure card, map greying and the announcement banner in web-map.js). Bump
+// so an already-installed worker re-precaches the shell and the new modules.
+const VERSION = "v6";
 const CACHE = `syrmos-${VERSION}`;
 const TILE_CACHE = `syrmos-tiles-${VERSION}`;
 const TILE_MAX = 300; // opportunistic, capped: only tiles the user actually viewed
@@ -51,6 +54,8 @@ const PRECACHE = [
   "/web-airport.js",
   "/web-departures.js",
   "/web-station-board.js",
+  "/web-closures.js",
+  "/web-broadcasts.js",
   "/web-planner.js",
   "/web-active-journey.js",
   "/web-go-panel.js",
@@ -58,6 +63,9 @@ const PRECACHE = [
   "/files/seed/stations.json",
   "/files/seed/schedules-v2/lines.json",
   "/files/seed/station-complexes.json",
+  // 3.0.2 offline fallback for /api/closures (same shape). Optional: a missing
+  // file only skips this entry, it never fails the install.
+  "/files/seed/schedules-v2/closures.json",
   "/files/seed/routes.json",
   "/files/seed/service_patterns.json",
   "/files/seed/station-offsets.json",

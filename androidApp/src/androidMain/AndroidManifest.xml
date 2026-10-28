@@ -11,6 +11,13 @@
          Revocable on Android 13+; the scheduler checks canScheduleExactAlarms() and
          falls back to an inexact alarm when the user has not granted it. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 3.0.2 nearby next-train notifications: geofences around the nearest
+         stations need "Allow all the time" location on Android 10+. Opt-in from
+         Settings only; location never leaves the device. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- Airport tab trips and 3.0.2 calendar leave-by reminders: events are read
+         on device only. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.location.network" android:required="false" />
@@ -29,6 +36,25 @@
         <receiver
             android:name=".LeaveByReminderReceiver"
             android:exported="false" />
+        <!-- 3.0.2: nearby next-train geofence transitions and calendar leave-by alarms. -->
+        <receiver
+            android:name=".proactive.GeofenceBroadcastReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".proactive.CalendarLeaveByReceiver"
+            android:exported="false" />
+        <!-- 3.0.2: "Announcements from Syrmos" by Firebase Cloud Messaging.
+             FirebaseApp is initialised manually (no google-services.json). -->
+        <service
+            android:name=".push.SyrmosMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="syrmos_broadcasts" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

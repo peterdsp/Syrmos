@@ -2,4 +2,9 @@ fastapi==0.115.5
 uvicorn[standard]==0.32.1
 python-multipart==0.0.12
 deep-translator==1.11.4
-httpx==0.28.1
+# http2 extra (h2) for APNs, which only speaks HTTP/2 (syrmos_admin/push.py).
+httpx[http2]==0.28.1
+# Cloudflare Access JWT verification (RS256) and the APNs/FCM provider tokens
+# (ES256/RS256). The crypto extra pulls in `cryptography`, which ships wheels
+# for aarch64 and armv7 (piwheels on Raspberry Pi OS), so no compiler is needed.
+PyJWT[crypto]==2.10.1

@@ -86,7 +86,14 @@ jobs:
             echo "RELEASE_KEY_PASSWORD=${RELEASE_KEY_PASSWORD}"
           } >> local.properties
 
+      # FCM client values (not secret, but kept out of the repo). Empty values
+      # build a push-disabled app that still polls for announcements.
       - name: Build signed release bundle
+        env:
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_APP_ID: ${{ secrets.FCM_APP_ID }}
+          FCM_API_KEY: ${{ secrets.FCM_API_KEY }}
+          FCM_SENDER_ID: ${{ secrets.FCM_SENDER_ID }}
         run: ./gradlew :androidApp:bundleRelease
 
       # Validate the signed artifact: prove it is production-signed by printing

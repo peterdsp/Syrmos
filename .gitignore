@@ -35,6 +35,9 @@ xcuserdata/
 *.key
 admin.env
 *.env.local
+# Push credentials for the broadcasts dispatcher (APNs .p8 above, FCM service account)
+ops/syrmos-api/secrets/
+*service-account*.json
 
 # Logs and diagnostics
 *.hprof

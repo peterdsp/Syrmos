@@ -29,6 +29,7 @@ struct SyrmosSettingsView: View {
                 operatorsSection
                 savedStationsSection
                 notificationsSection
+                TravelNotificationSettings()
                 dataSection
                 ticketsSection
                 aboutSection
@@ -463,6 +464,11 @@ struct SyrmosSettingsView: View {
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+            // 3.0.2: fire the nearby next-train notification for the closest
+            // station right now, bypassing region entry (simulator and QA check).
+            Button(travelText(loc.language, "Test nearby next-train notification", "Δοκιμή ειδοποίησης επόμενου συρμού", "Provë njoftimi për trenin e radhës", "Prova notifica prossimo treno")) {
+                Task { await StationGeofenceService.shared.debugNotifyNearest() }
+            }
         }
     }
 

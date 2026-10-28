@@ -35,10 +35,16 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         BackgroundRefresh.schedule()
 
         UNUserNotificationCenter.current().delegate = self
+        // 3.0.2: the geofence manager must exist at launch so a background
+        // relaunch for a region entry delivers the event to its delegate.
+        _ = StationGeofenceService.shared
+        StationGeofenceService.shared.start()
 
         Task { @MainActor in
             await NotificationService.shared.requestAuthorization()
             NotificationService.shared.scheduleMorningDigest()
+            PushRegistrar.shared.start()
+            await BroadcastStore.shared.syncDeliveredFromNotificationCenter()
             // Phase N J09: reconcile leave-by alarms with the persisted board on
             // launch, so a board changed while the app was closed (or after a
             // reboot) re-schedules correctly. Prunes departed entries first.
@@ -49,17 +55,29 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         return true
     }
 
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Task { @MainActor in PushRegistrar.shared.didReceive(token: deviceToken) }
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        DiagnosticsCenter.shared.leaveBreadcrumb("push", "APNs registration failed")
+    }
+
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let category = response.notification.request.content.categoryIdentifier
-        let alertId = response.notification.request.content.userInfo["alertId"] as? String ?? ""
-        let stationId = response.notification.request.content.userInfo["stationId"] as? String
+        let info = response.notification.request.content.userInfo
+        let alertId = info["alertId"] as? String ?? ""
+        let stationId = info["stationId"] as? String
+        let broadcastId = info["broadcastId"] as? String
+        let deepLink = info["deepLink"] as? String
 
         Task { @MainActor in
-            routeNotification(category: category, alertId: alertId, stationId: stationId)
+            routeNotification(category: category, alertId: alertId, stationId: stationId,
+                              broadcastId: broadcastId, deepLink: deepLink)
         }
         completionHandler()
     }
@@ -69,6 +87,12 @@ final class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationC
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        // A pushed broadcast shown in the foreground counts as delivered, so the
+        // polling fallback never repeats it.
+        if let broadcastId = notification.request.content.userInfo["broadcastId"] as? String,
+           !notification.request.identifier.hasPrefix("syrmos.broadcast.") {
+            Task { @MainActor in BroadcastStore.shared.recordDelivered(broadcastId) }
+        }
         completionHandler([.banner, .sound])
     }
 
@@ -112,11 +136,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let content = response.notification.request.content
             let alertId = content.userInfo["alertId"] as? String ?? ""
             let stationId = content.userInfo["stationId"] as? String
+            let broadcastId = content.userInfo["broadcastId"] as? String
+            let deepLink = content.userInfo["deepLink"] as? String
             Task { @MainActor in
                 routeNotification(
                     category: content.categoryIdentifier,
                     alertId: alertId,
-                    stationId: stationId
+                    stationId: stationId,
+                    broadcastId: broadcastId,
+                    deepLink: deepLink
                 )
             }
         }
@@ -273,6 +301,15 @@ struct ContentView: View {
             LiveTrainService.onLiveDataRefreshed = { count in
                 WidgetBridge.publishLiveTrains(count: count, updatedEpoch: SyrmosClock.now.timeIntervalSince1970)
             }
+            // 3.0.2: closures, announcements from Syrmos and calendar leave-by
+            // re-plan on every app open (the hosting view is rebuilt on each
+            // foreground, so this runs again after a background return).
+            Task {
+                await ClosuresStore.shared.refresh()
+                await BroadcastStore.shared.poll()
+                PushRegistrar.shared.syncIfNeeded()
+                await CalendarTripStore.shared.replan()
+            }
             await LivePositionsService.shared.refresh()
             await LiveTrainService.shared.refresh()
             // Keep metro/tram/A dots fresh: without a re-poll each projected
@@ -325,7 +362,22 @@ struct ContentView: View {
 }
 
 @MainActor
-private func routeNotification(category: String, alertId: String, stationId: String?) {
+private func routeNotification(category: String, alertId: String, stationId: String?,
+                               broadcastId: String? = nil, deepLink: String? = nil) {
+    if let broadcastId, !broadcastId.isEmpty {
+        // Push or polled broadcast: record it so polling never repeats it, then
+        // follow its deep link (syrmos://station/<id> or syrmos://line/<id>).
+        BroadcastStore.shared.recordDelivered(broadcastId)
+        DeepLinkRouter.shared.pending = BroadcastRules.destination(fromDeepLink: deepLink) ?? .morningDigest
+        return
+    }
+    switch category {
+    case "NEARBY_TRAINS", "CALENDAR_LEAVE_BY":
+        DeepLinkRouter.shared.pending = .nearbyAlert(stationId: stationId)
+        return
+    default:
+        break
+    }
     switch category {
     case "SERVICE_ALERT":
         DeepLinkRouter.shared.pending = .serviceAlert(id: alertId)

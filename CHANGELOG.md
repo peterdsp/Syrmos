@@ -10,6 +10,27 @@ The long-range product roadmap by version (1.1 through 2.0, with quarterly targe
 
 Product direction: Syrmos is a companion, not a schedule. Every feature is measured against the answer-first / proactive / reassuring / low-decision rules in [docs/PRODUCT_PRINCIPLES.md](docs/PRODUCT_PRINCIPLES.md).
 
+## 3.0.2 - 2026-10-28
+
+Android versionName 3.0.2, versionCode 271; iOS marketing version 3.0.2.
+
+### Added
+- Station closures (closed, pass-through, exit-only, entry-only) with a time
+  window, reason and replacement bus, on the map, station screens, planner,
+  GO and widgets of every client; served by `/api/closures`.
+- Private admin console for closures and announcements behind a verified
+  Cloudflare Access login, with APNs/FCM push and a polling fallback.
+- Optional next-train notification near a station with honest coach copy.
+- Leave-on-time reminders for every calendar event with a place.
+- Editable line styling for every line (`/api/line-display`).
+
+### Fixed
+- STASY scraper missed stations and used wrong station ids; draft closures
+  only, never auto-published.
+- The nightly importer wiped admin line styling and date overrides.
+- iOS Weather and Alerts widget showed "Weather offline" when the App Group
+  was empty; Greek station and destination names in Greek UI.
+
 ## 3.0.0 - 2026-10-24
 
 The 3.0.0 production release, consolidating the beta.1-60 train. Android

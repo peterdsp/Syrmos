@@ -1,13 +1,30 @@
-Syrmos tells you when your next train or bus actually leaves. Athens metro, tram and suburban rail, the airport buses, and now Thessaloniki.
+Syrmos tells you when your next train, tram or bus actually leaves, all over Greece. It works offline from the schedule inside the app and never shows a made-up time.
 
+WHERE IT WORKS
+- Athens: Metro Lines 1, 2 and 3 including the airport branch, Tram T6 and T7, Suburban Railway A1 to A4
+- Athens airport buses X93, X95, X96 and X97, with live positions and arrival times when the operator shares them
+- Thessaloniki: Metro Lines 1 and 2, the X3 and 2X airport buses, and suburban trains to Larisa, Florina, Sindos and Serres-Drama
+- Patras: suburban trains Patras-Kaminia and Patras-Rio, the Kato Achaia link and the university buses
+- National rail: Intercity Athens-Thessaloniki, Athens-Leianokladi, Alexandroupoli-Ormenio and Katakolo-Pyrgos-Olympia, plus the scenic Pelion and Diakopto-Kalavryta railways when they run
+- Hellenic Train connecting buses: Kiato-Patras, Volos-Larisa, Paleofarsalos-Kalambaka, Tithorea-Lamia-Stylida and Drama-Xanthi-Alexandroupoli
+
+NEW IN 3.0.2
+- Station closures: closed stations and trains passing without stopping show on the map, the station screen and in your routes, with the hours and any replacement bus. The planner routes around them.
+- Next train near you: an optional notification as you reach a station, with the next trains each way and an honest heads-up ("the next one is in 2 minutes, but another comes in 10, no need to run").
+- Leave on time: calendar events with a place get a reminder telling you when to leave. Flights default to two hours at the airport.
+- Announcements from Syrmos: important service news, such as a station closed by police order, as a notification in your language.
+
+EVERY DAY
 - Live countdowns and your nearest station by GPS
-- Airport buses (X93, X95, X96, X97) and Thessaloniki, on the map and at the stop
-- Plan a route, with guidance and a leave-now reminder
-- Fares, timetables and station details
-- Ichnos: see and flag a crowded or disrupted stop
-- Widgets, Apple Watch and a Lock Screen countdown
+- Plan a route with step-by-step guidance, leave-by reminders and a live journey notification
+- Fares, timetables, accessibility and station details
+- Live service alerts from the operators
+- Ichnos: see and anonymously flag a crowded or disrupted stop
+- Ask Ariadne in plain words; she answers from the real schedule
+- Home screen widgets and an ongoing notification for your active journey
 - English, Greek, Albanian and Italian
 
-Everything works offline from the schedule in the app. Ask Ariadne in plain words and she answers from that schedule, never a made-up time.
+PRIVACY
+No account. Your location and calendar stay on your phone. Announcements use an anonymous notification token and nothing else.
 
-Not affiliated with Hellenic Train, OASA, STASY or OSETH.
+Not affiliated with Hellenic Train, OASA, STASY, OSETH or TrainOSE.

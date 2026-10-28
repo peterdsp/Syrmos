@@ -139,6 +139,95 @@ struct WLineStatus: Identifiable {
 }
 
 @available(iOS 17.0, *)
+/// Network fallbacks for the Weather + Alerts widget. The app normally hands
+/// these over through the App Group; when nothing is there the widget fetches
+/// them itself instead of claiming "Weather offline" / "No active alerts".
+enum WidgetFallbackFetch {
+    static let athens = CLLocation(latitude: 37.9838, longitude: 23.7275)
+
+    static func weather(at location: CLLocation?) async -> WWeather? {
+        let c = (location ?? athens).coordinate
+        var comps = URLComponents(string: "https://api.open-meteo.com/v1/forecast")
+        comps?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(format: "%.4f", c.latitude)),
+            URLQueryItem(name: "longitude", value: String(format: "%.4f", c.longitude)),
+            URLQueryItem(name: "current", value: "temperature_2m,weather_code"),
+            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min"),
+            URLQueryItem(name: "timezone", value: "Europe/Athens"),
+            URLQueryItem(name: "forecast_days", value: "1"),
+        ]
+        guard let url = comps?.url, let data = await get(url) else { return nil }
+        struct Response: Decodable {
+            struct Current: Decodable { let temperature_2m: Double; let weather_code: Int }
+            struct Daily: Decodable { let temperature_2m_max: [Double]; let temperature_2m_min: [Double] }
+            let current: Current
+            let daily: Daily?
+        }
+        guard let r = try? JSONDecoder().decode(Response.self, from: data) else { return nil }
+        let t = r.current.temperature_2m
+        return WWeather(
+            temperature: Int(t.rounded()),
+            symbol: symbol(forWMO: r.current.weather_code),
+            high: Int((r.daily?.temperature_2m_max.first ?? t).rounded()),
+            low: Int((r.daily?.temperature_2m_min.first ?? t).rounded())
+        )
+    }
+
+    static func serviceAlerts() async -> [String] {
+        guard let url = URL(string: "https://api-syrmos.peterdsp.dev/api/announcements"),
+              let data = await get(url) else { return [] }
+        struct Feed: Decodable {
+            struct Item: Decodable {
+                let title: String
+                let titleEn: String?
+                let titleSq: String?
+                let titleIt: String?
+                let category: String?
+            }
+            let announcements: [Item]
+        }
+        guard let feed = try? JSONDecoder().decode(Feed.self, from: data) else { return [] }
+        return feed.announcements
+            .filter { $0.category == "serviceAlert" }
+            .prefix(4)
+            .map { item in
+                let localized: String?
+                switch WLoc.lang {
+                case "el": localized = item.title
+                case "sq": localized = item.titleSq
+                case "it": localized = item.titleIt
+                default: localized = item.titleEn
+                }
+                if let localized, !localized.isEmpty { return localized }
+                return (item.titleEn?.isEmpty == false ? item.titleEn : nil) ?? item.title
+            }
+    }
+
+    private static func get(_ url: URL) async -> Data? {
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 6
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return data
+    }
+
+    /// WMO weather code to SF Symbol, matching the app's WidgetBridge mapping.
+    static func symbol(forWMO code: Int) -> String {
+        switch code {
+        case 0: return "sun.max.fill"
+        case 1, 2: return "cloud.sun.fill"
+        case 3: return "cloud.fill"
+        case 45, 48: return "cloud.fog.fill"
+        case 51...57: return "cloud.drizzle.fill"
+        case 61...67: return "cloud.rain.fill"
+        case 71...77, 85, 86: return "snowflake"
+        case 80...82: return "cloud.heavyrain.fill"
+        case 95...99: return "cloud.bolt.rain.fill"
+        default: return "cloud.fill"
+        }
+    }
+}
+
 struct WWeather {
     let temperature: Int
     let symbol: String
@@ -159,6 +248,10 @@ struct SyrmosEntry: TimelineEntry {
     let alerts: [String]
     var liveTrainCount: Int = 0
     var liveUpdatedEpoch: Double = 0
+    /// 3.0.2: set when the station is closed right now (from the closures the
+    /// app shares through the App Group), so the widget says Closed instead of
+    /// "No upcoming departures".
+    var closedLabel: String? = nil
     var isLiveDataFresh: Bool { liveTrainCount > 0 && (Date().timeIntervalSince1970 - liveUpdatedEpoch) < 300 }
 }
 
@@ -282,17 +375,22 @@ struct SyrmosProvider: AppIntentTimelineProvider {
             widgetLog.error("no station resolved (no location fix)")
             return SyrmosEntry(date: .now, stationName: "-", rows: [], routeStops: [],
                                lastTrain: nil, nearby: nearby, statuses: lineStatuses(),
-                               weather: cachedWeather(), alerts: cachedAlerts(),
+                               weather: await weatherWithFallback(location), alerts: await alertsWithFallback(),
                                liveTrainCount: live.count, liveUpdatedEpoch: live.updated)
         }
         let rows = await MainActor.run { departureRows(for: station, lineFilter: lineFilter) }
         let last = await MainActor.run { lastTrainString(for: station, lineFilter: lineFilter) }
         let stops = routeStops(for: station, lineFilter: lineFilter)
         widgetLog.debug("entry ready: \(station.name, privacy: .public), \(rows.count) rows")
+        let closure = StationClosures.effect(ClosureSnapshot.current(), stationId: station.id, lineId: lineFilter,
+                                             now: Int64(Date().timeIntervalSince1970))
+        let closed = closure.active && !closure.canBoard
+            ? WLoc.t("Closed", "Κλειστός", "I mbyllur", "Chiusa") : nil
         return SyrmosEntry(date: .now, stationName: station.name, rows: rows, routeStops: stops,
                            lastTrain: last, nearby: nearby, statuses: lineStatuses(),
-                           weather: cachedWeather(), alerts: cachedAlerts(),
-                           liveTrainCount: live.count, liveUpdatedEpoch: live.updated)
+                           weather: await weatherWithFallback(location), alerts: await alertsWithFallback(),
+                           liveTrainCount: live.count, liveUpdatedEpoch: live.updated,
+                           closedLabel: closed)
     }
 
     /// The station to show: the user's pinned pick when nearest mode is off,
@@ -450,6 +548,20 @@ struct SyrmosProvider: AppIntentTimelineProvider {
         UserDefaults(suiteName: "group.com.syrmosApp.ios")?.stringArray(forKey: "alerts") ?? []
     }
 
+    /// The app's cached weather, or a direct fetch when the App Group is empty
+    /// (app not opened since install, or the widget cannot read the group).
+    private func weatherWithFallback(_ location: CLLocation?) async -> WWeather? {
+        if let cached = cachedWeather() { return cached }
+        return await WidgetFallbackFetch.weather(at: location)
+    }
+
+    /// The app's cached alert titles, or the live service alerts from the API.
+    private func alertsWithFallback() async -> [String] {
+        let cached = cachedAlerts()
+        if !cached.isEmpty { return cached }
+        return await WidgetFallbackFetch.serviceAlerts()
+    }
+
     /// Live train count and freshness from the shared App Group, written by
     /// the app's LiveTrainService after each successful API poll.
     private func cachedLiveInfo() -> (count: Int, updated: Double) {
@@ -524,7 +636,17 @@ struct NextTrainView: View {
                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 } else {
                     Text(entry.stationName).font(.headline).lineLimit(1)
-                    Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme", "Nessuna partenza in arrivo")).font(.caption).foregroundStyle(.secondary)
+                    if let closed = entry.closedLabel {
+                        Text(closed)
+                            .font(.caption.weight(.bold))
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .foregroundStyle(.white)
+                            .background(Color.red, in: Capsule())
+                    } else {
+                        Text(WLoc.t("No upcoming departures", "Καμία επόμενη αναχώρηση", "Asnjë nisje e ardhshme", "Nessuna partenza in arrivo")).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 if family == .systemSmall {
                     if !entry.routeStops.isEmpty {

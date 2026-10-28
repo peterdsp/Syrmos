@@ -1,0 +1,572 @@
+{
+  "schemaVersion": 1,
+  "description": "Calendar leave-by, shared by Kotlin CalendarLeaveBy (core/common) and Swift CalendarLeaveBy. fold(text) = lowercase, then map Greek tonos/dialytika vowels to plain, final sigma to sigma, and Latin àáâèéêëìíîòóôùúûç to plain. classify(title, location): text = fold(title + ' ' + location), tokens = split on anything that is not [0-9a-zα-ω]; first class whose substring keyword is contained or token keyword is a whole token, in order flight, longDistance, venue, appointment, else default. Keyword lists are in 'keywords' below. buffer minutes: {\"flight\": 120, \"longDistance\": 25, \"venue\": 30, \"appointment\": 15, \"default\": 5}; flight uses flightBufferMinutes when it is one of 90/120/150. margin = min(20, transfers*2 + ceil(firstLegHeadway/2) + 5 if raining + 5 if alertOnRoute). arriveBy = start - buffer; leaveAt = arriveBy - (journeyMinutes + margin) minutes. state: now < leaveAt scheduled; < arriveBy leaveNow; < start late; else past. notifications (only those strictly after now, in this order): flightChecklist at leaveAt - 180 min (flight only), headsUp at leaveAt - 15 min, leaveNow at leaveAt. Eligibility in order: allDay, declined, past (start <= now), beyondHorizon (start > now + 48 h), unresolved destination, else eligible. Reschedule when |newLeaveAt - oldLeaveAt| >= 300 s.",
+  "keywords": {
+    "flight": {
+      "substring": [
+        "airport",
+        "flight",
+        "αεροδρομιο",
+        "πτηση",
+        "aeroporto",
+        "volo",
+        "fluturim",
+        "aeroport",
+        "venizelos",
+        "βενιζελοσ",
+        "makedonia airport"
+      ],
+      "token": [
+        "ath",
+        "skg"
+      ]
+    },
+    "longDistance": {
+      "substring": [
+        "ferry",
+        "πλοιο",
+        "λιμανι",
+        "port of piraeus",
+        "rafina",
+        "ραφηνα",
+        "lavrio",
+        "λαυριο",
+        "intercity",
+        "hellenic train",
+        "τρενο",
+        "κτελ",
+        "ktel",
+        "σταθμοσ λαρισησ",
+        "larissa station"
+      ],
+      "token": [
+        "ose",
+        "οσε"
+      ]
+    },
+    "venue": {
+      "substring": [
+        "οακα",
+        "oaka",
+        "stadium",
+        "γηπεδο",
+        "karaiskakis",
+        "καραισκακη",
+        "concert",
+        "συναυλια",
+        "theatre",
+        "theater",
+        "θεατρο",
+        "megaron",
+        "μεγαρο",
+        "badminton",
+        "cinema",
+        "σινεμα",
+        "ηρωδειο",
+        "herodion",
+        "festival",
+        "φεστιβαλ"
+      ],
+      "token": []
+    },
+    "appointment": {
+      "substring": [
+        "doctor",
+        "γιατρ",
+        "hospital",
+        "νοσοκομ",
+        "clinic",
+        "κλινικ",
+        "exam",
+        "εξετασ",
+        "interview",
+        "συνεντευξ",
+        "dentist",
+        "οδοντ",
+        "embassy",
+        "πρεσβεια"
+      ],
+      "token": [
+        "dr",
+        "kep",
+        "κεπ"
+      ]
+    }
+  },
+  "foldCases": [
+    {
+      "input": "Πτήση",
+      "expected": "πτηση"
+    },
+    {
+      "input": "ΑΕΡΟΔΡΌΜΙΟ",
+      "expected": "αεροδρομιο"
+    },
+    {
+      "input": "Καραϊσκάκης",
+      "expected": "καραισκακησ"
+    },
+    {
+      "input": "Tiranë",
+      "expected": "tirane"
+    },
+    {
+      "input": "Ηρώδειο",
+      "expected": "ηρωδειο"
+    }
+  ],
+  "classifyCases": [
+    {
+      "title": "Flight to London",
+      "location": "",
+      "expected": "flight"
+    },
+    {
+      "title": "Πτήση Μιλάνο",
+      "location": "",
+      "expected": "flight"
+    },
+    {
+      "title": "Volo per Roma",
+      "location": "",
+      "expected": "flight"
+    },
+    {
+      "title": "Fluturim Tiranë",
+      "location": "",
+      "expected": "flight"
+    },
+    {
+      "title": "Trip",
+      "location": "Athens International Airport El. Venizelos",
+      "expected": "flight"
+    },
+    {
+      "title": "A3 602",
+      "location": "ATH",
+      "expected": "flight"
+    },
+    {
+      "title": "Meeting in Athens",
+      "location": "Syntagma",
+      "expected": "default"
+    },
+    {
+      "title": "Ferry to Naxos",
+      "location": "Piraeus",
+      "expected": "longDistance"
+    },
+    {
+      "title": "Πλοίο Πάρος",
+      "location": "Λιμάνι Ραφήνας",
+      "expected": "longDistance"
+    },
+    {
+      "title": "Train to Thessaloniki",
+      "location": "OSE Larissa",
+      "expected": "longDistance"
+    },
+    {
+      "title": "Συναυλία",
+      "location": "ΟΑΚΑ",
+      "expected": "venue"
+    },
+    {
+      "title": "Olympiacos",
+      "location": "Karaiskakis Stadium",
+      "expected": "venue"
+    },
+    {
+      "title": "Θέατρο",
+      "location": "Ηρώδειο",
+      "expected": "venue"
+    },
+    {
+      "title": "Dr. Papadopoulos",
+      "location": "",
+      "expected": "appointment"
+    },
+    {
+      "title": "Οδοντίατρος",
+      "location": "",
+      "expected": "appointment"
+    },
+    {
+      "title": "ΚΕΠ ραντεβού",
+      "location": "",
+      "expected": "appointment"
+    },
+    {
+      "title": "Job interview",
+      "location": "Marousi",
+      "expected": "appointment"
+    },
+    {
+      "title": "Dinner with Maria",
+      "location": "Psyrri",
+      "expected": "default"
+    },
+    {
+      "title": "Skgames meetup",
+      "location": "",
+      "expected": "default"
+    },
+    {
+      "title": "Drinks",
+      "location": "Gazi",
+      "expected": "default"
+    }
+  ],
+  "planCases": [
+    {
+      "id": "default_event",
+      "event": {
+        "title": "Dinner",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 30,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 6,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "default",
+        "bufferMinutes": 5,
+        "marginMinutes": 3,
+        "arriveByEpochSeconds": 1793188500,
+        "leaveAtEpochSeconds": 1793186520,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793185620
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793186520
+          }
+        ]
+      }
+    },
+    {
+      "id": "flight_default_120",
+      "event": {
+        "title": "Flight to Paris",
+        "location": "ATH",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 45,
+        "transfers": 1,
+        "firstLegHeadwayMinutes": 36,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "flight",
+        "bufferMinutes": 120,
+        "marginMinutes": 20,
+        "arriveByEpochSeconds": 1793181600,
+        "leaveAtEpochSeconds": 1793177700,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793176800
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793177700
+          }
+        ]
+      }
+    },
+    {
+      "id": "flight_buffer_150",
+      "event": {
+        "title": "Flight to Paris",
+        "location": "ATH",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 45,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 36,
+        "raining": false,
+        "alertOnRoute": false,
+        "flightBufferMinutes": 150
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "flight",
+        "bufferMinutes": 150,
+        "marginMinutes": 18,
+        "arriveByEpochSeconds": 1793179800,
+        "leaveAtEpochSeconds": 1793176020,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793175120
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793176020
+          }
+        ]
+      }
+    },
+    {
+      "id": "flight_buffer_invalid_falls_back",
+      "event": {
+        "title": "Flight",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 45,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 10,
+        "raining": false,
+        "alertOnRoute": false,
+        "flightBufferMinutes": 100
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "flight",
+        "bufferMinutes": 120,
+        "marginMinutes": 5,
+        "arriveByEpochSeconds": 1793181600,
+        "leaveAtEpochSeconds": 1793178600,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "flightChecklist",
+            "atEpochSeconds": 1793167800
+          },
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793177700
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793178600
+          }
+        ]
+      }
+    },
+    {
+      "id": "venue_rain_alert_capped",
+      "event": {
+        "title": "Concert",
+        "location": "OAKA",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 30,
+        "transfers": 3,
+        "firstLegHeadwayMinutes": 10,
+        "raining": true,
+        "alertOnRoute": true
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "venue",
+        "bufferMinutes": 30,
+        "marginMinutes": 20,
+        "arriveByEpochSeconds": 1793187000,
+        "leaveAtEpochSeconds": 1793184000,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793183100
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793184000
+          }
+        ]
+      }
+    },
+    {
+      "id": "appointment",
+      "event": {
+        "title": "Doctor",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793188800,
+        "journeyMinutes": 20,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 4,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "appointment",
+        "bufferMinutes": 15,
+        "marginMinutes": 2,
+        "arriveByEpochSeconds": 1793187900,
+        "leaveAtEpochSeconds": 1793186580,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "headsUp",
+            "atEpochSeconds": 1793185680
+          },
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793186580
+          }
+        ]
+      }
+    },
+    {
+      "id": "heads_up_already_passed",
+      "event": {
+        "title": "Dinner",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793169300,
+        "journeyMinutes": 20,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 4,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "default",
+        "bufferMinutes": 5,
+        "marginMinutes": 2,
+        "arriveByEpochSeconds": 1793169000,
+        "leaveAtEpochSeconds": 1793167680,
+        "state": "scheduled",
+        "notifications": [
+          {
+            "kind": "leaveNow",
+            "atEpochSeconds": 1793167680
+          }
+        ]
+      }
+    },
+    {
+      "id": "leave_now_window",
+      "event": {
+        "title": "Dinner",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793168700,
+        "journeyMinutes": 20,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 4,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "default",
+        "bufferMinutes": 5,
+        "marginMinutes": 2,
+        "arriveByEpochSeconds": 1793168400,
+        "leaveAtEpochSeconds": 1793167080,
+        "state": "leaveNow",
+        "notifications": []
+      }
+    },
+    {
+      "id": "late",
+      "event": {
+        "title": "Dinner",
+        "location": "Psyrri",
+        "startEpochSeconds": 1793167380,
+        "journeyMinutes": 20,
+        "transfers": 0,
+        "firstLegHeadwayMinutes": 4,
+        "raining": false,
+        "alertOnRoute": false
+      },
+      "now": 1793167200,
+      "expected": {
+        "kind": "default",
+        "bufferMinutes": 5,
+        "marginMinutes": 2,
+        "arriveByEpochSeconds": 1793167080,
+        "leaveAtEpochSeconds": 1793165760,
+        "state": "late",
+        "notifications": []
+      }
+    }
+  ],
+  "eligibilityCases": [
+    {
+      "id": "eligible",
+      "event": {
+        "startEpochSeconds": 1793170800
+      },
+      "now": 1793167200,
+      "expected": "eligible"
+    },
+    {
+      "id": "all_day",
+      "event": {
+        "startEpochSeconds": 1793170800,
+        "allDay": true
+      },
+      "now": 1793167200,
+      "expected": "allDay"
+    },
+    {
+      "id": "declined",
+      "event": {
+        "startEpochSeconds": 1793170800,
+        "declined": true
+      },
+      "now": 1793167200,
+      "expected": "declined"
+    },
+    {
+      "id": "past",
+      "event": {
+        "startEpochSeconds": 1793167200
+      },
+      "now": 1793167200,
+      "expected": "past"
+    },
+    {
+      "id": "horizon_edge_ok",
+      "event": {
+        "startEpochSeconds": 1793340000
+      },
+      "now": 1793167200,
+      "expected": "eligible"
+    },
+    {
+      "id": "beyond_horizon",
+      "event": {
+        "startEpochSeconds": 1793340001
+      },
+      "now": 1793167200,
+      "expected": "beyondHorizon"
+    },
+    {
+      "id": "unresolved",
+      "event": {
+        "startEpochSeconds": 1793170800,
+        "destinationResolved": false
+      },
+      "now": 1793167200,
+      "expected": "unresolved"
+    }
+  ],
+  "rescheduleCases": [
+    {
+      "old": 1793167200,
+      "new": 1793167499,
+      "expected": false
+    },
+    {
+      "old": 1793167200,
+      "new": 1793167500,
+      "expected": true
+    },
+    {
+      "old": 1793167200,
+      "new": 1793166600,
+      "expected": true
+    }
+  ]
+}

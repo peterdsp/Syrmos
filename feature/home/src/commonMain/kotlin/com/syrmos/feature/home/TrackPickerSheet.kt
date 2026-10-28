@@ -1,5 +1,8 @@
 package com.syrmos.feature.home
 
+import com.syrmos.core.domain.station.localizedTerminal
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -208,8 +211,8 @@ fun TrackPickerSheet(
                                     stationId = station.id,
                                     stationName = stationName,
                                     destination = when (dir) {
-                                        TrackDir.OUTBOUND -> line.terminalB
-                                        TrackDir.INBOUND -> line.terminalA
+                                        TrackDir.OUTBOUND -> line.localizedTerminal(true, lang)
+                                        TrackDir.INBOUND -> line.localizedTerminal(false, lang)
                                         TrackDir.AIRPORT -> airportLabel(lang)
                                     },
                                     scheduledTime = "",
@@ -235,8 +238,8 @@ fun TrackPickerSheet(
                         val nowEpoch = Clock.System.now().epochSeconds
                         val pickDir = selectedDirection ?: TrackDir.OUTBOUND
                         val destination = when (pickDir) {
-                            TrackDir.OUTBOUND -> line.terminalB
-                            TrackDir.INBOUND -> line.terminalA
+                            TrackDir.OUTBOUND -> line.localizedTerminal(true, lang)
+                            TrackDir.INBOUND -> line.localizedTerminal(false, lang)
                             TrackDir.AIRPORT -> airportLabel(lang)
                         }
                         val routeDir = if (pickDir == TrackDir.INBOUND) Direction.INBOUND else Direction.OUTBOUND
@@ -270,8 +273,8 @@ fun TrackPickerSheet(
                         val nowEpoch = Clock.System.now().epochSeconds
                         val pickDir = selectedDirection ?: TrackDir.OUTBOUND
                         val destination = when (pickDir) {
-                            TrackDir.OUTBOUND -> line.terminalB
-                            TrackDir.INBOUND -> line.terminalA
+                            TrackDir.OUTBOUND -> line.localizedTerminal(true, lang)
+                            TrackDir.INBOUND -> line.localizedTerminal(false, lang)
                             TrackDir.AIRPORT -> airportLabel(lang)
                         }
                         // Asking for a reminder is the opt-in: enable the master
@@ -452,7 +455,7 @@ private fun LineList(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "${line.terminalA} - ${line.terminalB}",
+                        text = line.localizedTerminals(lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -473,12 +476,12 @@ private fun DirectionList(
     val accent = line.color.toComposeColor()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DirectionRow(
-            label = "${L.TO.text(lang)} ${line.terminalB}",
+            label = "${L.TO.text(lang)} ${line.localizedTerminal(true, lang)}",
             accent = accent,
             onClick = { onSelect(TrackDir.OUTBOUND) },
         )
         DirectionRow(
-            label = "${L.TO.text(lang)} ${line.terminalA}",
+            label = "${L.TO.text(lang)} ${line.localizedTerminal(false, lang)}",
             accent = accent,
             onClick = { onSelect(TrackDir.INBOUND) },
         )
@@ -710,17 +713,6 @@ private fun stationAllSubtitle(lang: AppLanguage) = when (lang) {
     AppLanguage.ITALIAN -> "Monitora le partenze in continuo"
     else -> "Continuously track departures"
 }
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
-}
-
 private fun metroFrequentNote(lang: AppLanguage) = when (lang) {
     AppLanguage.GREEK -> "Το μετρό έρχεται συχνά, δεν χρειάζεται παρακολούθηση"
     AppLanguage.ALBANIAN -> "Metroja vjen shpesh, nuk ka nevojë për ndjekje"

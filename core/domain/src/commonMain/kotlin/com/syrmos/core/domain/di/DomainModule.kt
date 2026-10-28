@@ -26,7 +26,7 @@ val domainModule = module {
     factory { GetInterchangeTargetsUseCase(lineRepository = get(), stationRepository = get(), scheduleSync = get()) }
     factory { ComputeDeparturesFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
     factory { ComputeActiveTrainsFromBandsUseCase(scheduleSync = get(), stationOffsets = get()) }
-    factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get()) }
+    factory { GetNextDeparturesUseCase(scheduleRepository = get(), bandProjector = get(), serverProjector = get(), closures = getOrNull()) }
     factory { GetLastTrainUseCase(bandProjector = get()) }
     // The reviewed station-complex registry and the authoritative per-line stop
     // order are read once from the bundled seed, so they are singles.
@@ -41,7 +41,7 @@ val domainModule = module {
     }
     factory { SearchStationsUseCase(stationRepository = get()) }
     factory { FindNearestStationUseCase(stationRepository = get()) }
-    factory { PlanJourneyUseCase(stationRepository = get(), lineRepository = get()) }
+    factory { PlanJourneyUseCase(stationRepository = get(), lineRepository = get(), closures = getOrNull()) }
     factory { com.syrmos.core.domain.usecase.PlanByArrivalUseCase(planJourney = get(), getNextDepartures = get()) }
 
     // Live arrivals infrastructure. All providers return null today (no

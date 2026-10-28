@@ -26,6 +26,7 @@ import org.koin.core.component.inject
 object WidgetProjection : KoinComponent {
     private val getNextDepartures: GetNextDeparturesUseCase by inject()
     private val stationRepository: StationRepositoryImpl by inject()
+    private val closuresRepository: com.syrmos.core.data.sync.ClosuresRepository by inject()
 
     /** All stations, name-deduped and alphabetized, for the config picker. */
     suspend fun stationsForPicker(): List<Station> =
@@ -39,7 +40,7 @@ object WidgetProjection : KoinComponent {
     suspend fun snapshotFor(context: Context, appWidgetId: Int): WidgetSnapshot {
         val cfg = WidgetConfigStore.read(context, appWidgetId)
         val base = if (cfg.useNearest || cfg.stationId == null) {
-            SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() } ?: BundledFallback.snapshot()
+            SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() || it.closed } ?: BundledFallback.snapshot()
         } else {
             runCatching { projectStation(cfg.stationId, cfg.stationName ?: cfg.stationId, cfg.line) }
                 .getOrDefault(BundledFallback.snapshot().copy(stationName = cfg.stationName ?: "—"))
@@ -50,6 +51,13 @@ object WidgetProjection : KoinComponent {
     private suspend fun projectStation(stationId: String, stationName: String, lineFilter: String?): WidgetSnapshot {
         val now = System.currentTimeMillis()
         val line = lineFilter ?: primaryLine(stationId)
+        runCatching { closuresRepository.hydrateFromBundleIfNeeded() }
+        val closure = closuresRepository.effectForStation(stationId)
+        val closedMode = closure.mode
+        if (closure.active && !closure.canBoard && closedMode != null) {
+            val label = com.syrmos.core.common.ClosureCopy.modeChip(closedMode, com.syrmos.core.common.LocalizationManager.language.value)
+            return WidgetSnapshot(stationName = "$stationName · $label", lastTrain = null, rows = emptyList(), updatedEpoch = now, closed = true)
+        }
         val deps = getNextDepartures
             .invoke(stationId, line, Direction.OUTBOUND, limit = 5)
             .firstOrNull()

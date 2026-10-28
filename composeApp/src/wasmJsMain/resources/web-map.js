@@ -85,6 +85,19 @@
             svc_construction: "Not yet open",
             svc_construction_note: "The track is built but not yet in passenger service.",
             svc_next_today: "Next departure today at {time}",
+            closure_mode_closed: "Station closed",
+            closure_mode_pass_through: "Trains pass without stopping",
+            closure_mode_exit_only: "Exit only, no boarding",
+            closure_mode_entry_only: "Entry only, no alighting",
+            closure_range: "{from} to {to}",
+            closure_until_further: "Until further notice",
+            closure_from_until_further: "From {from}, until further notice",
+            closure_upcoming: "Planned closure",
+            closure_bus_default: "Replacement bus",
+            closure_bus_every: "{label} every {min} min",
+            closure_bus_route: "From {from} to {to}",
+            broadcast_label: "Syrmos announcement",
+            broadcast_view_station: "View station",
             svc_towards: "towards",
             get_directions: "Get directions",
             now: "Now",
@@ -214,6 +227,19 @@
             svc_construction: "Δεν λειτουργεί ακόμη",
             svc_construction_note: "Η γραμμή έχει κατασκευαστεί αλλά δεν έχει τεθεί ακόμη σε επιβατική λειτουργία.",
             svc_next_today: "Επόμενη αναχώρηση σήμερα στις {time}",
+            closure_mode_closed: "Ο σταθμός είναι κλειστός",
+            closure_mode_pass_through: "Οι συρμοί διέρχονται χωρίς στάση",
+            closure_mode_exit_only: "Μόνο έξοδος, χωρίς επιβίβαση",
+            closure_mode_entry_only: "Μόνο είσοδος, χωρίς αποβίβαση",
+            closure_range: "{from} έως {to}",
+            closure_until_further: "Έως νεωτέρας",
+            closure_from_until_further: "Από {from}, έως νεωτέρας",
+            closure_upcoming: "Προγραμματισμένο κλείσιμο",
+            closure_bus_default: "Έκτακτο λεωφορείο",
+            closure_bus_every: "{label} κάθε {min} λεπτά",
+            closure_bus_route: "Από {from} προς {to}",
+            broadcast_label: "Ανακοίνωση Syrmos",
+            broadcast_view_station: "Δες τον σταθμό",
             svc_towards: "προς",
             get_directions: "Οδηγίες",
             now: "Τώρα",
@@ -343,6 +369,19 @@
             svc_construction: "Ende jo e hapur",
             svc_construction_note: "Hekurudha është ndërtuar por ende nuk është në shërbim për pasagjerë.",
             svc_next_today: "Nisja e radhës sot në {time}",
+            closure_mode_closed: "Stacioni është i mbyllur",
+            closure_mode_pass_through: "Trenat kalojnë pa ndalur",
+            closure_mode_exit_only: "Vetëm dalje, pa hipje",
+            closure_mode_entry_only: "Vetëm hyrje, pa zbritje",
+            closure_range: "{from} deri në {to}",
+            closure_until_further: "Deri në njoftim të mëtejshëm",
+            closure_from_until_further: "Nga {from}, deri në njoftim të mëtejshëm",
+            closure_upcoming: "Mbyllje e planifikuar",
+            closure_bus_default: "Autobus zëvendësues",
+            closure_bus_every: "{label} çdo {min} min",
+            closure_bus_route: "Nga {from} drejt {to}",
+            broadcast_label: "Njoftim nga Syrmos",
+            broadcast_view_station: "Shiko stacionin",
             svc_towards: "drejt",
             get_directions: "Udhëzime",
             now: "Tani",
@@ -472,6 +511,19 @@
             svc_construction: "Non ancora in servizio",
             svc_construction_note: "Il binario è costruito ma non ancora in servizio passeggeri.",
             svc_next_today: "Prossima partenza oggi alle {time}",
+            closure_mode_closed: "Stazione chiusa",
+            closure_mode_pass_through: "I treni transitano senza fermarsi",
+            closure_mode_exit_only: "Solo uscita, niente salita",
+            closure_mode_entry_only: "Solo ingresso, niente discesa",
+            closure_range: "dalle {from} alle {to}",
+            closure_until_further: "Fino a nuovo avviso",
+            closure_from_until_further: "Dalle {from}, fino a nuovo avviso",
+            closure_upcoming: "Chiusura programmata",
+            closure_bus_default: "Bus sostitutivo",
+            closure_bus_every: "{label} ogni {min} min",
+            closure_bus_route: "Da {from} a {to}",
+            broadcast_label: "Avviso di Syrmos",
+            broadcast_view_station: "Vedi la stazione",
             svc_towards: "verso",
             get_directions: "Indicazioni",
             now: "Ora",
@@ -922,6 +974,18 @@
     const stationMap = new Map(stations.map((station) => [station.id, station]));
     const stationNodes = buildStationNodes(stations);
     const stationNodeMap = new Map(stationNodes.map((station) => [station.id, station]));
+    // 3.0.2 station closures (SyrmosClosures, fixtures/closures/effect.json).
+    // Declared before the station markers are first styled so stationStyle can
+    // read them. Filled by loadStationClosures() below; the window is evaluated
+    // on the client against the real clock, so an 08:00 closure flips at 08:00.
+    let stationClosures = [];
+    const nowEpochSeconds = () => Math.floor(Date.now() / 1000);
+    function stationClosureEffect(station) {
+        const C = window.SyrmosClosures;
+        if (!C || !station || !stationClosures.length) return null;
+        const pairs = C.pairsFor(station.stationIds && station.stationIds.length ? station.stationIds : [station.id], station.lineIds);
+        return Object.assign(C.nodeEffect(stationClosures, pairs, nowEpochSeconds()), { pairs });
+    }
     const markers = new Map();
     const liveTrainMarkers = new Map();
     // Live trains live in a dedicated layer group. clearLayers() wipes EVERY
@@ -1820,14 +1884,23 @@
     function stationStyle(station, selected) {
         const first = station.lineIds.map((id) => lineMap.get(id)).find(Boolean);
         const color = first ? first.color : "#6B7280";
+        // Closures reuse the greyed disruption token: a station nobody can board
+        // or leave fills grey; a partial closure (one line, exit/entry only)
+        // keeps its colour behind a grey ring.
+        const closure = stationClosureEffect(station);
+        const fullyClosed = !!(closure && closure.allClosed);
+        const partlyClosed = !!(closure && closure.primary && !fullyClosed);
         return {
             radius: stationRadius(station, selected),
-            color: "#ffffff",
-            weight: selected ? 3 : (station.isInterchange ? 2 : 1.5),
-            fillColor: color,
-            fillOpacity: 1,
+            color: partlyClosed ? MAP_TOKENS.greyedColor : "#ffffff",
+            weight: selected ? 3 : (partlyClosed ? 2.5 : (station.isInterchange ? 2 : 1.5)),
+            fillColor: fullyClosed ? MAP_TOKENS.greyedColor : color,
+            fillOpacity: fullyClosed ? 0.7 : 1,
             opacity: 1,
         };
+    }
+    function restyleAllStations() {
+        for (const [id] of markers) restyleStation(id, stationNodeMap.get(id), id === selectedStationId);
     }
     function restyleStation(id, station, selected) {
         const m = markers.get(id);
@@ -2763,6 +2836,54 @@
             </div>`;
     }
 
+    // Closure card for the station sheet: the active closure (mode, Athens-time
+    // window, reason in the current language, replacement bus) or, when nothing
+    // is active yet, the closure starting within the next 24 h.
+    function closureCardHtml(effect) {
+        const C = window.SyrmosClosures;
+        if (!C || !effect || !(effect.primary || effect.upcoming)) return "";
+        const active = !!effect.primary;
+        const e = active ? effect.primary : effect.upcoming;
+        const c = C.findClosure(stationClosures, active ? e.closureId : e.upcomingClosureId);
+        if (!c) return "";
+        const mode = active ? e.mode : c.mode;
+        const when = C.windowText(
+            c.startsAtEpochSeconds,
+            active ? e.endsAtEpochSeconds : c.endsAtEpochSeconds,
+            nowEpochSeconds(),
+            currentLang,
+            { range: t("closure_range"), untilFurther: t("closure_until_further"), fromUntilFurther: t("closure_from_until_further") },
+        );
+        const title = active ? t("closure_mode_" + mode) : t("closure_upcoming");
+        const subtitle = active ? when : `${t("closure_mode_" + mode)} · ${when}`;
+        const reason = C.pickText(c.reason, currentLang);
+        let busHtml = "";
+        const bus = c.replacementBus;
+        if (bus) {
+            const label = C.pickText(bus.label, currentLang) || t("closure_bus_default");
+            const head = Number.isFinite(bus.headwayMinutes) && bus.headwayMinutes > 0
+                ? t("closure_bus_every", { label, min: bus.headwayMinutes })
+                : label;
+            const from = C.pickText(bus.fromStop, currentLang);
+            const to = C.pickText(bus.toStop, currentLang);
+            const route = from && to ? t("closure_bus_route", { from, to }) : (from || to);
+            busHtml = `
+                    <div class="closure-bus">
+                        <div class="closure-bus__title"><span aria-hidden="true">🚌</span> ${escapeHtml(head)}</div>
+                        ${route ? `<div class="service-state__note">${escapeHtml(route)}</div>` : ""}
+                    </div>`;
+        }
+        return `
+            <div class="departure-empty departure-empty--service departure-empty--closure${active ? "" : " departure-empty--closure-upcoming"}" role="note" data-closure-id="${escapeHtml(c.id)}">
+                <div class="service-state__icon" aria-hidden="true">${active ? "⛔" : "🕗"}</div>
+                <div class="service-state__text">
+                    <div class="service-state__title closure-status">${escapeHtml(title)}</div>
+                    <div class="service-state__line">${escapeHtml(subtitle)}</div>
+                    ${reason ? `<div class="service-state__note">${escapeHtml(reason)}</div>` : ""}${busHtml}
+                </div>
+            </div>`;
+    }
+
     // Map one board group onto the departure-card shape the sheet renders.
     function boardGroupToCard(group) {
         return {
@@ -2795,6 +2916,10 @@
         // targets the shared #stationDepartures node, so bail when the selection
         // moved on while this fetch was in flight.
         if (selectedStationId !== station.id) return;
+        // 3.0.2 closures: a line that cannot be boarded here loses its
+        // departures and the sheet leads with the closure card instead.
+        const closure = stationClosureEffect(station);
+        const closureHtml = closureCardHtml(closure);
         // The sheet shows the SAME station complex the Home board shows, so a
         // row tapped on the card opens the destination it named. The board
         // reconciles per service, so one published railway response can no
@@ -2826,9 +2951,11 @@
         }
         // Fall back to the legacy per-node path only if the complex could not be
         // resolved at all, so an unknown station still shows something true.
-        const railDepartures = boardCards.length
+        const unfilteredRail = boardCards.length
             ? boardCards
             : ((apiDepartures && apiDepartures.length) ? apiDepartures : buildStationDepartures(station));
+        const railDepartures = !closure ? unfilteredRail
+            : window.SyrmosClosures.filterDeparturesAt(unfilteredRail, stationClosures, closure.pairs, nowEpochSeconds());
         const usingBoard = boardCards.length > 0;
         const busRows = busReduced
             ? SyrmosAirport.airportBusDepartures(busReduced).map(toBusDeparture)
@@ -2836,7 +2963,9 @@
 
         if (!railDepartures.length && !busRows.length) {
             const svc = stationServiceState(station);
-            stationDepartures.innerHTML = svc
+            stationDepartures.innerHTML = closureHtml
+                ? closureHtml
+                : svc
                 ? serviceStateCardHtml(svc)
                 : `<div class="departure-empty">${t("no_departures")}</div>`;
             if (contextDepartures) contextDepartures.innerHTML = stationDepartures.innerHTML;
@@ -2869,7 +2998,7 @@
                 times: [{ minutesAway: d.minutesAway, time: d.time }], moreCount: 0, total: 1,
             }));
 
-        stationDepartures.innerHTML = groups.map((group, idx) => {
+        stationDepartures.innerHTML = closureHtml + groups.map((group, idx) => {
             const sourceMod = group.source || railMod;
             const sourceLabel = group.sourceLabel || railLabel;
             const sourceChip = `<span class="src-chip src-chip--${sourceMod}"><span class="src-chip__dot"></span>${sourceLabel}</span>`;
@@ -3403,8 +3532,157 @@
     initStep("setupRightRail", setupRightRail);
     initStep("startTrainSimulation", startTrainSimulation);
     initStep("setupHero", setupHero);
+    initStep("connectClosuresAndBroadcasts", connectClosuresAndBroadcasts);
     // setupPanelBehavior() runs earlier (right after the markers) so a later
     // init failure can't skip the bottom sheet.
+
+    // 3.0.2 closures + broadcasts. Both are public cacheable reads polled once a
+    // minute (the API's max-age), with the same backoff as the live polls.
+    // Closures: /api/closures, else the last good payload in localStorage, else
+    // the bundled seed closures.json. Broadcasts: /api/broadcasts?since=<newest
+    // held>, shown in a dismissible banner filtered by audience (all, the
+    // selected region chip, or a line/station the rider saved).
+    function connectClosuresAndBroadcasts() {
+        const C = window.SyrmosClosures;
+        const B = window.SyrmosBroadcasts;
+        const API = "https://api-syrmos.peterdsp.dev";
+        const CLOSURES_CACHE_KEY = "syrmos.closures.v1";
+        const readLS = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+        const writeLS = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+
+        if (C) {
+            let lastKey = null;
+            let fromNetwork = false;
+            const applyClosures = (list) => {
+                const key = JSON.stringify(list);
+                stationClosures = list;
+                restyleAllStations();
+                if (key === lastKey) return;
+                lastKey = key;
+                const current = selectedStationId && stationNodeMap.get(selectedStationId);
+                if (current) renderDepartures(current);
+            };
+            // The closure card carries localised copy; repaint it on a language flip.
+            onLanguageChange(() => {
+                const current = stationClosures.length && selectedStationId && stationNodeMap.get(selectedStationId);
+                if (current) renderDepartures(current);
+            });
+            const cached = readLS(CLOSURES_CACHE_KEY);
+            let haveCache = false;
+            if (cached) {
+                try { applyClosures(C.parsePayload(JSON.parse(cached))); haveCache = true; } catch (_) {}
+            }
+            if (!haveCache) {
+                fetch("/files/seed/schedules-v2/closures.json")
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((j) => { if (j && !fromNetwork) applyClosures(C.parsePayload(j)); })
+                    .catch(() => { /* no bundled closures: nothing is closed */ });
+            }
+            startPollLoop(async () => {
+                const r = await fetch(`${API}/api/closures`);
+                // Offline: keep what we have, but re-evaluate the windows so a
+                // closure still flips at its start time.
+                if (!r.ok) { restyleAllStations(); return false; }
+                const j = await r.json();
+                fromNetwork = true;
+                applyClosures(C.parsePayload(j));
+                writeLS(CLOSURES_CACHE_KEY, JSON.stringify(j));
+                return true;
+            }, 60_000, 300_000);
+        }
+
+        if (B) {
+            let held = B.decodeCache(readLS(B.CACHE_KEY));
+            const rawToNode = new Map();
+            for (const node of stationNodes) for (const raw of node.stationIds) rawToNode.set(raw, node.id);
+
+            const context = () => {
+                const chip = document.querySelector("#regionChips .region-chip--active");
+                const ctx = { region: chip ? chip.getAttribute("data-region") : "athens", stationIds: [], lineIds: [] };
+                const addStation = (id) => {
+                    const node = stationNodeMap.get(id);
+                    for (const sid of (node ? node.stationIds : [id])) if (sid) ctx.stationIds.push(sid);
+                };
+                try {
+                    const SJ = window.SyrmosSavedJourneys;
+                    if (SJ) for (const j of SJ.createStore().list()) { addStation(j.fromId); addStation(j.toId); }
+                } catch (_) {}
+                try {
+                    const RT = window.SyrmosRemindersRuntime;
+                    if (RT) for (const d of RT.list()) { addStation(d.stationId); if (d.lineId) ctx.lineIds.push(d.lineId); }
+                } catch (_) {}
+                return ctx;
+            };
+
+            let host = null;
+            const render = () => {
+                const shown = B.visible(held, context(), nowEpochSeconds(), B.decodeIds(readLS(B.DISMISSED_KEY))).slice(0, 3);
+                if (!shown.length) { if (host) { host.remove(); host = null; } return; }
+                if (!host) {
+                    host = document.createElement("div");
+                    host.className = "broadcast-banner";
+                    host.setAttribute("role", "region");
+                    document.body.appendChild(host);
+                }
+                host.setAttribute("aria-label", t("broadcast_label"));
+                host.innerHTML = "";
+                for (const b of shown) {
+                    const item = document.createElement("div");
+                    item.className = "broadcast-banner__item";
+                    item.setAttribute("role", "status");
+                    item.setAttribute("data-broadcast-id", b.id);
+                    const text = document.createElement("div");
+                    text.className = "broadcast-banner__text";
+                    const label = document.createElement("div");
+                    label.className = "broadcast-banner__label";
+                    label.textContent = t("broadcast_label");
+                    const title = document.createElement("div");
+                    title.className = "broadcast-banner__title";
+                    title.textContent = window.SyrmosClosures ? window.SyrmosClosures.pickText(b.title, currentLang) : "";
+                    const body = document.createElement("div");
+                    body.className = "broadcast-banner__body";
+                    body.textContent = window.SyrmosClosures ? window.SyrmosClosures.pickText(b.body, currentLang) : "";
+                    text.appendChild(label);
+                    text.appendChild(title);
+                    if (body.textContent) text.appendChild(body);
+                    const nodeId = rawToNode.get(B.stationIdFromDeepLink(b.deepLink));
+                    if (nodeId) {
+                        const go = document.createElement("button");
+                        go.type = "button";
+                        go.className = "broadcast-banner__link";
+                        go.textContent = t("broadcast_view_station");
+                        go.addEventListener("click", () => selectStation(nodeId, true));
+                        text.appendChild(go);
+                    }
+                    const close = document.createElement("button");
+                    close.type = "button";
+                    close.className = "broadcast-banner__close";
+                    close.setAttribute("aria-label", t("dismiss"));
+                    close.textContent = "×";
+                    close.addEventListener("click", () => {
+                        writeLS(B.DISMISSED_KEY, B.encodeIds(B.decodeIds(readLS(B.DISMISSED_KEY)), b.id));
+                        render();
+                    });
+                    item.appendChild(text);
+                    item.appendChild(close);
+                    host.appendChild(item);
+                }
+            };
+            render();
+            onLanguageChange(render);
+            const chips = document.getElementById("regionChips");
+            if (chips) chips.addEventListener("click", () => setTimeout(render, 0));
+            startPollLoop(async () => {
+                const r = await fetch(`${API}/api/broadcasts?since=${B.nextSince(held, 0)}`);
+                if (!r.ok) { render(); return false; }
+                const j = await r.json();
+                held = B.merge(held, j && j.broadcasts, nowEpochSeconds());
+                writeLS(B.CACHE_KEY, B.encodeCache(held));
+                render();
+                return true;
+            }, 60_000, 300_000);
+        }
+    }
 
     function updateNearbyPanel() {
         if (userLocation) {
@@ -4027,7 +4305,15 @@
 
         function refreshData() {
             const node = boardStation();
-            const board = node ? buildComplexBoard(node) : null;
+            let board = node ? buildComplexBoard(node) : null;
+            // 3.0.2: departures for a line that cannot be boarded here are not
+            // offered on the Home board either (the station sheet explains why).
+            const closure = node ? stationClosureEffect(node) : null;
+            if (board && closure) {
+                board = Object.assign({}, board, {
+                    groups: window.SyrmosClosures.filterDeparturesAt(board.groups, stationClosures, closure.pairs, nowEpochSeconds()),
+                });
+            }
             state.node = node;
             state.board = board;
             // Keep the selection only while its group still exists.
@@ -5245,6 +5531,7 @@
             let planStepFree = false; // Phase R rider accessibility preference
             let planNotices = []; // live service notices for disruption exclusion
             let planDisruption = null; // last DisruptionExclusion outcome
+            let planClosure = null; // 3.0.2: options dropped for boarding/alighting at a closed station
             // Load the live announcement feed once so disruption exclusion has data.
             // CLOSURE notices suspend their lines; anything else is informational.
             function loadPlanNotices() {
@@ -6019,6 +6306,23 @@
                     resultsEl.appendChild(chip);
                 }
 
+                if (planClosure && planClosure.blockedStationIds.length) {
+                    const names = [...new Set(planClosure.blockedStationIds.map((id) => {
+                        const st = stations.find((x) => x.id === id);
+                        return (st && (st["name_" + currentLang] || st.name)) || id;
+                    }))].sort().join(", ");
+                    const note = document.createElement("div");
+                    note.className = planClosure.options.length ? "plan-routing-around" : "plan-suspended";
+                    note.textContent = planClosure.options.length
+                        ? T("Avoiding closed station: " + names + ".", "Παράκαμψη κλειστού σταθμού: " + names + ".",
+                            "Duke shmangur stacionin e mbyllur: " + names + ".", "Evitata la stazione chiusa: " + names + ".")
+                        : T(names + " is closed. No route can board or alight there right now.",
+                            names + ": ο σταθμός είναι κλειστός. Καμία διαδρομή δεν μπορεί να επιβιβάσει ή να αποβιβάσει εκεί τώρα.",
+                            names + " është i mbyllur. Asnjë rrugë nuk mund të hipë ose të zbresë aty tani.",
+                            names + " è chiusa. Nessun percorso può salire o scendere lì ora.");
+                    resultsEl.appendChild(note);
+                }
+
                 const byId = new Map(stations.map((s) => [s.id, s]));
                 // In a backward mode only options that actually scheduled are
                 // usable, plus a route whose intercity leg has no timetable, which
@@ -6241,7 +6545,17 @@
                     planDisruption = D
                         ? D.classify((avoiding && avoiding.options) || [], (naive && naive.options) || [], planNotices)
                         : { kind: "routed", excludedLineIds: [] };
-                    const shown = (planDisruption.kind === "suspended") ? { options: [] } : avoiding;
+                    let shown = (planDisruption.kind === "suspended") ? { options: [] } : avoiding;
+                    // 3.0.2 closures: never board where canBoard is false nor
+                    // alight where canAlight is false (riding through is fine).
+                    planClosure = null;
+                    if (window.SyrmosClosures && stationClosures.length && shown && shown.options) {
+                        const cf = window.SyrmosClosures.filterOptions(shown.options, stationClosures, nowEpochSeconds());
+                        if (cf.removed) {
+                            planClosure = cf;
+                            shown = Object.assign({}, shown, { options: cf.options });
+                        }
+                    }
                     renderResults(shown, hasTimetable);
                 } catch (_) { /* leave prior results intact */ }
             }

@@ -1,17 +1,20 @@
 """FastAPI admin service for Syrmos schedules.
 
-Auth: relies on Cloudflare Access (Cf-Access-Authenticated-User-Email header).
-Locally the service binds to 127.0.0.1:8091 only; nginx fronts it at /admin/
-and Cloudflare Access enforces the login. If CF Access is disabled, the
-HTTP_ADMIN_TOKEN env var is the fallback (X-Admin-Token header).
+Auth: Cloudflare Access in front of /admin/, verified here (see security.py):
+the Cf-Access-Jwt-Assertion JWT is checked against the team certs, audience
+and expiry, and its email must be in ADMIN_EMAILS. Locally the service binds
+to 127.0.0.1 only; nginx fronts it at /admin/. HTTP_ADMIN_TOKEN (X-Admin-Token
+header) is a fallback only when set. With neither configured, admin is closed.
 
 Run: uvicorn syrmos_admin.app:app --host 127.0.0.1 --port 8091
 """
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hashlib
 import json
+import logging
 import os
 import pathlib
 import re
@@ -22,31 +25,74 @@ from html import escape as _html_escape
 from pathlib import Path
 from typing import Any, Iterator
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from . import ariadne as ariadne_mod
 from . import community as community_mod
 from . import db as dbmod
 from . import generator
 from . import projector as projector_mod
+from . import security
 
-ADMIN_TOKEN = os.environ.get("SYRMOS_ADMIN_TOKEN")  # fallback when CF Access is off
-CF_USER_HEADER = "cf-access-authenticated-user-email"
+logger = logging.getLogger(__name__)
 AIRPORT_BUS_SNAPSHOT = Path(os.environ.get(
     "AIRPORT_BUS_SNAPSHOT",
     str(Path(__file__).resolve().parent.parent / "out" / "airport-buses.json"),
 ))
 
 
-def auth(request: Request) -> str:
-    """Return the admin identity or raise 401."""
-    user = request.headers.get(CF_USER_HEADER)
-    if user:
-        return user
-    if ADMIN_TOKEN and request.headers.get("x-admin-token") == ADMIN_TOKEN:
-        return "token-admin"
-    raise HTTPException(status_code=401, detail="Unauthorized")
+# Identity of the admin making the current request. Set by auth() (async, so
+# it runs in the request task and the value is visible to the endpoint) and
+# read by page() to sign the CSRF token embedded in every POST form.
+_ADMIN_IDENTITY: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "syrmos_admin_identity", default=None
+)
+_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _audit_connect():
+    conn = dbmod.connect()
+    dbmod.migrate(conn)
+    return conn
+
+
+async def auth(request: Request) -> str:
+    """Return the admin identity or raise 401/403.
+
+    Mutating requests from a browser session must carry a valid CSRF token,
+    and every accepted mutating request writes one admin_audit row.
+    """
+    try:
+        identity, needs_csrf = security.identify(request.headers)
+    except security.AuthError as exc:
+        logger.info("admin auth rejected for %s: %s", request.url.path, exc)
+        raise HTTPException(status_code=401, detail="Unauthorized") from None
+    _ADMIN_IDENTITY.set(identity)
+    if request.method not in _UNSAFE_METHODS:
+        return identity
+    items: list[tuple[str, Any]] = []
+    if "form" in (request.headers.get("content-type") or ""):
+        form = await request.form()
+        items = list(form.multi_items())
+    fields = dict(items)
+    if needs_csrf:
+        fetch_site = request.headers.get("sec-fetch-site")
+        if fetch_site and fetch_site not in ("same-origin", "none"):
+            raise HTTPException(status_code=403, detail="Cross-site admin request refused")
+        token = fields.get(security.CSRF_FIELD) or request.headers.get("x-csrf-token")
+        if not security.check_csrf_token(identity, token if isinstance(token, str) else None):
+            raise HTTPException(status_code=403, detail="CSRF token missing or expired, reload the page")
+    action = fields.get("action")
+    security.write_audit(
+        _audit_connect,
+        actor=identity,
+        method=request.method,
+        path=request.url.path,
+        action=action if isinstance(action, str) else None,
+        digest=security.payload_hash(items),
+    )
+    return identity
 
 
 @contextmanager
@@ -258,6 +304,12 @@ button.ghost {{
 }}
 button.danger {{ background: var(--danger); }}
 form.inline {{ display: inline; }}
+a.action {{
+  display: inline-block; margin: 2px 4px 2px 0; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); text-decoration: none; font-size: 13px;
+}}
+a.action:hover {{ background: var(--panel-2); }}
 
 /* Small badges + meta */
 .small {{ font-size: 12px; color: var(--text-muted); }}
@@ -330,6 +382,9 @@ img.icon-preview {{
       <a href="{prefix}/line-display" class="{c_line_display}">Line drawing</a>
       <a href="{prefix}/stations" class="{c_stations}">Stations</a>
       <a href="{prefix}/operators" class="{c_operators}">Operators</a>
+      <a href="{prefix}/closures" class="{c_closures}">Closures</a>
+      <a href="{prefix}/broadcasts" class="{c_broadcasts}">Broadcasts</a>
+      <a href="{prefix}/push" class="{c_push}">Push</a>
       <a href="{prefix}/sync" class="{c_sync}">Sync</a>
       <a href="{prefix}/docs" class="{c_docs}">Docs</a>
     </nav>
@@ -351,9 +406,26 @@ _TAB_KEYS = {
     "line-display": "c_line_display",
     "stations": "c_stations",
     "operators": "c_operators",
+    "closures": "c_closures",
+    "broadcasts": "c_broadcasts",
+    "push": "c_push",
     "sync": "c_sync",
     "docs": "c_docs",
 }
+
+
+_POST_FORM_RE = re.compile(r"(<form\b[^>]*\bmethod=[\"']?post\b[\"']?[^>]*>)", re.IGNORECASE)
+
+
+def with_csrf(body: str, identity: str | None) -> str:
+    """Append the signed CSRF field to every POST form in body."""
+    if not identity:
+        return body
+    field = (
+        f"<input type=hidden name={security.CSRF_FIELD} "
+        f"value='{security.make_csrf_token(identity)}'>"
+    )
+    return _POST_FORM_RE.sub(lambda m: m.group(1) + field, body)
 
 
 def page(title: str, body: str, active: str = "") -> HTMLResponse:
@@ -362,7 +434,7 @@ def page(title: str, body: str, active: str = "") -> HTMLResponse:
         fields[_TAB_KEYS[active]] = "is-active"
     return HTMLResponse(BASE.format(
         title=title,
-        body=body,
+        body=with_csrf(body, _ADMIN_IDENTITY.get()),
         prefix=ADMIN_PREFIX,
         **fields,
     ))
@@ -659,9 +731,21 @@ def icons_save(id: int = Form(...), override_url: str = Form(""), scope: str = F
 
 # Line drawing: editable polyline parameters
 
+def ensure_line_display_rows(conn) -> int:
+    """Create a default line_display row for any line that lacks one (same
+    defaults as migration 0033, which match what the apps draw unstyled)."""
+    return conn.execute(
+        "INSERT OR IGNORE INTO line_display"
+        "(line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes)"
+        " SELECT id, color, CASE WHEN mode IN ('metro', 'tram') THEN 5 ELSE 4 END,"
+        " NULL, NULL, 0, name_en FROM lines"
+    ).rowcount
+
+
 @app.get("/line-display", response_class=HTMLResponse)
 def line_display_page(_: str = Depends(auth)) -> HTMLResponse:
     with get_db() as conn:
+        ensure_line_display_rows(conn)
         rows = conn.execute(
             "SELECT line_id, stroke_color, stroke_weight, stroke_dash, label_color, glow, notes"
             " FROM line_display ORDER BY line_id"
@@ -1549,12 +1633,16 @@ def api_departures_next(
             now=now_dt,
             limit=limit,
         )
+        # Why the board may be empty: an active closed / pass_through closure
+        # at this station (shape: fixtures/closures/effect.json expected).
+        station_closure = projector_mod.station_closure_effect(conn, stationId, now_dt)
     return JSONResponse({
         "stationId": stationId,
         "lineIds": line_id_list,
         "direction": direction,
         "generatedAt": (now_dt or _dt.datetime.now(projector_mod.ATHENS)).isoformat(),
         "departures": departures,
+        "stationClosure": station_closure,
     })
 
 
@@ -1815,3 +1903,955 @@ def api_oasa_airport_buses_legacy():
             for r in data.get("routes", [])
         },
     })
+
+
+# =============================================================================
+# 3.0.2: station closures, broadcasts and push registration
+# =============================================================================
+#
+# Public reads (GET /api/closures, GET /api/broadcasts) and the anonymous push
+# registration endpoints, followed by the private admin pages that write them.
+# Contract: docs/3.0.2-CONTRACTS.md. Window rules: syrmos_admin/closures.py.
+
+import sqlite3
+
+from starlette.concurrency import run_in_threadpool
+
+from . import broadcasts as broadcasts_mod
+from . import closures as closures_mod
+from . import dispatch as dispatch_mod
+from . import push as push_mod
+from . import schedule_invariants
+from . import translation as translation_mod
+
+ATHENS_TZ = projector_mod.ATHENS
+_PUBLIC_MAX_AGE = 60
+
+
+def _etag_matches(request: Request, etag: str) -> bool:
+    inm = request.headers.get("if-none-match")
+    if not inm:
+        return False
+    if inm.strip() == "*":
+        return True
+    tags = [t.strip().removeprefix("W/") for t in inm.split(",")]
+    return etag in tags
+
+
+def _cached_json(request: Request, payload: dict, etag: str) -> Response:
+    headers = {"ETag": etag, "Cache-Control": f"public, max-age={_PUBLIC_MAX_AGE}"}
+    if _etag_matches(request, etag):
+        return Response(status_code=304, headers=headers)
+    return JSONResponse(payload, headers=headers)
+
+
+@app.get("/api/closures")
+def api_closures(request: Request) -> Response:
+    """Non-draft, non-cancelled station closures (open-ended or ended < 24 h ago)."""
+    with get_db() as conn:
+        payload, etag = closures_mod.public_payload(conn)
+    return _cached_json(request, payload, etag)
+
+
+@app.get("/api/broadcasts")
+def api_broadcasts(request: Request, since: str | None = None) -> Response:
+    """Sent, unexpired broadcasts with sentAt >= since (epoch seconds), newest first."""
+    try:
+        since_epoch = int(since) if since not in (None, "") else 0
+    except ValueError:
+        raise HTTPException(status_code=400, detail="since must be epoch seconds") from None
+    if since_epoch < 0:
+        raise HTTPException(status_code=400, detail="since must be epoch seconds")
+    with get_db() as conn:
+        payload, etag = broadcasts_mod.public_payload(conn, since_epoch)
+    return _cached_json(request, payload, etag)
+
+
+# --- anonymous push registration ---------------------------------------------
+
+_PUSH_RATE_PER_HOUR = 30
+_PUSH_RATE_MAX_KEYS = 20000
+_push_hits: dict[str, list[float]] = {}
+_push_rate_lock = asyncio.Lock()
+_PUSH_LANGS = {"en", "el", "sq", "it"}
+_IOS_TOKEN_RE = re.compile(r"^[0-9a-fA-F]{32,200}$")
+_FCM_TOKEN_RE = re.compile(r"^[A-Za-z0-9_:\-.]{20,4096}$")
+_APP_VERSION_RE = re.compile(r"^[0-9A-Za-z.\-+ ()]{1,32}$")
+_MAX_TOPICS = 100
+
+
+async def _push_rate_ok(key: str) -> bool:
+    """30 requests per rolling hour per client (hashed IP), in memory."""
+    now = time.monotonic()
+    async with _push_rate_lock:
+        window = [t for t in _push_hits.get(key, ()) if now - t < 3600.0]
+        if len(window) >= _PUSH_RATE_PER_HOUR:
+            _push_hits[key] = window
+            return False
+        window.append(now)
+        _push_hits[key] = window
+        if len(_push_hits) > _PUSH_RATE_MAX_KEYS:
+            for stale in [k for k, v in _push_hits.items() if not v or now - max(v) >= 3600.0]:
+                _push_hits.pop(stale, None)
+            if len(_push_hits) > _PUSH_RATE_MAX_KEYS:
+                overflow = len(_push_hits) - _PUSH_RATE_MAX_KEYS
+                for k, _v in sorted(_push_hits.items(), key=lambda kv: max(kv[1]))[:overflow]:
+                    _push_hits.pop(k, None)
+        return True
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _normalise_token(platform: str, token: Any) -> str:
+    if not isinstance(token, str):
+        raise ValueError("token must be a string")
+    token = token.strip()
+    if platform == "ios":
+        if not _IOS_TOKEN_RE.match(token):
+            raise ValueError("ios token must be hex")
+        return token.lower()
+    if not _FCM_TOKEN_RE.match(token):
+        raise ValueError("invalid android token")
+    return token
+
+
+def validate_push_registration(body: Any) -> dict:
+    """Validated, normalised registration or ValueError (-> 400)."""
+    if not isinstance(body, dict):
+        raise ValueError("JSON object required")
+    platform = body.get("platform")
+    if platform not in ("ios", "android"):
+        raise ValueError("platform must be ios or android")
+    token = _normalise_token(platform, body.get("token"))
+    environment = body.get("environment", "production")
+    if environment not in ("sandbox", "production"):
+        raise ValueError("environment must be sandbox or production")
+    if platform == "android":
+        environment = "production"
+    lang = body.get("lang", "en")
+    if not isinstance(lang, str) or not lang.strip():
+        raise ValueError("lang must be a language code")
+    lang = lang.strip().lower().replace("_", "-").split("-", 1)[0]
+    if lang not in _PUSH_LANGS:
+        lang = "en"
+    topics = body.get("topics", ["all"])
+    if not isinstance(topics, list) or len(topics) > _MAX_TOPICS:
+        raise ValueError("topics must be a list")
+    clean_topics: list[str] = []
+    for t in topics:
+        if not isinstance(t, str) or not push_mod.TOPIC_RE.match(t):
+            raise ValueError(f"invalid topic: {t!r}")
+        if t not in clean_topics:
+            clean_topics.append(t)
+    app_version = body.get("appVersion")
+    if app_version is not None and (not isinstance(app_version, str) or not _APP_VERSION_RE.match(app_version)):
+        raise ValueError("invalid appVersion")
+    return {
+        "token": token,
+        "platform": platform,
+        "environment": environment,
+        "lang": lang,
+        "topics": clean_topics,
+        "appVersion": app_version,
+    }
+
+
+async def _push_body(request: Request) -> Any:
+    if not await _push_rate_ok(_ariadne_client_key(request)):
+        raise HTTPException(status_code=429, detail="rate limit, try again later")
+    try:
+        return await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid JSON") from None
+
+
+@app.post("/api/push/register")
+async def api_push_register(request: Request) -> Response:
+    body = await _push_body(request)
+    try:
+        reg = validate_push_registration(body)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from None
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO push_devices(token_hash, token, platform, environment, lang, topics, app_version)"
+            " VALUES(?,?,?,?,?,?,?)"
+            " ON CONFLICT(token_hash) DO UPDATE SET"
+            " token=excluded.token, platform=excluded.platform, environment=excluded.environment,"
+            " lang=excluded.lang, topics=excluded.topics, app_version=excluded.app_version,"
+            " last_seen=strftime('%Y-%m-%dT%H:%M:%SZ','now')",
+            (
+                _token_hash(reg["token"]), reg["token"], reg["platform"], reg["environment"],
+                reg["lang"], json.dumps(reg["topics"]), reg["appVersion"],
+            ),
+        )
+    return Response(status_code=204)
+
+
+@app.post("/api/push/unregister")
+async def api_push_unregister(request: Request) -> Response:
+    body = await _push_body(request)
+    token = body.get("token") if isinstance(body, dict) else None
+    if not isinstance(token, str) or not token.strip() or len(token) > 4096:
+        raise HTTPException(status_code=400, detail="token required")
+    token = token.strip()
+    with get_db() as conn:
+        conn.execute(
+            "DELETE FROM push_devices WHERE token_hash IN (?, ?)",
+            (_token_hash(token), _token_hash(token.lower())),
+        )
+    return Response(status_code=204)
+
+
+# --- admin helpers -----------------------------------------------------------
+
+def _h(value: Any) -> str:
+    return _html_escape("" if value is None else str(value), quote=True)
+
+
+def _athens_input(epoch: int | None) -> str:
+    if epoch is None:
+        return ""
+    return _dt.datetime.fromtimestamp(int(epoch), ATHENS_TZ).strftime("%Y-%m-%dT%H:%M")
+
+
+def _athens_label(epoch: int | None) -> str:
+    if epoch is None:
+        return "until further notice"
+    return _dt.datetime.fromtimestamp(int(epoch), ATHENS_TZ).strftime("%a %d %b %Y %H:%M")
+
+
+def parse_athens_datetime(value: str | None) -> int | None:
+    """An Athens-local datetime-local input ("2026-10-28T08:00") as UTC epoch."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        local = _dt.datetime.fromisoformat(value)
+    except ValueError:
+        raise ValueError(f"invalid date/time: {value!r}") from None
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=ATHENS_TZ)
+    return int(local.timestamp())
+
+
+def _translate_fields(source: str, targets: list[str]) -> dict[str, str]:
+    """Greek source -> {lang: text} via the shared pipeline; failures omitted."""
+    out: dict[str, str] = {}
+    if not source.strip():
+        return out
+    for lang in targets:
+        text = translation_mod.translate_from_greek(source, lang)
+        if text and text != source:
+            out[lang] = text
+    return out
+
+
+def _station_choices(conn) -> list[Any]:
+    return conn.execute(
+        "SELECT s.id, s.name_en, s.name_el,"
+        " (SELECT GROUP_CONCAT(DISTINCT ls.line_id) FROM line_stations ls WHERE ls.station_id=s.id) AS lines"
+        " FROM stations s ORDER BY s.id"
+    ).fetchall()
+
+
+def _line_choices(conn) -> list[str]:
+    return [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
+
+
+_FILTER_JS = """<script>
+function syrmosFilter(input, selectId) {
+  var q = input.value.toLowerCase();
+  var opts = document.getElementById(selectId).options;
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].hidden = q && opts[i].text.toLowerCase().indexOf(q) === -1 && !opts[i].selected;
+  }
+}
+</script>"""
+
+
+# --- admin: closures ---------------------------------------------------------
+
+CLOSURE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{2,63}$")
+# Statuses the form can submit. cancelled / ended are only offered when editing
+# a closure that already has them, so an edit never resurrects it by accident.
+CLOSURE_FORM_STATUSES = ("draft", "scheduled", "cancelled", "ended")
+
+CLOSURE_TEMPLATES: dict[str, dict[str, Any]] = {
+    "police_pass_through": {
+        "label": "Station closed by police order, trains pass without stopping until further notice",
+        "mode": "pass_through",
+        "until_further_notice": True,
+        "reason_el": "Με εντολή της Αστυνομίας ο σταθμός είναι κλειστός. "
+                     "Οι συρμοί διέρχονται χωρίς στάση έως νεωτέρας.",
+        "reason_en": "Station closed by police order. Trains pass without stopping until further notice.",
+        "reason_sq": "Stacioni është mbyllur me urdhër të policisë. "
+                     "Trenat kalojnë pa ndalur deri në njoftim të mëtejshëm.",
+        "reason_it": "Stazione chiusa per ordine della polizia. "
+                     "I treni transitano senza fermarsi fino a nuovo avviso.",
+    },
+}
+
+
+def _empty_closure_form() -> dict[str, Any]:
+    return {
+        "id": "", "station_ids": [], "line_ids": [], "mode": "closed",
+        "starts": "", "ends": "", "until_further_notice": False,
+        "reason_el": "", "reason_en": "", "reason_sq": "", "reason_it": "",
+        "bus_label_el": "", "bus_label_en": "", "bus_from_el": "", "bus_from_en": "",
+        "bus_to_el": "", "bus_to_en": "", "bus_headway": "", "bus_stops": "",
+        "status": "draft",
+    }
+
+
+def _closure_form_from_row(row: Any) -> dict[str, Any]:
+    f = _empty_closure_form()
+    c = closures_mod.row_to_closure(row)
+    f.update({
+        "id": row["id"], "station_ids": c["stationIds"], "line_ids": c["lineIds"],
+        "mode": row["mode"], "starts": _athens_input(row["starts_at"]),
+        "ends": _athens_input(row["ends_at"]), "until_further_notice": row["ends_at"] is None,
+        "reason_el": row["reason_el"], "reason_en": row["reason_en"],
+        "reason_sq": row["reason_sq"], "reason_it": row["reason_it"],
+        # cancelled / ended are kept on edit unless the owner picks another
+        # status; scheduled and active both show as scheduled (the window
+        # decides which one is stored).
+        "status": row["status"] if row["status"] in ("draft", "cancelled", "ended") else "scheduled",
+    })
+    bus = closures_mod._replacement_bus(row["replacement_bus"])
+    if bus:
+        f.update({
+            "bus_label_el": bus["label"].get("el", ""), "bus_label_en": bus["label"].get("en", ""),
+            "bus_from_el": bus["fromStop"].get("el", ""), "bus_from_en": bus["fromStop"].get("en", ""),
+            "bus_to_el": bus["toStop"].get("el", ""), "bus_to_en": bus["toStop"].get("en", ""),
+            "bus_headway": "" if bus["headwayMinutes"] is None else str(bus["headwayMinutes"]),
+            "bus_stops": "\n".join(
+                f"{(s.get('name') or {}).get('el', '')} | {s.get('lat', '')} | {s.get('lon', '')}"
+                for s in bus["stops"]
+            ),
+        })
+    return f
+
+
+def _closure_form_from_post(form: Any) -> dict[str, Any]:
+    f = _empty_closure_form()
+    for key in f:
+        if key in ("station_ids", "line_ids"):
+            f[key] = [v for v in form.getlist(key) if isinstance(v, str) and v]
+        elif key == "until_further_notice":
+            f[key] = form.get(key) in ("1", "on", "true")
+        else:
+            value = form.get(key)
+            f[key] = value.strip() if isinstance(value, str) else ""
+    return f
+
+
+def _replacement_bus_from_form(f: dict[str, Any]) -> dict | None:
+    def loc(el: str, en: str) -> dict:
+        return {k: v for k, v in (("el", el), ("en", en)) if v}
+
+    label = loc(f["bus_label_el"], f["bus_label_en"])
+    from_stop = loc(f["bus_from_el"], f["bus_from_en"])
+    to_stop = loc(f["bus_to_el"], f["bus_to_en"])
+    stops = []
+    for line in (f["bus_stops"] or "").splitlines():
+        parts = [p.strip() for p in line.split("|")]
+        if not parts or not parts[0]:
+            continue
+        stop: dict[str, Any] = {"name": {"el": parts[0]}}
+        if len(parts) >= 3:
+            try:
+                stop["lat"] = float(parts[1])
+                stop["lon"] = float(parts[2])
+            except ValueError:
+                raise ValueError(f"bad stop coordinates: {line!r}") from None
+        stops.append(stop)
+    headway = None
+    if f["bus_headway"]:
+        try:
+            headway = int(f["bus_headway"])
+        except ValueError:
+            raise ValueError("headway must be whole minutes") from None
+        if not 1 <= headway <= 240:
+            raise ValueError("headway must be 1 to 240 minutes")
+    if not (label or from_stop or to_stop or stops or headway):
+        return None
+    return {"label": label, "fromStop": from_stop, "toStop": to_stop,
+            "headwayMinutes": headway, "stops": stops}
+
+
+def _validate_closure_form(conn, f: dict[str, Any]) -> dict[str, Any]:
+    """Storage values for a closure form, or ValueError with a message for the owner."""
+    if f["id"] and not CLOSURE_ID_RE.match(f["id"]):
+        raise ValueError("id: lowercase letters, digits, - and _, 3 to 64 characters")
+    if not f["station_ids"]:
+        raise ValueError("pick at least one station")
+    known_stations = {r["id"] for r in conn.execute("SELECT id FROM stations")}
+    unknown = [s for s in f["station_ids"] if s not in known_stations]
+    if unknown:
+        raise ValueError(f"unknown stations: {', '.join(unknown)}")
+    known_lines = set(_line_choices(conn))
+    unknown = [l for l in f["line_ids"] if l not in known_lines]
+    if unknown:
+        raise ValueError(f"unknown lines: {', '.join(unknown)}")
+    if f["mode"] not in closures_mod.MODES:
+        raise ValueError("invalid mode")
+    starts = parse_athens_datetime(f["starts"])
+    if starts is None:
+        raise ValueError("start date/time is required")
+    ends = None
+    if not f["until_further_notice"]:
+        ends = parse_athens_datetime(f["ends"])
+        if ends is None:
+            raise ValueError("set an end date/time or tick 'until further notice'")
+        if ends <= starts:
+            raise ValueError("the end must be after the start")
+    if not (f["reason_el"] or f["reason_en"]):
+        raise ValueError("a reason in Greek (or English) is required")
+    if f["status"] not in CLOSURE_FORM_STATUSES:
+        raise ValueError("status must be draft, scheduled, cancelled or ended")
+    return {
+        "station_ids": f["station_ids"], "line_ids": f["line_ids"], "mode": f["mode"],
+        "starts_at": starts, "ends_at": ends,
+        "replacement_bus": _replacement_bus_from_form(f),
+    }
+
+
+def _check_line_invariant(conn, closure: dict) -> None:
+    others = closures_mod.load_closures(conn)
+    emptied = schedule_invariants.closure_emptied_lines(conn, closure, others)
+    if emptied:
+        raise ValueError(
+            "this would close every station of " + ", ".join(emptied)
+            + "; suspend the line instead of closing all its stations"
+        )
+
+
+def _closure_form_html(conn, f: dict[str, Any], *, error: str = "", notice: str = "", editing: bool = False) -> str:
+    stations = _station_choices(conn)
+    lines = _line_choices(conn)
+    selected_s = set(f["station_ids"])
+    selected_l = set(f["line_ids"])
+    st_opts = "".join(
+        f"<option value='{_h(r['id'])}' {'selected' if r['id'] in selected_s else ''}>"
+        f"{_h(r['id'])} &middot; {_h(r['name_el'])} / {_h(r['name_en'])} ({_h(r['lines'] or '')})</option>"
+        for r in stations
+    )
+    ln_opts = "".join(
+        f"<option value='{_h(l)}' {'selected' if l in selected_l else ''}>{_h(l)}</option>" for l in lines
+    )
+    mode_labels = {
+        "closed": "closed (no boarding, no alighting)",
+        "pass_through": "pass through (trains run without stopping)",
+        "exit_only": "exit only (alighting allowed)",
+        "entry_only": "entry only (boarding allowed)",
+    }
+    mode_opts = "".join(
+        f"<option value='{m}' {'selected' if f['mode'] == m else ''}>{_h(mode_labels[m])}</option>"
+        for m in closures_mod.MODES
+    )
+    offered = ["draft", "scheduled"]
+    if f["status"] in ("cancelled", "ended"):
+        offered.append(f["status"])
+    status_opts = "".join(
+        f"<option value='{s}' {'selected' if f['status'] == s else ''}>{s}</option>"
+        for s in offered
+    )
+    id_field = (
+        f"<code>{_h(f['id'])}</code><input type=hidden name=id value='{_h(f['id'])}'>"
+        f"<input type=hidden name=edit value=1>"
+        if editing else
+        f"<input name=id value='{_h(f['id'])}' placeholder='optional, e.g. syn-parade-2026' size=30>"
+    )
+    msg = ""
+    if error:
+        msg += f"<p class='pill pill-danger'>{_h(error)}</p>"
+    if notice:
+        msg += f"<p class='pill pill-success'>{_h(notice)}</p>"
+    return f"""{_FILTER_JS}
+{msg}
+<form method=post action={ADMIN_PREFIX}/closures/save class=card>
+ <table>
+  <tr><th>Id</th><td>{id_field}</td></tr>
+  <tr><th>Stations</th><td>
+    <input placeholder='filter: Σύνταγμα, Syntagma, M3_' oninput="syrmosFilter(this, 'closure-stations')" size=40><br>
+    <select id=closure-stations name=station_ids multiple size=12 style='min-width:32em'>{st_opts}</select>
+    <div class=small>Cmd/Ctrl-click for several. Interchanges are one id per line (M2_SYN and M3_SYN).</div></td></tr>
+  <tr><th>Lines</th><td><select name=line_ids multiple size=6>{ln_opts}</select>
+    <div class=small>None selected = every line at those stations.</div></td></tr>
+  <tr><th>Mode</th><td><select name=mode>{mode_opts}</select></td></tr>
+  <tr><th>From (Athens time)</th><td><input type=datetime-local name=starts value='{_h(f['starts'])}'></td></tr>
+  <tr><th>Until (Athens time)</th><td><input type=datetime-local name=ends value='{_h(f['ends'])}'>
+    <label><input type=checkbox name=until_further_notice value=1 {'checked' if f['until_further_notice'] else ''}> until further notice</label></td></tr>
+  <tr><th>Reason (Greek)</th><td><textarea name=reason_el rows=3 cols=70>{_h(f['reason_el'])}</textarea><br>
+    <button name=action value=translate class=ghost>Translate to en / sq / it</button></td></tr>
+  <tr><th>Reason (English)</th><td><textarea name=reason_en rows=2 cols=70>{_h(f['reason_en'])}</textarea></td></tr>
+  <tr><th>Reason (Albanian)</th><td><textarea name=reason_sq rows=2 cols=70>{_h(f['reason_sq'])}</textarea></td></tr>
+  <tr><th>Reason (Italian)</th><td><textarea name=reason_it rows=2 cols=70>{_h(f['reason_it'])}</textarea></td></tr>
+  <tr><th>Replacement bus</th><td>
+    Label <input name=bus_label_el value='{_h(f['bus_label_el'])}' placeholder='Έκτακτο λεωφορείο'>
+    <input name=bus_label_en value='{_h(f['bus_label_en'])}' placeholder='Replacement bus'><br>
+    From <input name=bus_from_el value='{_h(f['bus_from_el'])}' placeholder='Σύνταγμα (Αμαλίας)'>
+    <input name=bus_from_en value='{_h(f['bus_from_en'])}' placeholder='Syntagma (Amalias)'><br>
+    To <input name=bus_to_el value='{_h(f['bus_to_el'])}' placeholder='Ευαγγελισμός'>
+    <input name=bus_to_en value='{_h(f['bus_to_en'])}' placeholder='Evangelismos'><br>
+    Every <input name=bus_headway value='{_h(f['bus_headway'])}' size=4> minutes<br>
+    Stops, one per line as <code class=small>name | lat | lon</code><br>
+    <textarea name=bus_stops rows=3 cols=70>{_h(f['bus_stops'])}</textarea>
+    <div class=small>Leave every bus field empty when there is no replacement bus.</div></td></tr>
+  <tr><th>Status</th><td><select name=status>{status_opts}</select>
+    <div class=small>draft is never public. scheduled goes public now and turns active at the start time.</div></td></tr>
+ </table>
+ <button name=action value=save>Save</button>
+</form>"""
+
+
+@app.get("/closures", response_class=HTMLResponse)
+def closures_page(_: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM station_closures ORDER BY"
+            " CASE status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 WHEN 'scheduled' THEN 2 ELSE 3 END,"
+            " starts_at DESC LIMIT 200"
+        ).fetchall()
+    tr = []
+    for r in rows:
+        c = closures_mod.row_to_closure(r)
+        actions = (
+            f"<a class=action href='{ADMIN_PREFIX}/closures/{_h(r['id'])}/edit'>edit</a> "
+            f"<a class=action href='{ADMIN_PREFIX}/broadcasts?closure={_h(r['id'])}'>broadcast</a> "
+        )
+        if r["status"] == "draft":
+            actions += (
+                f"<form class=inline method=post action={ADMIN_PREFIX}/closures/{_h(r['id'])}/approve>"
+                f"<button>approve</button></form> "
+            )
+        if r["status"] in ("draft", "scheduled", "active"):
+            actions += (
+                f"<form class=inline method=post action={ADMIN_PREFIX}/closures/{_h(r['id'])}/cancel>"
+                f"<button class=danger>cancel</button></form>"
+            )
+        tr.append(
+            f"<tr><td><code>{_h(r['id'])}</code><div class=small>{_h(r['source'])}</div></td>"
+            f"<td>{_h(', '.join(c['stationIds']))}</td><td>{_h(', '.join(c['lineIds']) or 'all')}</td>"
+            f"<td>{_h(r['mode'])}</td>"
+            f"<td>{_h(_athens_label(r['starts_at']))}<br>&rarr; {_h(_athens_label(r['ends_at']))}</td>"
+            f"<td>{_h(r['status'])}</td><td class=small>{_h((r['reason_el'] or r['reason_en'])[:120])}</td>"
+            f"<td>{actions}</td></tr>"
+        )
+    templates = "".join(
+        f"<a href='{ADMIN_PREFIX}/closures/new?template={k}'><button class=ghost type=button>{_h(t['label'])}</button></a> "
+        for k, t in CLOSURE_TEMPLATES.items()
+    )
+    body = f"""
+<h2>Station closures</h2>
+<p class=small>Served at <code class=small>/api/closures</code>. Clients evaluate the window themselves, so a
+closure scheduled for 08:00 flips at 08:00 even offline. Drafts (including STASY suggestions) are never public.</p>
+<p><a href='{ADMIN_PREFIX}/closures/new'><button type=button>New closure</button></a> {templates}</p>
+<table><tr><th>Id</th><th>Stations</th><th>Lines</th><th>Mode</th><th>Window (Athens)</th><th>Status</th><th>Reason</th><th></th></tr>
+{''.join(tr) or "<tr><td colspan=8 class=small>No closures yet.</td></tr>"}</table>"""
+    return page("Closures", body, active="closures")
+
+
+@app.get("/closures/new", response_class=HTMLResponse)
+def closures_new(template: str | None = None, _: str = Depends(auth)) -> HTMLResponse:
+    f = _empty_closure_form()
+    tpl = CLOSURE_TEMPLATES.get(template or "")
+    if tpl:
+        f.update({k: v for k, v in tpl.items() if k in f})
+    with get_db() as conn:
+        form_html = _closure_form_html(conn, f)
+    return page("New closure", f"<h2>New closure</h2>{form_html}", active="closures")
+
+
+@app.get("/closures/{closure_id}/edit", response_class=HTMLResponse)
+def closures_edit(closure_id: str, _: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM station_closures WHERE id=?", (closure_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Closure not found")
+        form_html = _closure_form_html(conn, _closure_form_from_row(row), editing=True)
+    note = f"<p class=small>Status now: <strong>{_h(row['status'])}</strong>, source {_h(row['source'])}.</p>"
+    return page(f"Edit {closure_id}", f"<h2>Edit closure</h2>{note}{form_html}", active="closures")
+
+
+@app.post("/closures/save", response_class=HTMLResponse)
+async def closures_save(request: Request, identity: str = Depends(auth)) -> Response:
+    form = await request.form()
+    f = _closure_form_from_post(form)
+    action = form.get("action") or "save"
+    # Edit vs create is explicit: only the edit form posts edit=1. A new form
+    # that reuses an existing id gets the duplicate error, never an update.
+    editing = form.get("edit") == "1" and bool(f["id"])
+    with get_db() as conn:
+        exists = bool(f["id"]) and conn.execute(
+            "SELECT 1 FROM station_closures WHERE id=?", (f["id"],)
+        ).fetchone() is not None
+    if editing and not exists:
+        raise HTTPException(404, "Closure not found")
+    if action == "translate":
+        filled = await run_in_threadpool(_translate_fields, f["reason_el"], ["en", "sq", "it"])
+        for lang, text in filled.items():
+            f[f"reason_{lang}"] = text
+        if f["bus_label_el"] and not f["bus_label_en"]:
+            f["bus_label_en"] = (await run_in_threadpool(_translate_fields, f["bus_label_el"], ["en"])).get("en", "")
+        notice = "Translated, review before saving." if filled else "Translation unavailable right now, fill in by hand."
+        with get_db() as conn:
+            html = _closure_form_html(conn, f, notice=notice, editing=editing)
+        return page("Closure", f"<h2>{'Edit' if editing else 'New'} closure</h2>{html}", active="closures")
+    with get_db() as conn:
+        try:
+            if not editing and f["status"] in ("cancelled", "ended"):
+                raise ValueError("a new closure starts as draft or scheduled")
+            if not editing and exists:
+                raise ValueError(f"a closure with id {f['id']} already exists, pick another id")
+            values = _validate_closure_form(conn, f)
+            closure_id = f["id"] or broadcasts_mod.new_id("c")
+            probe = {
+                "id": closure_id, "stationIds": values["station_ids"], "lineIds": values["line_ids"],
+                "mode": values["mode"], "startsAtEpochSeconds": values["starts_at"],
+                "endsAtEpochSeconds": values["ends_at"], "status": f["status"],
+            }
+            if f["status"] not in ("cancelled", "ended"):
+                _check_line_invariant(conn, probe)
+        except ValueError as error:
+            html = _closure_form_html(conn, f, error=str(error), editing=editing)
+            return page("Closure", f"<h2>{'Edit' if editing else 'New'} closure</h2>{html}", active="closures")
+        if f["status"] in ("draft", "cancelled", "ended"):
+            status = f["status"]
+        else:
+            status = closures_mod.status_for_window({**probe, "status": "scheduled"}, int(time.time()))
+        bus = json.dumps(values["replacement_bus"], ensure_ascii=False) if values["replacement_bus"] else None
+        params = (
+            json.dumps(values["station_ids"]), json.dumps(values["line_ids"]), values["mode"],
+            values["starts_at"], values["ends_at"], f["reason_en"], f["reason_el"], f["reason_sq"],
+            f["reason_it"], bus, status,
+        )
+        if editing:
+            conn.execute(
+                "UPDATE station_closures SET station_ids=?, line_ids=?, mode=?, starts_at=?, ends_at=?,"
+                " reason_en=?, reason_el=?, reason_sq=?, reason_it=?, replacement_bus=?, status=?,"
+                " updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id=?",
+                (*params, closure_id),
+            )
+        else:
+            try:
+                conn.execute(
+                    "INSERT INTO station_closures(station_ids, line_ids, mode, starts_at, ends_at,"
+                    " reason_en, reason_el, reason_sq, reason_it, replacement_bus, status, id, source, created_by)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?, 'admin', ?)",
+                    (*params, closure_id, identity),
+                )
+            except sqlite3.IntegrityError as error:  # duplicate id
+                html = _closure_form_html(conn, f, error=f"cannot save: {error}")
+                return page("Closure", f"<h2>New closure</h2>{html}", active="closures")
+    return RedirectResponse(f"{ADMIN_PREFIX}/closures", status_code=303)
+
+
+@app.post("/closures/{closure_id}/approve")
+def closures_approve(closure_id: str, _: str = Depends(auth)) -> Response:
+    """One-click approval of a draft (typically a STASY suggestion)."""
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM station_closures WHERE id=?", (closure_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Closure not found")
+        if row["status"] != "draft":
+            return RedirectResponse(f"{ADMIN_PREFIX}/closures", status_code=303)
+        closure = {**closures_mod.row_to_closure(row), "status": "scheduled"}
+        try:
+            _check_line_invariant(conn, closure)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        conn.execute(
+            "UPDATE station_closures SET status=?, updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now')"
+            " WHERE id=? AND status='draft'",
+            (closures_mod.status_for_window(closure, int(time.time())), closure_id),
+        )
+    return RedirectResponse(f"{ADMIN_PREFIX}/closures", status_code=303)
+
+
+@app.post("/closures/{closure_id}/cancel")
+def closures_cancel(closure_id: str, _: str = Depends(auth)) -> Response:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE station_closures SET status='cancelled',"
+            " updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id=?",
+            (closure_id,),
+        )
+    return RedirectResponse(f"{ADMIN_PREFIX}/closures", status_code=303)
+
+
+# --- admin: broadcasts -------------------------------------------------------
+
+_BROADCAST_FIELDS = (
+    "title_el", "title_en", "title_sq", "title_it",
+    "body_el", "body_en", "body_sq", "body_it",
+    "audience", "audience_station", "send_mode", "send_at", "expires",
+    "deep_link", "closure_id",
+)
+_DEEP_LINK_RE = re.compile(r"^(syrmos://|https://)[^\s<>\"']{1,500}$")
+DEFAULT_BROADCAST_TTL = 24 * 3600
+
+
+def _empty_broadcast_form() -> dict[str, str]:
+    f = {k: "" for k in _BROADCAST_FIELDS}
+    f.update({"audience": "all", "send_mode": "now"})
+    return f
+
+
+def _broadcast_audience(f: dict[str, str]) -> str:
+    return f"station:{f['audience_station']}" if f["audience_station"] else f["audience"]
+
+
+def _validate_broadcast_form(conn, f: dict[str, str], now: int) -> dict[str, Any]:
+    if not (f["title_el"] or f["title_en"]):
+        raise ValueError("a title in Greek (or English) is required")
+    if not (f["body_el"] or f["body_en"]):
+        raise ValueError("a body in Greek (or English) is required")
+    audience = _broadcast_audience(f)
+    try:
+        push_mod.audience_topic(audience)
+    except ValueError:
+        raise ValueError(f"invalid audience: {audience}") from None
+    if f["send_mode"] not in ("now", "schedule", "draft"):
+        raise ValueError("invalid send mode")
+    send_at = now if f["send_mode"] == "now" else parse_athens_datetime(f["send_at"])
+    if f["send_mode"] == "schedule" and send_at is None:
+        raise ValueError("pick the date/time to send")
+    base = send_at or now
+    expires = parse_athens_datetime(f["expires"]) or base + DEFAULT_BROADCAST_TTL
+    if expires <= base:
+        raise ValueError("expiry must be after the send time")
+    if f["deep_link"] and not _DEEP_LINK_RE.match(f["deep_link"]):
+        raise ValueError("deep link must start with syrmos:// or https://")
+    if f["closure_id"] and not conn.execute(
+        "SELECT 1 FROM station_closures WHERE id=?", (f["closure_id"],)
+    ).fetchone():
+        raise ValueError("unknown closure")
+    return {"audience": audience, "send_at": send_at, "expires_at": expires}
+
+
+def _broadcast_preview(f: dict[str, str]) -> str:
+    cards = []
+    for lang in ("el", "en", "sq", "it"):
+        title, body = push_mod.pick_text(f, lang)
+        cards.append(
+            f"<div class=stat><div class=stat-label>{lang}</div>"
+            f"<strong>{_h(title)}</strong><div class=small>{_h(body)}</div></div>"
+        )
+    return "<div class=stat-grid>" + "".join(cards) + "</div>"
+
+
+def _broadcast_form_html(conn, f: dict[str, str], *, error: str = "", notice: str = "", extra: str = "") -> str:
+    lines = _line_choices(conn)
+    audiences = ["all", "region:athens", "region:thessaloniki"] + [f"line:{l}" for l in lines]
+    aud_opts = "".join(
+        f"<option value='{_h(a)}' {'selected' if f['audience'] == a else ''}>{_h(a)}</option>" for a in audiences
+    )
+    st_opts = "<option value=''>(none)</option>" + "".join(
+        f"<option value='{_h(r['id'])}' {'selected' if f['audience_station'] == r['id'] else ''}>"
+        f"{_h(r['id'])} &middot; {_h(r['name_el'])}</option>"
+        for r in _station_choices(conn)
+    )
+    closures = conn.execute(
+        "SELECT id, mode, status FROM station_closures WHERE status NOT IN ('cancelled', 'ended')"
+        " ORDER BY starts_at DESC LIMIT 50"
+    ).fetchall()
+    cl_opts = "<option value=''>(none)</option>" + "".join(
+        f"<option value='{_h(r['id'])}' {'selected' if f['closure_id'] == r['id'] else ''}>"
+        f"{_h(r['id'])} ({_h(r['mode'])}, {_h(r['status'])})</option>"
+        for r in closures
+    )
+    modes = {"now": "send now", "schedule": "schedule", "draft": "save as draft"}
+    mode_radios = " ".join(
+        f"<label><input type=radio name=send_mode value={m} {'checked' if f['send_mode'] == m else ''}> {label}</label>"
+        for m, label in modes.items()
+    )
+    msg = ""
+    if error:
+        msg += f"<p class='pill pill-danger'>{_h(error)}</p>"
+    if notice:
+        msg += f"<p class='pill pill-success'>{_h(notice)}</p>"
+
+    def row(label: str, name: str, rows: int = 1) -> str:
+        if rows > 1:
+            return f"<tr><th>{label}</th><td><textarea name={name} rows={rows} cols=70>{_h(f[name])}</textarea></td></tr>"
+        return f"<tr><th>{label}</th><td><input name={name} value='{_h(f[name])}' size=70></td></tr>"
+
+    return f"""{msg}{extra}
+<form method=post action={ADMIN_PREFIX}/broadcasts/save class=card>
+ <table>
+  {row('Title (Greek)', 'title_el')}
+  {row('Body (Greek)', 'body_el', 4)}
+  <tr><th></th><td><button name=action value=translate class=ghost>Translate to en / sq / it</button></td></tr>
+  {row('Title (English)', 'title_en')}
+  {row('Body (English)', 'body_en', 3)}
+  {row('Title (Albanian)', 'title_sq')}
+  {row('Body (Albanian)', 'body_sq', 3)}
+  {row('Title (Italian)', 'title_it')}
+  {row('Body (Italian)', 'body_it', 3)}
+  <tr><th>Audience</th><td><select name=audience>{aud_opts}</select>
+    or station <select name=audience_station>{st_opts}</select>
+    <div class=small>A station overrides the audience list.</div></td></tr>
+  <tr><th>When</th><td>{mode_radios}
+    <input type=datetime-local name=send_at value='{_h(f['send_at'])}'> <span class=small>Athens time, for schedule</span></td></tr>
+  <tr><th>Expires (Athens time)</th><td><input type=datetime-local name=expires value='{_h(f['expires'])}'>
+    <span class=small>default: 24 h after sending</span></td></tr>
+  <tr><th>Deep link</th><td><input name=deep_link value='{_h(f['deep_link'])}' size=50 placeholder='syrmos://station/M2_SYN'></td></tr>
+  <tr><th>Closure</th><td><select name=closure_id>{cl_opts}</select></td></tr>
+ </table>
+ <button name=action value=preview class=ghost>Dry run and preview</button>
+ <button name=action value=save>Save</button>
+</form>"""
+
+
+@app.get("/broadcasts", response_class=HTMLResponse)
+def broadcasts_page(closure: str | None = None, _: str = Depends(auth)) -> HTMLResponse:
+    f = _empty_broadcast_form()
+    with get_db() as conn:
+        if closure:
+            row = conn.execute("SELECT * FROM station_closures WHERE id=?", (closure,)).fetchone()
+            if row:
+                f["closure_id"] = row["id"]
+                f["body_el"] = row["reason_el"]
+                f["body_en"] = row["reason_en"]
+                f["body_sq"] = row["reason_sq"]
+                f["body_it"] = row["reason_it"]
+        rows = conn.execute("SELECT * FROM broadcasts ORDER BY created_at DESC, id DESC LIMIT 100").fetchall()
+        form_html = _broadcast_form_html(conn, f)
+    tr = []
+    for r in rows:
+        actions = ""
+        if r["status"] in ("draft", "scheduled"):
+            actions = (
+                f"<form class=inline method=post action={ADMIN_PREFIX}/broadcasts/{_h(r['id'])}/cancel>"
+                f"<button class=danger>cancel</button></form>"
+            )
+        tr.append(
+            f"<tr><td><code>{_h(r['id'])}</code></td><td>{_h(r['title_el'] or r['title_en'])}</td>"
+            f"<td>{_h(r['audience'])}</td><td>{_h(r['status'])}</td>"
+            f"<td>{_h(_athens_label(r['sent_at'] or r['send_at']) if (r['sent_at'] or r['send_at']) else '')}</td>"
+            f"<td>{r['sent_count']} sent / {r['failed_count']} failed</td><td>{actions}</td></tr>"
+        )
+    body = f"""
+<h2>Broadcasts</h2>
+<p class=small>Pushed to registered devices (APNs / FCM) and served at <code class=small>/api/broadcasts</code>
+for polling. The dispatcher timer sends scheduled broadcasts within a minute.</p>
+{form_html}
+<h3>Recent</h3>
+<table><tr><th>Id</th><th>Title</th><th>Audience</th><th>Status</th><th>When (Athens)</th><th>Delivery</th><th></th></tr>
+{''.join(tr) or "<tr><td colspan=7 class=small>No broadcasts yet.</td></tr>"}</table>"""
+    return page("Broadcasts", body, active="broadcasts")
+
+
+def _dispatch_in_background(broadcast_id: str) -> None:
+    conn = dbmod.connect()
+    try:
+        dbmod.migrate(conn)
+        dispatch_mod.send_one(conn, broadcast_id, push_mod.Senders.from_env())
+    except Exception as exc:  # noqa: BLE001 - the timer retries nothing, so just log
+        logger.error("broadcast %s dispatch failed: %r", broadcast_id, exc)
+    finally:
+        conn.close()
+
+
+@app.post("/broadcasts/save", response_class=HTMLResponse)
+async def broadcasts_save(
+    request: Request, background: BackgroundTasks, identity: str = Depends(auth)
+) -> Response:
+    form = await request.form()
+    f = _empty_broadcast_form()
+    for key in _BROADCAST_FIELDS:
+        value = form.get(key)
+        if isinstance(value, str):
+            f[key] = value.strip()
+    action = form.get("action") or "save"
+    now = int(time.time())
+    if action == "translate":
+        notice_parts = []
+        for prefix in ("title", "body"):
+            filled = await run_in_threadpool(_translate_fields, f[f"{prefix}_el"], ["en", "sq", "it"])
+            for lang, text in filled.items():
+                f[f"{prefix}_{lang}"] = text
+            notice_parts.append(len(filled))
+        notice = "Translated, review before saving." if any(notice_parts) else "Translation unavailable right now, fill in by hand."
+        with get_db() as conn:
+            html = _broadcast_form_html(conn, f, notice=notice)
+        return page("Broadcasts", f"<h2>Broadcast</h2>{html}", active="broadcasts")
+    with get_db() as conn:
+        try:
+            values = _validate_broadcast_form(conn, f, now)
+        except ValueError as error:
+            html = _broadcast_form_html(conn, f, error=str(error))
+            return page("Broadcasts", f"<h2>Broadcast</h2>{html}", active="broadcasts")
+        if action == "preview":
+            counts = push_mod.count_targets(conn, values["audience"])
+            breakdown = ", ".join(f"{k} {v}" for k, v in sorted(counts.items()) if k != "total")
+            notice = f"Dry run: {counts['total']} device(s) would receive this" + (f" ({breakdown})" if breakdown else "") + "."
+            html = _broadcast_form_html(conn, f, notice=notice, extra=_broadcast_preview(f))
+            return page("Broadcasts", f"<h2>Broadcast</h2>{html}", active="broadcasts")
+        broadcast_id = broadcasts_mod.new_id("b")
+        status = "draft" if f["send_mode"] == "draft" else "scheduled"
+        conn.execute(
+            "INSERT INTO broadcasts(id, title_en, title_el, title_sq, title_it, body_en, body_el, body_sq, body_it,"
+            " audience, send_at, expires_at, deep_link, closure_id, status, created_by)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                broadcast_id, f["title_en"], f["title_el"], f["title_sq"], f["title_it"],
+                f["body_en"], f["body_el"], f["body_sq"], f["body_it"],
+                values["audience"], values["send_at"], values["expires_at"],
+                f["deep_link"] or None, f["closure_id"] or None, status, identity,
+            ),
+        )
+    if f["send_mode"] == "now":
+        background.add_task(_dispatch_in_background, broadcast_id)
+    return RedirectResponse(f"{ADMIN_PREFIX}/broadcasts", status_code=303)
+
+
+@app.post("/broadcasts/{broadcast_id}/cancel")
+def broadcasts_cancel(broadcast_id: str, _: str = Depends(auth)) -> Response:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE broadcasts SET status='cancelled' WHERE id=? AND status IN ('draft', 'scheduled')",
+            (broadcast_id,),
+        )
+    return RedirectResponse(f"{ADMIN_PREFIX}/broadcasts", status_code=303)
+
+
+# --- admin: push devices -----------------------------------------------------
+
+@app.get("/push", response_class=HTMLResponse)
+def push_page(_: str = Depends(auth)) -> HTMLResponse:
+    with get_db() as conn:
+        by = conn.execute(
+            "SELECT platform, environment, lang, COUNT(*) n FROM push_devices"
+            " GROUP BY platform, environment, lang ORDER BY n DESC"
+        ).fetchall()
+        topic_counts: dict[str, int] = {}
+        for r in conn.execute("SELECT topics FROM push_devices"):
+            for t in push_mod._topics(r["topics"]):
+                topic_counts[t] = topic_counts.get(t, 0) + 1
+        total = sum(r["n"] for r in by)
+    apns_set = bool(os.environ.get("APNS_KEY_PATH") and os.environ.get("APNS_KEY_ID"))
+    fcm_set = bool(os.environ.get("FCM_SERVICE_ACCOUNT_PATH"))
+    rows = "".join(
+        f"<tr><td>{_h(r['platform'])}</td><td>{_h(r['environment'])}</td><td>{_h(r['lang'])}</td><td>{r['n']}</td></tr>"
+        for r in by
+    )
+    topics = "".join(
+        f"<tr><td><code>{_h(t)}</code></td><td>{n}</td></tr>"
+        for t, n in sorted(topic_counts.items(), key=lambda kv: -kv[1])[:40]
+    )
+    body = f"""
+<h2>Push devices</h2>
+<div class=stat-grid>
+ <div class=stat><div class=stat-label>Registered</div><div class=stat-value>{total}</div></div>
+ <div class=stat><div class=stat-label>APNs key</div><div class=stat-value>{'set' if apns_set else 'missing'}</div></div>
+ <div class=stat><div class=stat-label>FCM account</div><div class=stat-value>{'set' if fcm_set else 'missing'}</div></div>
+</div>
+<table><tr><th>Platform</th><th>Environment</th><th>Language</th><th>Devices</th></tr>{rows}</table>
+<h3>Topics</h3>
+<table><tr><th>Topic</th><th>Devices</th></tr>{topics}</table>"""
+    return page("Push", body, active="push")

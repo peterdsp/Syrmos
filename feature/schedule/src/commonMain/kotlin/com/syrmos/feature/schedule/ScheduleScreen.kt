@@ -1,5 +1,6 @@
 package com.syrmos.feature.schedule
 
+import com.syrmos.core.domain.station.localizedTerminal
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -215,7 +216,7 @@ fun ScheduleScreen() {
                 isToday = isToday,
                 nowMinutes = now.time.hour * 60 + now.time.minute,
                 lang = lang,
-                destinationLabel = selectedLine?.terminalB ?: "",
+                destinationLabel = selectedLine?.localizedTerminal(true, lang) ?: "",
                 accent = lineColorFor(selectedLineId, selectedLine),
             )
             DepartureSection(
@@ -224,7 +225,7 @@ fun ScheduleScreen() {
                 isToday = isToday,
                 nowMinutes = now.time.hour * 60 + now.time.minute,
                 lang = lang,
-                destinationLabel = selectedLine?.terminalA ?: "",
+                destinationLabel = selectedLine?.localizedTerminal(false, lang) ?: "",
                 accent = lineColorFor(selectedLineId, selectedLine),
             )
         }

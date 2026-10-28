@@ -7,6 +7,7 @@ import com.syrmos.core.network.RailNewsService
 import com.syrmos.core.network.STASYAnnouncementService
 import com.syrmos.core.network.RailwayGovLiveTrackerService
 import com.syrmos.core.network.SyrmosLinesService
+import com.syrmos.core.network.SyrmosClosuresService
 import com.syrmos.core.network.SyrmosContactService
 import com.syrmos.core.network.SyrmosLivePositionsService
 import com.syrmos.core.network.SyrmosSchedulesService
@@ -53,4 +54,5 @@ val networkModule = module {
     single { AriadneChatService(httpClient = get()) }
     single { CommunityReportService(httpClient = get()) }
     single { OasaAirportBusService(httpClient = get()) }
+    single { SyrmosClosuresService(httpClient = get()) }
 }

@@ -1,1 +1,1 @@
-athens,thessaloniki,metro,tram,train,bus,airport,rail,timetable,greece,oasa,oseth,commute
+athens,thessaloniki,patras,metro,tram,train,bus,airport,rail,timetable,greece,oasa,closures

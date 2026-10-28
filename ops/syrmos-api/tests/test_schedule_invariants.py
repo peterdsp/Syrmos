@@ -141,3 +141,58 @@ class EnsureOvernightTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ClosureNeverEmptiesLineTest(unittest.TestCase):
+    """A station closure must never remove every station of a line."""
+
+    def _conn(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        conn.execute("CREATE TABLE line_stations (line_id TEXT, station_id TEXT, seq INTEGER, direction TEXT)")
+        rows = [("T6", "T6_SYN", 0), ("T6", "T6_FIX", 1), ("M2", "M2_SYN", 0), ("M2", "M2_PAN", 1),
+                ("M2", "M2_AKR", 2)]
+        conn.executemany("INSERT INTO line_stations VALUES (?, ?, ?, 'both')", rows)
+        return conn
+
+    @staticmethod
+    def _closure(cid, stations, lines=(), start=100, end=None, status="scheduled"):
+        return {"id": cid, "stationIds": list(stations), "lineIds": list(lines), "mode": "closed",
+                "startsAtEpochSeconds": start, "endsAtEpochSeconds": end, "status": status}
+
+    def test_partial_closure_is_fine(self):
+        from syrmos_admin.schedule_invariants import closure_emptied_lines
+
+        self.assertEqual(closure_emptied_lines(self._conn(), self._closure("a", ["M2_SYN", "T6_SYN"])), [])
+
+    def test_whole_line_closure_is_flagged(self):
+        from syrmos_admin.schedule_invariants import closure_emptied_lines
+
+        conn = self._conn()
+        self.assertEqual(closure_emptied_lines(conn, self._closure("a", ["T6_SYN", "T6_FIX"])), ["T6"])
+
+    def test_line_scope_limits_the_check(self):
+        from syrmos_admin.schedule_invariants import closure_emptied_lines
+
+        # Scoped to M2: closing T6's two stations for M2 only empties nothing.
+        closure = self._closure("a", ["T6_SYN", "T6_FIX", "M2_SYN"], lines=["M2"])
+        self.assertEqual(closure_emptied_lines(self._conn(), closure), [])
+
+    def test_overlapping_closures_add_up(self):
+        from syrmos_admin.schedule_invariants import closure_emptied_lines
+
+        conn = self._conn()
+        other = self._closure("b", ["T6_FIX"], start=50, end=500)
+        self.assertEqual(closure_emptied_lines(conn, self._closure("a", ["T6_SYN"]), [other]), ["T6"])
+        # A non-overlapping, draft or cancelled peer does not count.
+        for peer in (self._closure("c", ["T6_FIX"], start=0, end=100),
+                     self._closure("d", ["T6_FIX"], status="draft"),
+                     self._closure("e", ["T6_FIX"], status="cancelled")):
+            self.assertEqual(closure_emptied_lines(conn, self._closure("a", ["T6_SYN"]), [peer]), [])
+
+    def test_editing_a_closure_does_not_count_itself_twice(self):
+        from syrmos_admin.schedule_invariants import closure_emptied_lines
+
+        conn = self._conn()
+        stored = self._closure("a", ["T6_FIX"])
+        self.assertEqual(closure_emptied_lines(conn, self._closure("a", ["T6_SYN"]), [stored]), [])

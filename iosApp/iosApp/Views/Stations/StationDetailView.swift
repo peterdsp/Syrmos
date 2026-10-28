@@ -4,6 +4,7 @@ struct StationDetailView: View {
     let station: TransitStation
     @ObservedObject private var loc = LocalizationManager.shared
     @StateObject private var stasyService = STASYService()
+    @ObservedObject private var closures = ClosuresStore.shared
     @State private var departures: [Departure] = []
     @State private var hasLoadedOnce: Bool = false
     @State private var nowTick = SyrmosClock.now
@@ -29,8 +30,27 @@ struct StationDetailView: View {
         }
     }
 
+    /// The station row name in the reader's language. Both branches used to read
+    /// `station.name`, so a Greek reader saw the Latin name.
+    static func stationRowName(_ station: TransitStation, _ lang: AppLanguage) -> String {
+        if lang == .greek { return station.nameEl.isEmpty ? station.name : station.nameEl }
+        return SyrmosData.localizedStationName(station.name, language: lang)
+    }
+
+    /// 3.0.2: the closure effect for this station right now (any of its lines).
+    private var closureEffect: ClosureEffect {
+        _ = closures.tick
+        return closures.effect(stationIds: [station.id])
+    }
+
     var body: some View {
         List {
+            if closureEffect.active || closureEffect.upcomingClosureId != nil {
+                Section {
+                    StationClosureCard(stationIds: [station.id])
+                }
+            }
+
             if !stationAlerts.isEmpty {
                 Section {
                     ServiceAlertBanner(alert: stationAlerts[0], language: loc.language)
@@ -43,7 +63,7 @@ struct StationDetailView: View {
                 } label: {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(loc.language == .greek ? station.name : station.name)
+                            Text(Self.stationRowName(station, loc.language))
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
 
@@ -142,6 +162,7 @@ struct StationDetailView: View {
                 }
             }
 
+            if !closureEffect.blocksBoarding {
             Section(loc.language == .greek ? "Επόμενα Δρομολόγια" : loc.language == .albanian ? "Nisjet e ardhshme" : loc.language == .italian ? "Prossime partenze" : "Next Departures") {
                 if departures.isEmpty && !(isNonAthensRegion && apiFailed) {
                     Text(hasLoadedOnce
@@ -166,6 +187,7 @@ struct StationDetailView: View {
                         )
                     }
                 }
+            }
             }
         }
         .scrollContentBackground(.hidden)
@@ -349,6 +371,13 @@ private struct GroupedDepartureRow: View {
         .accessibilityLabel(accessibilityText)
     }
 
+    /// The destination in the reader's language, through the same localized
+    /// station-name lookup as the nearby notification (the schedule supplies
+    /// it as a raw, usually romanized, terminal name).
+    private var destinationName: String {
+        NearbyPlaceNames.destination(lineId: group.lineId, direction: group.destination, language)
+    }
+
     @ViewBuilder private var iconView: some View {
         let iconName = TimetablesIcons.vehicleImageName(
             lineId: group.lineId, direction: group.destination, isAirport: group.serviceType == "airport"
@@ -376,7 +405,7 @@ private struct GroupedDepartureRow: View {
                     .clipShape(Capsule())
             }
             Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
-            Text(group.destination)
+            Text(destinationName)
                 .font(.subheadline).fontWeight(.semibold)
                 .lineLimit(1)
         }
@@ -449,7 +478,7 @@ private struct GroupedDepartureRow: View {
             t.time.isEmpty ? minutesLabel(t.minutesAway) : "\(minutesLabel(t.minutesAway)) at \(t.time)"
         }.joined(separator: ", ")
         let more = group.moreCount > 0 ? ", +\(group.moreCount) more" : ""
-        return "\(group.lineId) towards \(group.destination), \(times)\(more)"
+        return "\(group.lineId) towards \(destinationName), \(times)\(more)"
     }
 }
 

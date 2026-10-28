@@ -526,6 +526,11 @@ final class AriadneModel: ObservableObject {
     /// Honest station status: lead with any live advisory, else the timetable.
     private func resolveStationStatus(stationId: String?) async -> AriadneMessage {
         guard let id = stationId, let st = station(id) else { return bot(clarify(.station)) }
+        // 3.0.2: closures from Syrmos answer first (they carry the window, the
+        // reason and the replacement bus); STASY notices are the fallback.
+        if let answer = closureStatusText(for: st) {
+            return bot(answer, confidence: .live)
+        }
         await alertsService.fetchAnnouncements()
         let advisory = ServiceAdvisoryMatcher.forStation(
             stationNames: stationSearchNames(st),
@@ -534,6 +539,26 @@ final class AriadneModel: ObservableObject {
             severeWeather: WeatherStore.shared.snapshot?.current.condition.isSevere == true
         )
         return bot(stationStatusText(name: name(st), advisory: advisory), confidence: .live)
+    }
+
+    private func closureStatusText(for st: TransitStation) -> String? {
+        let store = ClosuresStore.shared
+        let ids = [st.id] + SyrmosData.interchangeTargets(from: st, currentLineId: st.lineIds.first ?? "").map(\.stationId)
+        let effect = store.effect(stationIds: ids)
+        let lang = loc.language
+        if effect.active, let c = store.closure(for: effect) {
+            let window = ClosureCopy.window(startsAt: c.startsAtEpochSeconds, endsAt: effect.endsAtEpochSeconds, now: store.nowEpoch, lang)
+            return ClosureCopy.ariadneAnswer(stationName: name(st), mode: effect.mode, window: window,
+                                             reason: c.reason?.pick(lang),
+                                             bus: c.replacementBus.map { ClosureCopy.replacementBus($0, lang) }, lang)
+        }
+        if let startsAt = effect.upcomingStartsAtEpochSeconds, let c = store.closure(for: effect) {
+            var parts = ["\(name(st)): " + ClosureCopy.upcoming(startsAt: startsAt, now: store.nowEpoch, mode: c.mode, lang)]
+            if let reason = c.reason?.pick(lang) { parts.append(reason) }
+            if let bus = c.replacementBus { parts.append(ClosureCopy.replacementBus(bus, lang)) }
+            return parts.joined(separator: " ")
+        }
+        return nil
     }
 
     private func stationStatusText(name: String, advisory: ServiceAdvisory) -> String {

@@ -1,3 +1,18 @@
-Smarter severe-weather warnings.
+Syrmos 3.0.2, plus everything new since 3.0.0.
 
-The Home weather banner now stays up through a rainy or windy day instead of flickering off between showers, warns you when isolated showers can build into storms with lightning and strong gusts, and flags dangerous wind on its own. Stay careful out there.
+NEW IN 3.0.2
+- Station closures: when a station is closed or trains pass without stopping, Syrmos shows it on the map, the station screen and your routes, with the hours and any replacement bus. The planner routes around it.
+- Next train near you: turn on an optional notification and Syrmos tells you the next trains each way as you reach a station, with an honest heads-up when you don't need to rush.
+- Leave on time: calendar events with a place get a reminder telling you when to leave. Flights default to two hours at the airport (90 or 150 minutes if you prefer).
+- Announcements from Syrmos: important service news, in your language.
+- The Weather and Alerts widget now fills itself in, and station and destination names show in Greek when the app is in Greek.
+
+3.0.1
+- Smarter severe-weather warnings: the banner stays up through a stormy day and warns about lightning and strong wind.
+
+3.0.0
+- All of Greece: Thessaloniki metro, suburban trains and airport buses, Patras, national rail and Hellenic Train connecting buses.
+- Live Athens airport buses (X93, X95, X96, X97) with real positions and arrival times.
+- Journeys: route planning with step-by-step guidance, leave-by reminders, saved departures and a Lock Screen Live Activity.
+- Ichnos: see and anonymously flag a crowded or disrupted stop.
+- Italian joins English, Greek and Albanian.

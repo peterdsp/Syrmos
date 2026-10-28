@@ -1,5 +1,7 @@
 package com.syrmos.feature.lines
 
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedTerminals
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -924,7 +926,7 @@ private fun LineRow(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "${line.terminalA} - ${line.terminalB}",
+                text = line.localizedTerminals(lang),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -941,17 +943,6 @@ private fun LineRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
 }
 
 private fun LineType.localizedName(lang: AppLanguage): String {

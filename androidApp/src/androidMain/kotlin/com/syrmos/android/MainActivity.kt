@@ -14,13 +14,16 @@ import com.syrmos.app.platform.setLocationPermissionRequester
 import com.syrmos.app.platform.setAirportCalendarPermissionRequester
 import com.syrmos.app.platform.setNotificationPermissionRequester
 import com.syrmos.app.platform.setPendingAssistantQuery
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private var pending: CompletableDeferred<Unit>? = null
     private var notifPending: CompletableDeferred<Unit>? = null
     private var calendarPending: CompletableDeferred<Unit>? = null
+    private var backgroundLocationPending: CompletableDeferred<Unit>? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -41,6 +44,15 @@ class MainActivity : ComponentActivity() {
     ) {
         calendarPending?.complete(Unit)
         calendarPending = null
+    }
+
+    // 3.0.2 nearby next-train: "Allow all the time" location. On Android 11+ the
+    // system answers this request by opening the app's location settings page.
+    private val backgroundLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        backgroundLocationPending?.complete(Unit)
+        backgroundLocationPending = null
     }
 
     // Location for the "Near Me" Glance widget (nearest station + walking
@@ -107,11 +119,72 @@ class MainActivity : ComponentActivity() {
             deferred.await()
         }
 
+        installProactiveHooks()
+
         handleAssistantIntent(intent)
         handleNotificationIntent(intent)
 
         setContent {
             SyrmosApp()
+        }
+    }
+
+    /**
+     * 3.0.2 Settings toggles: run the permission flow when a feature is turned on
+     * (switching it back off if the rider declines), and start or stop the work.
+     */
+    private fun installProactiveHooks() {
+        val app = applicationContext
+        com.syrmos.core.common.ProactiveFeatureHooks.onBroadcastsChanged = { on ->
+            if (on) {
+                lifecycleScope.launch {
+                    com.syrmos.app.platform.requestNotificationPermission()
+                    com.syrmos.android.push.SyrmosPush.sync(app, force = true)
+                    com.syrmos.android.notification.AlertCheckWorker.pollBroadcastsNow(app)
+                }
+            } else {
+                com.syrmos.android.push.SyrmosPush.unregister(app)
+            }
+        }
+        com.syrmos.core.common.ProactiveFeatureHooks.onNearbyDeparturesChanged = { on ->
+            lifecycleScope.launch {
+                if (on) {
+                    com.syrmos.app.platform.requestNotificationPermission()
+                    if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        val d = CompletableDeferred<Unit>()
+                        pending = d
+                        locationPermissionLauncher.launch(
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                        )
+                        d.await()
+                    }
+                    // Android 10+ grants background location in a separate step.
+                    if (Build.VERSION.SDK_INT >= 29 &&
+                        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        val d = CompletableDeferred<Unit>()
+                        backgroundLocationPending = d
+                        backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                        d.await()
+                    }
+                    if (!com.syrmos.android.proactive.StationGeofenceManager.hasPermissions(app)) {
+                        com.syrmos.core.common.NotificationSettings.setNearbyDepartures(false)
+                    }
+                }
+                com.syrmos.android.proactive.StationGeofenceManager.refresh(app)
+            }
+        }
+        com.syrmos.core.common.ProactiveFeatureHooks.onCalendarRemindersChanged = { on ->
+            lifecycleScope.launch {
+                if (on) {
+                    com.syrmos.app.platform.requestNotificationPermission()
+                    if (!com.syrmos.app.platform.requestAirportCalendarPermission()) {
+                        com.syrmos.core.common.NotificationSettings.setCalendarReminders(false)
+                    }
+                }
+                com.syrmos.android.proactive.CalendarLeaveByScheduler.planAll(app)
+            }
         }
     }
 
@@ -134,6 +207,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
+        // 3.0.2 broadcasts carry a deep link ("syrmos://station/M2_SYN"): from our
+        // own notification (notif_deep_link) or from the system-shown FCM one,
+        // whose data keys arrive as extras (deepLink, broadcastId).
+        val deepLink = intent?.getStringExtra("notif_deep_link") ?: intent?.getStringExtra("deepLink")
+        intent?.getStringExtra("broadcastId")?.let {
+            com.syrmos.android.push.BroadcastPrefs.addDelivered(this, it)
+        }
+        val stationFromLink = deepLink?.takeIf { it.startsWith("syrmos://station/") }?.removePrefix("syrmos://station/")
+        if (!stationFromLink.isNullOrBlank()) {
+            com.syrmos.app.platform.setPendingNotificationDeepLink("station", stationFromLink)
+            return
+        }
         val notifType = intent?.getStringExtra("notif_type") ?: return
         val alertId = intent.getStringExtra("notif_alert_id")
         com.syrmos.app.platform.setPendingNotificationDeepLink(notifType, alertId)
@@ -147,9 +232,22 @@ class MainActivity : ComponentActivity() {
         // lifecycle: opening Syrmos and pressing Home again refreshes the
         // snapshot the widgets read within seconds.
         com.syrmos.android.widget.SnapshotWorker.refreshNow(this)
+        // 3.0.2: poll broadcasts on app open (push may be off or unconfigured),
+        // keep the push registration current, and refresh geofences and calendar
+        // reminders with the latest location. Each is a no-op when its toggle is off.
+        com.syrmos.android.notification.AlertCheckWorker.pollBroadcastsNow(this)
+        com.syrmos.android.push.SyrmosPush.sync(this)
+        val app = applicationContext
+        lifecycleScope.launch {
+            runCatching { com.syrmos.android.proactive.StationGeofenceManager.refresh(app) }
+            runCatching { com.syrmos.android.proactive.CalendarLeaveByScheduler.planAll(app) }
+        }
     }
 
     override fun onDestroy() {
+        com.syrmos.core.common.ProactiveFeatureHooks.onBroadcastsChanged = null
+        com.syrmos.core.common.ProactiveFeatureHooks.onNearbyDeparturesChanged = null
+        com.syrmos.core.common.ProactiveFeatureHooks.onCalendarRemindersChanged = null
         setLocationPermissionRequester(null)
         setAirportCalendarPermissionRequester(null)
         super.onDestroy()

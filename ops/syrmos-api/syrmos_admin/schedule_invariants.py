@@ -219,3 +219,67 @@ def provenance() -> dict[str, object]:
             "05:30 daytime handover. The M3 airport branch and Metro M1 are not 24h."
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# Station closures must never empty a whole line
+# ---------------------------------------------------------------------------
+#
+# A closure (migration 0029) removes boarding and/or alighting at the stations
+# it lists. Closing every station of a line is never what the owner means: it
+# would silently turn the line into a ghost on every client (no departures,
+# no valid plan legs) when the right tool is a line suspension. The admin form
+# and the STASY draft path both refuse a closure that would do that, counting
+# other closures that overlap it in time.
+
+
+def _line_station_sets(conn: sqlite3.Connection) -> dict[str, set[str]]:
+    sets: dict[str, set[str]] = {}
+    for r in conn.execute("SELECT line_id, station_id FROM line_stations"):
+        sets.setdefault(r["line_id"], set()).add(r["station_id"])
+    return sets
+
+
+def _windows_overlap(a: dict, b: dict) -> bool:
+    a_end = a.get("endsAtEpochSeconds")
+    b_end = b.get("endsAtEpochSeconds")
+    a_start = a["startsAtEpochSeconds"]
+    b_start = b["startsAtEpochSeconds"]
+    return (b_end is None or a_start < b_end) and (a_end is None or b_start < a_end)
+
+
+def closure_emptied_lines(
+    conn: sqlite3.Connection, closure: dict, others: list[dict] | None = None
+) -> list[str]:
+    """Line ids whose every station would be closed by `closure`.
+
+    `closure` and `others` use the fixture shape of syrmos_admin.closures.
+    Other non-draft, non-cancelled closures that overlap `closure` in time and
+    cover the same line count too, so two half-line closures cannot add up to a
+    whole line. Returns [] when the invariant holds.
+    """
+    line_sets = _line_station_sets(conn)
+    stations = set(closure.get("stationIds") or [])
+    if not stations:
+        return []
+    scoped = set(closure.get("lineIds") or [])
+    candidate_lines = scoped or {lid for lid, s in line_sets.items() if s & stations}
+    peers = [
+        o for o in (others or [])
+        if o.get("id") != closure.get("id")
+        and o.get("status") not in ("draft", "cancelled")
+        and _windows_overlap(closure, o)
+    ]
+    emptied: list[str] = []
+    for lid in sorted(candidate_lines):
+        line_stations = line_sets.get(lid)
+        if not line_stations:
+            continue
+        covered = set(stations)
+        for o in peers:
+            o_lines = set(o.get("lineIds") or [])
+            if not o_lines or lid in o_lines:
+                covered |= set(o.get("stationIds") or [])
+        if line_stations <= covered:
+            emptied.append(lid)
+    return emptied

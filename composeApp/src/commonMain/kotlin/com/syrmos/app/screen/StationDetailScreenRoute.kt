@@ -51,10 +51,13 @@ data class StationDetailScreenRoute(
             )
         }
 
+        val closureCard = rememberStationClosureCard(stationId, lang)
+
         viewModel.loadStation(stationId, focusLineId)
         StationDetailScreen(
             viewModel = viewModel,
             alertBanner = alertBanner,
+            closureCard = closureCard,
             lineDisruptions = lineDisruptions,
             onBack = { navigator.pop() },
             onOpenTransfer = { lineId, targetStationId ->

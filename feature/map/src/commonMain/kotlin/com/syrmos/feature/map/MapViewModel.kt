@@ -127,6 +127,7 @@ class MapViewModel(
     private val computeActiveTrains: ComputeActiveTrainsFromBandsUseCase,
     private val announcementsRepository: AnnouncementsRepository,
     private val lineGeometryRepository: LineGeometryRepositoryImpl,
+    private val closuresRepository: com.syrmos.core.data.sync.ClosuresRepository? = null,
 ) {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
@@ -140,6 +141,7 @@ class MapViewModel(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + errorHandler)
     private var livePositionsSnapshot: LivePositionsSnapshot? = null
     private var departureRefreshJob: Job? = null
+    private var passThroughStationIds: Set<String> = emptySet()
 
     init {
         loadMapData()
@@ -152,7 +154,21 @@ class MapViewModel(
 
     private fun observeStationDisruptions() {
         scope.launch {
-            announcementsRepository.stationDisruptions.collect { disruptions ->
+            // 3.0.2: closures feed the same CLOSURE path the map already greys
+            // stations with, re-evaluated every 30 s so a window flips on time.
+            val closed = closuresRepository?.let { repo ->
+                runCatching { repo.hydrateFromBundleIfNeeded() }
+                repo.closedStationIdsFlow()
+            } ?: kotlinx.coroutines.flow.flowOf(emptySet())
+            kotlinx.coroutines.flow.combine(announcementsRepository.stationDisruptions, closed) { disruptions, closedIds ->
+                // Trains keep running through a pass_through station, so the
+                // simulator must not stop them there (it skips CLOSURE stops).
+                passThroughStationIds = closuresRepository?.let { repo ->
+                    closedIds.filter { repo.effectForStation(it).mode == com.syrmos.core.common.ClosureMode.PASS_THROUGH }.toSet()
+                }.orEmpty()
+                if (closedIds.isEmpty()) disruptions
+                else disruptions + closedIds.associateWith { AlertSeverity.CLOSURE }
+            }.collect { disruptions ->
                 _uiState.update { it.copy(stationDisruptions = disruptions) }
             }
         }
@@ -304,7 +320,7 @@ class MapViewModel(
                 if (state.lines.isNotEmpty() && state.lineStations.isNotEmpty()) {
                     val closedIds = state.stationDisruptions
                         .filterValues { it == AlertSeverity.CLOSURE }
-                        .keys
+                        .keys - passThroughStationIds
                     val simulated = simulateTrains(
                         state.lines,
                         state.lineStations,
@@ -486,6 +502,8 @@ class MapViewModel(
                 }
             }
             if (hasBandResults) return@forEach
+            // 3.0.2: a closed station keeps an empty board (no synthetic times).
+            if (getNextDepartures.boardingClosed(stationId, line.id)) return@forEach
 
             val servicePatterns = transitPatternRepository.getPatternsFor(line.id, stationId)
             if (servicePatterns.isNotEmpty()) {

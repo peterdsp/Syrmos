@@ -1,5 +1,8 @@
 package com.syrmos.feature.stations
 
+import com.syrmos.core.domain.station.LineTitles
+import com.syrmos.core.domain.station.localizedName
+import com.syrmos.core.domain.station.localizedNameWithTerminals
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +58,8 @@ import com.syrmos.core.domain.departures.groupDepartures
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.designsystem.component.GroupedDepartureCard
 import com.syrmos.core.designsystem.component.AlertBannerInfo
+import com.syrmos.core.designsystem.component.ClosureCardInfo
+import com.syrmos.core.designsystem.component.StationClosureCard
 import com.syrmos.core.designsystem.component.LineColorIndicator
 import com.syrmos.core.designsystem.component.SectionHeader
 import com.syrmos.core.designsystem.component.ServiceAlertBanner
@@ -69,6 +74,9 @@ import com.syrmos.core.model.alerts.AlertSeverity
 fun StationDetailScreen(
     viewModel: StationDetailViewModel,
     alertBanner: AlertBannerInfo? = null,
+    // 3.0.2: active (or within 24 h) station closure. When active, the board is
+    // already empty (the projector hides departures where boarding is forbidden).
+    closureCard: ClosureCardInfo? = null,
     lineDisruptions: Map<String, AlertSeverity> = emptyMap(),
     onBack: () -> Unit = {},
     // Carries BOTH the line and the resolver's per-line station id so the caller
@@ -130,6 +138,11 @@ fun StationDetailScreen(
             contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (closureCard != null) {
+                item {
+                    StationClosureCard(info = closureCard)
+                }
+            }
             if (alertBanner != null) {
                 item {
                     ServiceAlertBanner(info = alertBanner)
@@ -165,7 +178,7 @@ fun StationDetailScreen(
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             LineColorIndicator(lineColor = line.color, size = 14.dp)
                                             Text(
-                                                text = "${line.localizedName(lang)} (${line.terminalA} - ${line.terminalB})",
+                                                text = line.localizedNameWithTerminals(lang),
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
                                         }
@@ -240,7 +253,7 @@ fun StationDetailScreen(
                                 ) {
                                     LineColorIndicator(lineColor = target.line.color, size = 14.dp)
                                     Text(
-                                        text = "${target.line.localizedName(lang)} (${target.line.terminalA} - ${target.line.terminalB})",
+                                        text = target.line.localizedNameWithTerminals(lang),
                                         style = MaterialTheme.typography.bodyMedium,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -313,7 +326,17 @@ fun StationDetailScreen(
                 SectionHeader(title = title)
             }
 
-            if (uiState.departures.isEmpty()) {
+            if (uiState.departures.isEmpty() && closureCard != null && !closureCard.upcoming) {
+                // Never an empty section: say why in one line (web/iOS parity).
+                item {
+                    Text(
+                        text = com.syrmos.core.common.ClosureCopy.noDeparturesClosed(lang),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            } else if (uiState.departures.isEmpty()) {
                 item {
                     Text(
                         text = if (uiState.hasLoadedDepartures) {
@@ -490,7 +513,7 @@ internal fun departureDirectionLabel(
     departure.notes
         ?.trim()
         ?.takeIf { it.isNotEmpty() && '_' !in it }
-        ?.let { return it }
+        ?.let { return LineTitles.stationName(it, departure.lineId.removeSuffix("_AIR"), language) }
 
     if (
         departure.direction == Direction.OUTBOUND &&
@@ -510,7 +533,7 @@ internal fun departureDirectionLabel(
         Direction.OUTBOUND -> line?.terminalB
         Direction.INBOUND -> line?.terminalA
     }
-    if (!terminal.isNullOrBlank()) return terminal
+    if (!terminal.isNullOrBlank()) return LineTitles.stationName(terminal, lineId, language)
 
     return when (departure.direction) {
         Direction.OUTBOUND -> when (language) {
@@ -557,17 +580,6 @@ private fun LinePill(lineId: String) {
             maxLines = 1,
         )
     }
-}
-
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
 }
 
 private fun lineIdToColor(lineId: String): LineColor = when {

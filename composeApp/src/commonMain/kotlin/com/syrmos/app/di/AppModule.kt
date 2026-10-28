@@ -56,6 +56,7 @@ val featureModule = module {
             assistantClassifier = com.syrmos.app.platform.provideAssistantClassifier(),
             modelDownloader = com.syrmos.app.platform.provideModelDownloader(),
             ariadneChatService = get(),
+            closuresRepository = get(),
         )
     }
     single { LinesViewModel(getLinesUseCase = get()) }
@@ -86,6 +87,7 @@ val featureModule = module {
             computeActiveTrains = get(),
             announcementsRepository = get(),
             lineGeometryRepository = get(),
+            closuresRepository = get(),
         )
     }
     factory { com.syrmos.core.domain.usecase.GetStationDeparturesUseCase(getNextDepartures = get(), transitPatternRepository = get()) }

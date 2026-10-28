@@ -1,0 +1,20 @@
+[Unit]
+Description=Syrmos dispatcher one-shot: send due broadcasts, flip closure status
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=peterdsp
+WorkingDirectory=/home/peterdsp/syrmos-api
+Environment=SYRMOS_DB_PATH=/home/peterdsp/syrmos-api/db/syrmos.db
+Environment=SYRMOS_API_OUT_DIR=/home/peterdsp/syrmos-api/out
+# APNs / FCM credentials (APNS_*, FCM_*) live only in admin.env on the Pi.
+# Optional (-): without it the dispatcher still flips closures, and broadcasts
+# are marked sent with every device skipped.
+EnvironmentFile=-/home/peterdsp/syrmos-api/admin.env
+ExecStart=/home/peterdsp/syrmos-api/.venv/bin/python -m syrmos_admin.dispatch
+# Journal, not an append file: a corrupt log file must not stop delivery
+# (see syrmos-admin.service.d/10-selfheal.conf).
+StandardOutput=journal
+StandardError=journal

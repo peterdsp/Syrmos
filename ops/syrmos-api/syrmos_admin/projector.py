@@ -35,6 +35,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
 from typing import Iterable
 
+from . import closures as closures_mod
+
 
 def _round_half_up(x: float) -> int:
     """Round a slot minute to the nearest whole minute, half up.
@@ -157,6 +159,16 @@ def project_next_departures(
             conn=conn,
         )
 
+    # Station closures (migration 0029): no departure where boarding is not
+    # possible at that departure's own time (closed, pass_through, exit_only),
+    # so an 08:05 train is hidden when a closure starts at 08:00 even if it is
+    # 07:50 now, and a 10:05 train shows when the closure ends at 10:00 (the
+    # same rule as the iOS removingClosedBoardings). Line-scoped closures only
+    # hide their own lines. Filter before the limit so open lines fill the board.
+    closures = closures_mod.load_closures(conn)
+    minute_epoch = int(now.replace(second=0, microsecond=0).timestamp())
+    out = [d for d in out if _can_board(closures, station_id, d.lineId, _departure_epoch(minute_epoch, d))]
+
     out = _dedupe(out)
     out.sort(key=lambda d: d.minutesAway)
     out = out[:limit]
@@ -194,7 +206,9 @@ def project_next_departures(
                     conn=conn,
                     direction_key=d_key,
                 )
-                if la is not None:
+                if la is not None and _can_board(
+                    closures, station_id, la.lineId, _departure_epoch(minute_epoch, la)
+                ):
                     out.append(la)
             # Re-dedup so any same-minute city row collapses into the
             # airport-labeled row (the dedup keeps the airport label).
@@ -205,7 +219,35 @@ def project_next_departures(
     return [d.to_dict() for d in out]
 
 
+def station_closure_effect(
+    conn: sqlite3.Connection, station_id: str, now: datetime | None = None
+) -> dict:
+    """closures.closure_effect for a whole station (any line) at `now`, so the
+    departures response can say why a board is empty (closed / pass_through)."""
+    if now is None:
+        now = datetime.now(ATHENS)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=ATHENS)
+    return closures_mod.closure_effect(
+        closures_mod.load_closures(conn), station_id, None, int(now.timestamp())
+    )
+
+
 # --- internals ---
+
+def _departure_epoch(minute_epoch: int, d: Departure) -> int:
+    """Epoch second a departure leaves: minutesAway counts from the current
+    whole minute (the projector works on now.hour * 60 + now.minute)."""
+    return minute_epoch + d.minutesAway * 60
+
+
+def _can_board(closures: list[dict], station_id: str, line_id: str, now_epoch: int) -> bool:
+    if not closures:
+        return True
+    # Closures name public line ids; the airport schedule line is M3 to riders.
+    lid = _display_line_id(line_id)
+    return closures_mod.closure_effect(closures, station_id, lid, now_epoch)["canBoard"]
+
 
 def _closed_lines_for_date(conn: sqlite3.Connection, date_iso: str) -> set[str]:
     """Lines that should emit no departures / no active trains for date_iso.

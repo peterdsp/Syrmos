@@ -124,6 +124,8 @@ class AssistantViewModel(
      */
     private val modelDownloader: AriadneModelDownloader = NoOpAriadneModelDownloader,
     private val ariadneChatService: AriadneChatService? = null,
+    // 3.0.2: station status answers from the closures feed first.
+    private val closuresRepository: com.syrmos.core.data.sync.ClosuresRepository? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -533,6 +535,15 @@ class AssistantViewModel(
     private suspend fun resolveStationStatus(intent: AssistantIntent.StationStatus): AssistantMessage {
         val station = intent.stationId?.let { id -> stations.firstOrNull { it.id == id } }
             ?: return botMessage(clarify(MissingSlot.STATION))
+        closureStatusText(station)?.let { text ->
+            return AssistantMessage(
+                id = nextId++,
+                fromUser = false,
+                text = text,
+                action = AssistantAction.OpenStation(station.id),
+                actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
+            )
+        }
         val advisory = ServiceAdvisoryMatcher.forStation(
             stationNames = stationSearchNames(station),
             stationLineIds = station.lineIds,
@@ -546,6 +557,32 @@ class AssistantViewModel(
             action = AssistantAction.OpenStation(station.id),
             actionLabel = t("Open", "Άνοιγμα", "Hap", it = "Apri"),
         )
+    }
+
+    /**
+     * An active (or within 24 h) Syrmos closure for this station, in words, or
+     * null. Checked before STASY notices: it is the curated, windowed source.
+     */
+    private suspend fun closureStatusText(station: Station): String? {
+        val repo = closuresRepository ?: return null
+        runCatching { repo.hydrateFromBundleIfNeeded() }
+        val lang = LocalizationManager.language.value
+        val now = com.syrmos.core.data.sync.ClosuresRepository.nowEpochSeconds()
+        val effect = repo.effectForStation(station.id, now)
+        val closure = repo.closureFor(effect) ?: return null
+        val name = stationName(station)
+        val reason = closure.reason?.text(lang).orEmpty().trimEnd('.')
+        val bus = closure.replacementBus?.let { " " + com.syrmos.core.common.ClosureCopy.replacementBus(it, lang) + "." }.orEmpty()
+        if (effect.active) {
+            val mode = effect.mode ?: closure.mode
+            val window = com.syrmos.core.common.ClosureCopy.window(closure.startsAtEpochSeconds, effect.endsAtEpochSeconds, now, lang)
+            return com.syrmos.core.common.ClosureCopy.assistantStatus(name, mode, window, reason, lang) + bus
+        }
+        val starts = effect.upcomingStartsAtEpochSeconds ?: return null
+        val window = com.syrmos.core.common.ClosureCopy.window(starts, closure.endsAtEpochSeconds, now, lang)
+        return "$name: ${com.syrmos.core.common.ClosureCopy.upcoming(starts, now, lang)}. " +
+            com.syrmos.core.common.ClosureCopy.assistantStatus(name, closure.mode, window, reason, lang)
+                .removePrefix("$name: ") + bus
     }
 
     /** Honest station status: lead with any live advisory, else the timetable. */

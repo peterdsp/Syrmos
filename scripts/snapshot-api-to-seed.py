@@ -17,6 +17,7 @@ Usage:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
@@ -88,6 +89,21 @@ def main() -> None:
         station_offsets = fetch("/api/station-offsets")
     except Exception as e:  # noqa: BLE001
         print(f"  WARN: /api/station-offsets fetch failed: {e}")
+
+    # Station closures (3.0.2): offline fallback so a scheduled closure still
+    # shows on a cold install with no network. Stored in the seed shape (the
+    # contract without generatedAt) so the bytes only change with content, and
+    # the manifest's closuresHash is set to the hash of exactly those bytes:
+    # the live manifest is regenerated less often than closures change.
+    closures_list: list = []
+    try:
+        closures_list = fetch("/api/closures").get("closures", [])
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARN: /api/closures fetch failed, bundling an empty list: {e}")
+    closures_bytes = json.dumps(
+        {"schemaVersion": 1, "closures": closures_list}, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    manifest["closuresHash"] = hashlib.sha256(closures_bytes).hexdigest()
 
     line_ids = list(manifest.get("perLineHashes", {}).keys())
     if not line_ids:
@@ -166,11 +182,13 @@ def main() -> None:
             total += write(dest / "announcements.json", announcements)
         (dest / "shapes.json").write_bytes(shapes_bytes)
         total += len(shapes_bytes)
+        (dest / "closures.json").write_bytes(closures_bytes)
+        total += len(closures_bytes)
         for lid, payload in bundles.items():
             total += write(dest / f"{lid}.json", payload)
         n_files = (
             len(bundles)
-            + 7
+            + 8
             + (1 if station_offsets is not None else 0)
             + (1 if announcements is not None else 0)
         )

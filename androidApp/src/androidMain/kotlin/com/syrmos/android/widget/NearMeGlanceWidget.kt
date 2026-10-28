@@ -37,7 +37,7 @@ class NearMeGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).appWidgetIdOrZero(id)
         val lineFilter = WidgetConfigStore.read(context, appWidgetId).line
-        val base = SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() } ?: BundledFallback.snapshot()
+        val base = SnapshotStore.read(context).takeIf { it.rows.isNotEmpty() || it.closed } ?: BundledFallback.snapshot()
         // Honor the optional line filter by keeping only nearby stations that
         // serve the chosen line (ignored when that would empty the list).
         val snapshot = if (lineFilter == null) base else {

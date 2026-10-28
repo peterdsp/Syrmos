@@ -56,5 +56,12 @@ enum BackgroundRefresh {
         let notif = NotificationService.shared
         notif.checkForNewAlerts(stasy.announcements)
         notif.checkWeather(WeatherStore.shared.snapshot)
+
+        // 3.0.2: closures (widgets read the shared snapshot), the polling
+        // fallback for announcements from Syrmos, and the calendar leave-by
+        // re-plan (reschedules only when leave-at moved by 5' or more).
+        await ClosuresStore.shared.refresh(force: true)
+        await BroadcastStore.shared.poll()
+        await CalendarTripStore.shared.replan()
     }
 }

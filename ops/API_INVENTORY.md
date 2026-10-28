@@ -58,3 +58,24 @@ Public endpoint: `https://api-syrmos.peterdsp.dev` (Cloudflared named tunnel →
 3. **On any DB write**, the admin service regenerates the static JSON files (`schedules.json`, `schedules-{lineId}.json`, `manifest.json`, `holidays.json`, `overrides.json`) atomically and bumps `meta.version` / `meta.etag`.
 4. **Admin service** binds to `127.0.0.1:8091`, fronted by nginx at `/admin`, gated by **Cloudflare Access**. Never exposed without auth.
 5. **Postgres in Docker is for `conservatio`**, untouched. SQLite is intentional for Syrmos: tiny data volume, single-file backup, no docker dependency.
+
+## 3.0.2 additions (closures, broadcasts, push)
+
+Served by the FastAPI app (`syrmos-admin.service`, 127.0.0.1:8092) through the
+nginx locations in `ops/syrmos-api/nginx.locations.conf`. Contract:
+`docs/3.0.2-CONTRACTS.md`.
+
+| Path | Method | Auth | Cache | Notes |
+|---|---|---|---|---|
+| `/api/closures` | GET | public | `public, max-age=60`, ETag, 304 | Non-draft, non-cancelled station closures, ended ones kept 24 h |
+| `/api/broadcasts?since=<epoch>` | GET | public | `public, max-age=60`, ETag, 304 | Sent, unexpired broadcasts, newest first, max 50 |
+| `/api/push/register` | POST | public | `no-store` | Anonymous token upsert keyed by sha256(token), 204, 400 on bad shape, 30/hour per IP |
+| `/api/push/unregister` | POST | public | `no-store` | 204 |
+| `/api/departures/next` | GET | public | `no-store` | Now also hides departures where a closure blocks boarding and returns `stationClosure` |
+| `/admin/closures`, `/admin/broadcasts`, `/admin/push` | GET/POST | Cloudflare Access JWT + `ADMIN_EMAILS`, CSRF on POST | `no-store` | Every POST writes an `admin_audit` row |
+
+Timer: `syrmos-broadcasts.timer` (every minute) runs `python -m syrmos_admin.dispatch`,
+which sends due broadcasts once and flips closure status scheduled -> active -> ended.
+
+Public `/api/*` proxy locations blank the `Cf-Access-Jwt-Assertion` and
+`Cf-Access-Authenticated-User-Email` request headers; only `/admin/` forwards them.

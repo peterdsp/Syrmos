@@ -1,5 +1,7 @@
 package com.syrmos.feature.map
 
+import com.syrmos.core.domain.station.LineTitles
+import com.syrmos.core.domain.station.localizedName
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
@@ -719,7 +721,7 @@ private fun StationSheetCard(
                                         fontWeight = FontWeight.SemiBold,
                                     )
                                     Text(
-                                        text = "${vehicleText(lang, "to", "προς", "për", "per")} ${departure.destinationLabel}",
+                                        text = "${vehicleText(lang, "to", "προς", "për", "per")} ${LineTitles.stationName(departure.destinationLabel, departure.line.id, lang)}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -1504,17 +1506,6 @@ private fun TelemetryCell(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }
-}
-
-private fun Line.localizedName(lang: AppLanguage): String {
-    if (lang == AppLanguage.GREEK && nameEl.isNotBlank()) return nameEl
-    if (lang == AppLanguage.ITALIAN) return name
-        .replace("Line ", "Linea ")
-        .replace("Suburban ", "Suburbano ")
-    if (lang == AppLanguage.ALBANIAN) return name
-        .replace("Line ", "Linja ")
-        .replace("Suburban ", "Periferik ")
-    return name
 }
 
 private fun resolveStation(greek: String?, english: String?, lang: AppLanguage): String? {

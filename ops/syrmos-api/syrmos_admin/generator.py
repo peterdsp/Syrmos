@@ -15,6 +15,7 @@ from datetime import date as _date, datetime, timedelta as _timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from . import closures as closures_mod
 from . import db as dbmod
 from . import schedule_invariants
 
@@ -1078,6 +1079,13 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
         news_payload = _build_news(conn)
         news_hash = _atomic_write_json(out_dir / "news.json", news_payload)
 
+        # /api/closures is served live by the app (ETag, max-age=60); the
+        # manifest only carries the hash of the bundled-seed shape (no
+        # generatedAt) so a seed snapshot can tell whether closures.json changed.
+        closures_hash = hashlib.sha256(closures_mod.canonical_bytes(
+            closures_mod.seed_payload(closures_mod.public_closures(conn))
+        )).hexdigest()
+
         # /api/schedules/{lineId} per line
         line_ids = [r["id"] for r in conn.execute("SELECT id FROM lines ORDER BY sort_order")]
         per_line_hashes: dict[str, str] = {}
@@ -1117,6 +1125,7 @@ def generate(out_dir: Path = DEFAULT_OUT, db_path: str | None = None) -> dict:
             "stationOffsetsHash": station_offsets_hash,
             "announcementsHash": announcements_hash,
             "newsHash": news_hash,
+            "closuresHash": closures_hash,
             # Provenance for the 24h Saturday overnight service so clients can
             # surface "Operating all night" with a source + verification date.
             "overnightService": schedule_invariants.provenance(),

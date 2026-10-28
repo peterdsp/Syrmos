@@ -185,7 +185,27 @@ enum ScheduleProjector {
                 sorted.append(lookahead)
             }
         }
-        return sorted
+        // 3.0.2 closures: only today's call evaluates the window (each
+        // departure at its own minute), so the rolled-over tomorrow rows the
+        // recursive calls return are filtered once, with their absolute offsets.
+        return dayOffset == 0 ? removingClosedBoardings(sorted, stationId: stationId) : sorted
+    }
+
+    /// Drops departures a rider cannot board because the station is closed (or
+    /// trains pass through) at that departure's minute. Mirrors the server
+    /// projector rule in fixtures/closures/effect.json.
+    static func removingClosedBoardings(
+        _ departures: [Departure],
+        stationId: String,
+        closures: [StationClosure] = ClosureSnapshot.current(),
+        now: Date = SyrmosClock.now
+    ) -> [Departure] {
+        guard !closures.isEmpty else { return departures }
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        return departures.filter { dep in
+            let at = nowEpoch + Int64(max(0, dep.minutesAway)) * 60
+            return StationClosures.effect(closures, stationId: stationId, lineId: dep.lineId, now: at).canBoard
+        }
     }
 
     /// Scans forward up to 7 days for the next M3_AIR departure when the

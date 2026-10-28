@@ -40,6 +40,7 @@ class SnapshotWorker(
     private val getNextDepartures: GetNextDeparturesUseCase by inject()
     private val stationRepository: StationRepositoryImpl by inject()
     private val announcementsRepository: com.syrmos.core.data.sync.AnnouncementsRepository by inject()
+    private val closuresRepository: com.syrmos.core.data.sync.ClosuresRepository by inject()
 
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
@@ -81,6 +82,24 @@ class SnapshotWorker(
         val disruptions = announcementsRepository.lineDisruptions.value
             .mapValues { it.value.name.lowercase() }
             .filterValues { it == "warning" || it == "closure" }
+
+        // 3.0.2: a closed station shows "Closed" with no rows, never the bundled
+        // fallback times (which would claim trains that do not stop there).
+        runCatching { closuresRepository.hydrateFromBundleIfNeeded() }
+        val closure = closuresRepository.effectForStation(stationId)
+        val closedMode = closure.mode
+        if (closure.active && !closure.canBoard && closedMode != null) {
+            val label = com.syrmos.core.common.ClosureCopy.modeChip(closedMode, com.syrmos.core.common.LocalizationManager.language.value)
+            return WidgetSnapshot(
+                stationName = "$stationName · $label",
+                lastTrain = null,
+                rows = emptyList(),
+                updatedEpoch = now,
+                nearby = nearby,
+                disruptedLines = disruptions,
+                closed = true,
+            )
+        }
 
         val deps = getNextDepartures
             .invoke(stationId, line, Direction.OUTBOUND, limit = 5)

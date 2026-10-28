@@ -2,105 +2,6 @@ import SwiftUI
 import EventKit
 import UIKit
 
-private struct AirportCalendarEvent: Identifiable, Equatable {
-    let id: String
-    let title: String
-    let startDate: Date
-    let location: String
-}
-
-@MainActor
-private final class AirportCalendarStore: ObservableObject {
-    enum AccessState {
-        case unknown
-        case connected
-        case denied
-    }
-
-    @Published private(set) var accessState: AccessState = .unknown
-    @Published private(set) var events: [AirportCalendarEvent] = []
-
-    private let eventStore = EKEventStore()
-
-    func refresh() async {
-        let status = EKEventStore.authorizationStatus(for: .event)
-        if isAuthorized(status) {
-            accessState = .connected
-            loadEvents()
-        } else if status == .denied || status == .restricted {
-            accessState = .denied
-            events = []
-        } else {
-            accessState = .unknown
-            events = []
-        }
-    }
-
-    func connect() async {
-        if accessState == .denied {
-            guard let settings = URL(string: UIApplication.openSettingsURLString) else { return }
-            await UIApplication.shared.open(settings)
-            return
-        }
-        do {
-            let granted: Bool
-            if #available(iOS 17.0, *) {
-                granted = try await eventStore.requestFullAccessToEvents()
-            } else {
-                granted = try await withCheckedThrowingContinuation { continuation in
-                    eventStore.requestAccess(to: .event) { allowed, error in
-                        if let error { continuation.resume(throwing: error) }
-                        else { continuation.resume(returning: allowed) }
-                    }
-                }
-            }
-            accessState = granted ? .connected : .denied
-            if granted { loadEvents() }
-        } catch {
-            accessState = .denied
-            events = []
-        }
-    }
-
-    private func isAuthorized(_ status: EKAuthorizationStatus) -> Bool {
-        if #available(iOS 17.0, *) { return status == .fullAccess }
-        return status == .authorized
-    }
-
-    /// Title for a calendar event that matched as an airport trip but has no title of its own.
-    private var fallbackTripTitle: String {
-        switch LocalizationManager.shared.language {
-        case .greek: return "Ταξίδι αεροδρομίου"
-        case .albanian: return "Udhëtim aeroporti"
-        case .italian: return "Viaggio in aeroporto"
-        case .english: return "Airport trip"
-        }
-    }
-
-    private func loadEvents() {
-        let start = SyrmosClock.now
-        let end = Calendar.current.date(byAdding: .day, value: 8, to: start) ?? start
-        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
-        events = eventStore.events(matching: predicate)
-            .filter { event in
-                let text = "\(event.title ?? "") \(event.location ?? "")".lowercased()
-                return [
-                    "airport", "flight", "ath", "aeroporto", "aeroporti", "volo", "fluturim",
-                    "αεροδρο", "πτηση", "πτήση", "m3", "x95", "x93"
-                ].contains { text.contains($0) }
-            }
-            .prefix(20)
-            .map { event in
-                AirportCalendarEvent(
-                    id: event.eventIdentifier ?? UUID().uuidString,
-                    title: event.title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? event.title! : fallbackTripTitle,
-                    startDate: event.startDate,
-                    location: event.location ?? ""
-                )
-            }
-    }
-}
-
 /// Airport travel hub with live context, upcoming services, and a
 /// seven-day planning calendar tied to a saved flight time.
 struct TimetablesView: View {
@@ -118,7 +19,7 @@ struct TimetablesView: View {
     @State private var metroLegDepartures: [String: [Departure]] = [:]
     @State private var flightTime = TimetablesView.defaultFlightTime
     @State private var nowTick = SyrmosClock.now
-    @StateObject private var calendarStore = AirportCalendarStore()
+    @ObservedObject private var calendarStore = CalendarTripStore.shared
     /// Live STASY / OSETH service announcements, so the airport hub can surface
     /// the alerts that actually affect its routes instead of a static placeholder.
     @StateObject private var stasyService = STASYService()
@@ -557,7 +458,7 @@ private struct AirportCalendarHub: View {
     @Binding var dayOffset: Int
     @Binding var flightTime: Date
     let calendarEvent: AirportCalendarEvent?
-    let accessState: AirportCalendarStore.AccessState
+    let accessState: CalendarTripStore.AccessState
     let onConnectCalendar: () -> Void
 
     var body: some View {
