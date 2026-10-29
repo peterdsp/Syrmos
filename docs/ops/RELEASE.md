@@ -57,7 +57,16 @@ The `release` signing config in `androidApp/build.gradle.kts` reads from
 
 First upload of a brand-new package to Play must be done manually in the console
 (Google requires the first bundle by hand); the workflow handles every release
-after that. Default track is `internal`; promote in the console or change `track`.
+after that. Every build goes to the `internal` track only, so the public listing
+does not change until a release is promoted. To promote one to production, run
+**Promote Android to production** (`promote-android.yml`):
+
+1. Run it with `dry_run` on. Google validates the edit, and the log shows what is
+   live and what would be promoted.
+2. Run it again with `dry_run` off. That sends the release to Google's review.
+
+Leave `version_code` empty to promote the newest internal release. Set `rollout`
+below 100 for a staged rollout.
 
 ## iOS secrets (GitHub repo settings, Actions secrets)
 

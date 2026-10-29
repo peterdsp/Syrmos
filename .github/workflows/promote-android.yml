@@ -1,0 +1,59 @@
+name: Promote Android to production
+
+# release-android.yml uploads every build to the Play internal track only, so
+# the public listing stays on the last promoted version. This promotes a
+# release that is already on internal to production and sends it to Google's
+# review. Nothing is rebuilt. Run it with dry_run first.
+#
+# Uses the same PLAY_SERVICE_ACCOUNT_JSON secret as release-android.yml; the
+# service account needs "Release to production" in Play Console.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "Version code on the internal track to promote (empty = the newest one)."
+        type: string
+        default: ""
+      rollout:
+        description: "Percent of users (100 = full rollout, lower = staged rollout)."
+        type: string
+        default: "100"
+      dry_run:
+        description: "Validate with Google and discard: publish nothing."
+        type: boolean
+        default: true
+
+concurrency:
+  group: promote-android
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Internal to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Google auth
+        run: pip install "google-auth[requests]==2.*"
+
+      - name: Test the promotion logic
+        run: python3 -m unittest scripts/test_play_promote.py
+
+      - name: Promote
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          ROLLOUT: ${{ inputs.rollout }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=(--rollout "$ROLLOUT")
+          [ -n "$VERSION_CODE" ] && args+=(--version-code "$VERSION_CODE")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          python3 scripts/play_promote.py "${args[@]}"
