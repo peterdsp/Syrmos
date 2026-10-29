@@ -76,12 +76,14 @@ def call(s, method, url, **kw):
 
 def status(s):
     """Print both tracks, then commit an empty edit that Google refuses if
-    changes are in review. Not sent for review, so it changes nothing."""
+    changes are in review. The edit holds no changes, so nothing is sent.
+    (This app sends changes for review automatically, so Google rejects
+    changesNotSentForReview.)"""
     edit = call(s, "POST", API)["id"]
     for track in ("internal", "production"):
         print(f"{track}: {json.dumps(call(s, 'GET', f'{API}/{edit}/tracks/{track}'), ensure_ascii=False)}")
     r = s.request("POST", f"{API}/{edit}:commit", timeout=60,
-                  params={"changesNotSentForReview": "true", "changesInReviewBehavior": "ERROR_IF_IN_REVIEW"})
+                  params={"changesInReviewBehavior": "ERROR_IF_IN_REVIEW"})
     if r.status_code < 400:
         print("Review: nothing in review (Google accepted an empty commit while asked to refuse if in review).")
     else:

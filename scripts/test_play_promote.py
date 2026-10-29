@@ -133,10 +133,9 @@ class MainFlowTest(unittest.TestCase):
             play = FakePlay(in_review=in_review)
             self.assertEqual(self.run_main(play, "--status"), 0)
             commits = [b for m, p, b in play.calls if p.endswith(":commit")]
-            # The only commit is the empty probe: never sent for review, and
-            # refused by Google if anything is already in review.
-            self.assertEqual(commits, [{"changesNotSentForReview": "true",
-                                        "changesInReviewBehavior": "ERROR_IF_IN_REVIEW"}])
+            # The only commit is the empty probe, refused by Google if
+            # anything is already in review.
+            self.assertEqual(commits, [{"changesInReviewBehavior": "ERROR_IF_IN_REVIEW"}])
             self.assertFalse([1 for m, p, b in play.calls if m == "PUT"])
 
 
