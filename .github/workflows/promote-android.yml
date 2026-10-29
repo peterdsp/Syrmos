@@ -23,6 +23,10 @@ on:
         description: "Validate with Google and discard: publish nothing."
         type: boolean
         default: true
+      status:
+        description: "Only report: print the tracks and whether changes are in review. Changes nothing."
+        type: boolean
+        default: false
 
 concurrency:
   group: promote-android
@@ -52,8 +56,10 @@ jobs:
           VERSION_CODE: ${{ inputs.version_code }}
           ROLLOUT: ${{ inputs.rollout }}
           DRY_RUN: ${{ inputs.dry_run }}
+          STATUS: ${{ inputs.status }}
         run: |
           args=(--rollout "$ROLLOUT")
           [ -n "$VERSION_CODE" ] && args+=(--version-code "$VERSION_CODE")
           [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          [ "$STATUS" = "true" ] && args+=(--status)
           python3 scripts/play_promote.py "${args[@]}"

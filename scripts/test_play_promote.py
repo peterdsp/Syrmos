@@ -78,12 +78,14 @@ class FakeResponse:
 class FakePlay:
     """Records the calls main() makes; answers like the Play edits API."""
 
-    def __init__(self, fail_put=False):
-        self.calls, self.fail_put = [], fail_put
+    def __init__(self, fail_put=False, in_review=False):
+        self.calls, self.fail_put, self.in_review = [], fail_put, in_review
 
-    def request(self, method, url, timeout=None, json=None):
+    def request(self, method, url, timeout=None, json=None, params=None):
         path = url.replace(P.API, "")
-        self.calls.append((method, path, json))
+        self.calls.append((method, path, json or params))
+        if path.endswith(":commit") and params and self.in_review:
+            return FakeResponse({"error": {"message": "Changes are in review"}}, 400)
         if method == "POST" and path == "":
             return FakeResponse({"id": "E1"})
         if method == "GET" and path.endswith("/tracks/internal"):
@@ -125,6 +127,17 @@ class MainFlowTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.run_main(play)
         self.assertEqual([(m, p) for m, p, _ in play.calls][-1], ("DELETE", "/E1"))
+
+    def test_status_changes_nothing_and_reports_review(self):
+        for in_review in (False, True):
+            play = FakePlay(in_review=in_review)
+            self.assertEqual(self.run_main(play, "--status"), 0)
+            commits = [b for m, p, b in play.calls if p.endswith(":commit")]
+            # The only commit is the empty probe: never sent for review, and
+            # refused by Google if anything is already in review.
+            self.assertEqual(commits, [{"changesNotSentForReview": "true",
+                                        "changesInReviewBehavior": "ERROR_IF_IN_REVIEW"}])
+            self.assertFalse([1 for m, p, b in play.calls if m == "PUT"])
 
 
 if __name__ == "__main__":

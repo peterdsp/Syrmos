@@ -12,7 +12,8 @@ Usage (CI, see .github/workflows/promote-android.yml):
       [--version-code 272] [--rollout 100] [--dry-run]
 
 --dry-run validates the edit with Google and then discards it: nothing is
-published. --rollout below 100 makes a staged rollout to that share of users.
+published. --status changes nothing: it prints both tracks and asks Google
+whether changes are waiting in review. --rollout below 100 makes a staged rollout to that share of users.
 """
 
 import argparse
@@ -73,11 +74,28 @@ def call(s, method, url, **kw):
     return r.json() if r.content else {}
 
 
+def status(s):
+    """Print both tracks, then commit an empty edit that Google refuses if
+    changes are in review. Not sent for review, so it changes nothing."""
+    edit = call(s, "POST", API)["id"]
+    for track in ("internal", "production"):
+        print(f"{track}: {json.dumps(call(s, 'GET', f'{API}/{edit}/tracks/{track}'), ensure_ascii=False)}")
+    r = s.request("POST", f"{API}/{edit}:commit", timeout=60,
+                  params={"changesNotSentForReview": "true", "changesInReviewBehavior": "ERROR_IF_IN_REVIEW"})
+    if r.status_code < 400:
+        print("Review: nothing in review (Google accepted an empty commit while asked to refuse if in review).")
+    else:
+        print(f"Review: Google refused ({r.status_code}): {r.text}")
+        call(s, "DELETE", f"{API}/{edit}")
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--version-code", type=int, default=None)
     ap.add_argument("--rollout", type=float, default=100.0)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--status", action="store_true")
     args = ap.parse_args(argv)
 
     key = os.environ.get("PLAY_SERVICE_ACCOUNT_JSON")
@@ -85,6 +103,8 @@ def main(argv=None):
         raise SystemExit("PLAY_SERVICE_ACCOUNT_JSON is not set.")
     s = session(key)
 
+    if args.status:
+        return status(s)
     edit = call(s, "POST", API)["id"]
     try:
         internal = call(s, "GET", f"{API}/{edit}/tracks/internal")
