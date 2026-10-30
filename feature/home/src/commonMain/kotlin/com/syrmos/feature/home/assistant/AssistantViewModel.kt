@@ -2,6 +2,7 @@ package com.syrmos.feature.home.assistant
 
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.LocalizationManager
+import com.syrmos.core.common.TransferCopy
 import com.syrmos.core.data.repository.FavoritesRepository
 import com.syrmos.core.data.repository.StationRepositoryImpl
 import com.syrmos.core.data.sync.AnnouncementsRepository
@@ -43,6 +44,7 @@ import com.syrmos.core.domain.usecase.PlanByArrivalUseCase
 import com.syrmos.core.domain.usecase.PlanJourneyUseCase
 import com.syrmos.core.model.location.UserLocation
 import com.syrmos.core.domain.usecase.SearchStationsUseCase
+import com.syrmos.core.domain.station.StationDepartureScope
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Direction
 import com.syrmos.core.model.schedule.SourceConfidence
@@ -126,6 +128,9 @@ class AssistantViewModel(
     private val ariadneChatService: AriadneChatService? = null,
     // 3.0.2: station status answers from the closures feed first.
     private val closuresRepository: com.syrmos.core.data.sync.ClosuresRepository? = null,
+    /** The reviewed station-complex registry, so an interchange answers for
+     *  every line it serves and not just the row the name resolved to. */
+    private val stationComplexRepository: com.syrmos.core.domain.station.StationComplexRepository? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -996,13 +1001,35 @@ class AssistantViewModel(
             return resolveDeparturesForDay(intent.day, station, lineIds)
         }
 
+        // Ask every line of the COMPLEX at its own boarding stop. Resolving
+        // "Syntagma" lands on one per-line row (M2_SYN), and asking that id for
+        // M3 returns nothing, so Ariadne used to answer with M2 departures only
+        // and silently drop the other half of an interchange.
+        val memberStopIds = stationComplexRepository
+            ?.complexForStop(station.id)?.memberStopIds
+            ?.takeIf { it.isNotEmpty() }
+            ?: listOf(station.id)
+        val targets = StationDepartureScope.targets(
+            memberStopIds = memberStopIds,
+            stations = stations,
+            lineFilter = intent.lineId,
+            normalize = ::normalizeLine,
+        )
+
         val departures = mutableListOf<UpcomingDeparture>()
-        for (lineId in lineIds) {
+        for (target in targets) {
             for (direction in Direction.entries) {
-                departures += getNextDepartures.invoke(station.id, lineId, direction, limit = 2).first()
+                departures += getNextDepartures.invoke(target.stationId, target.lineId, direction, limit = 2).first()
             }
         }
-        val sorted = departures.sortedBy { it.minutesAway }.take(4)
+        // One row per departure the rider can actually tell apart. The board
+        // renders "<line> · <time>" with no direction, and the projector is
+        // queried once per direction, so the same train came back twice and
+        // "next train from Athens" listed M2 16:53 twice in a row.
+        val sorted = departures
+            .distinctBy { Triple(it.lineId, it.time, it.trainNo) }
+            .sortedBy { it.minutesAway }
+            .take(4)
         if (sorted.isEmpty()) {
             return botMessage(t("No more trains from ${stationName(station)} right now.",
                 "Δεν υπάρχουν άλλα δρομολόγια από ${stationName(station)} τώρα.",
@@ -1172,7 +1199,16 @@ class AssistantViewModel(
     /** "Which lines serve X?" — list the lines calling at a station. */
     private suspend fun resolveWhichLines(intent: AssistantIntent.WhichLines): AssistantMessage {
         val station = resolveStation(intent.stationId, null) ?: return botMessage(clarify(MissingSlot.STATION))
-        val lineIds = station.lineIds.map { normalizeLine(it) }.distinct()
+        // Across the whole complex, not just the per-line row the name resolved
+        // to: Syntagma is M2_SYN AND M3_SYN, so this used to answer "served by
+        // M2" at one of Athens' two main interchanges.
+        val memberStopIds = stationComplexRepository
+            ?.complexForStop(station.id)?.memberStopIds
+            ?.takeIf { it.isNotEmpty() }
+            ?: listOf(station.id)
+        val lineIds = StationDepartureScope.targets(memberStopIds, stations)
+            .map { normalizeLine(it.lineId) }
+            .distinct()
         val name = stationName(station)
         if (lineIds.isEmpty()) {
             return botMessage(t("I don't have any lines listed for $name.",
@@ -1209,8 +1245,7 @@ class AssistantViewModel(
         val changePart = if (route.transferCount == 0) {
             t("direct", "απευθείας", "direkt", it = "diretto")
         } else {
-            t("${route.transferCount} change(s)", "${route.transferCount} αλλαγή/ές", "${route.transferCount} ndërrim(e)",
-                it = "${route.transferCount} cambio/i")
+            TransferCopy.changes(route.transferCount, LocalizationManager.language.value)
         }
         return botMessage(t(
             "$fromN to $toN is $stops stops, about ${route.totalMinutes} min ($changePart).",
@@ -1254,8 +1289,7 @@ class AssistantViewModel(
         val transfers = if (best.transferCount == 0) {
             t("no change", "χωρίς αλλαγή", "pa ndërrim", it = "nessun cambio")
         } else {
-            t("${best.transferCount} change(s)", "${best.transferCount} αλλαγή/ές", "${best.transferCount} ndërrim(e)",
-                it = "${best.transferCount} cambio/i")
+            TransferCopy.changes(best.transferCount, LocalizationManager.language.value)
         }
         // "This is direct" nod when the user asked for the easiest route.
         val directNote = if (intent.preference == com.syrmos.core.domain.assistant.RoutePreference.FEWEST_CHANGES &&
@@ -1432,8 +1466,7 @@ class AssistantViewModel(
         val transfers = if (result.transferCount == 0) {
             t("no change", "χωρίς αλλαγή", "pa ndërrim", it = "nessun cambio")
         } else {
-            t("${result.transferCount} change(s)", "${result.transferCount} αλλαγή/ές", "${result.transferCount} ndërrim(e)",
-                it = "${result.transferCount} cambio/i")
+            TransferCopy.changes(result.transferCount, LocalizationManager.language.value)
         }
         return botMessage(t(
             "About ${result.totalMinutes} min from ${stationNameById(fromId)} to ${stationNameById(toId)}, $transfers.",
@@ -1602,17 +1635,57 @@ class AssistantViewModel(
     private suspend fun resolveAlerts(intent: AssistantIntent.ShowAlerts): AssistantMessage {
         val feed = announcementsRepository.feed.first()
         val alerts = feed.announcements.filter { it.isServiceAlert }
+        // An active closure is the most concrete thing we know, and it is what a
+        // strike looks like in the data, so it leads. Asking "is there a strike
+        // today" during the 30 Oct 2026 Hellenic Train strike used to answer
+        // with nothing at all.
+        val closure = activeClosureHeadline()
+        val statusText = feed.status
+            ?.takeIf { it.isAlert }
+            ?.localizedMessage(LocalizationManager.language.value)
+            ?.takeIf { it.isNotBlank() }
+        val announced = alerts.take(2)
+            .map { localizedAnnouncementTitle(it) }
+            .filter { it.isNotBlank() }
         return when {
-            alerts.isNotEmpty() -> botMessage(t("Active alerts: ", "Ενεργές ειδοποιήσεις: ", "Njoftime aktive: ",
-                it = "Avvisi attivi: ") +
-                alerts.take(2).joinToString("; ") { localizedAnnouncementTitle(it) })
-            feed.status != null && feed.status?.isAlert == true ->
-                botMessage(feed.status!!.localizedMessage(LocalizationManager.language.value))
+            closure != null && announced.isNotEmpty() ->
+                botMessage(closure + " " + t("Also active: ", "Επίσης ενεργά: ", "Gjithashtu aktive: ",
+                    it = "Attivi anche: ") + announced.joinToString("; "))
+            closure != null -> botMessage(closure)
+            announced.isNotEmpty() -> botMessage(t("Active alerts: ", "Ενεργές ειδοποιήσεις: ",
+                "Njoftime aktive: ", it = "Avvisi attivi: ") + announced.joinToString("; "))
+            // Only when it actually says something: a blank status message used
+            // to render an empty bubble with a Live chip and no words in it.
+            statusText != null -> botMessage(statusText)
             else -> botMessage(t("No active service alerts right now.",
                 "Δεν υπάρχουν ενεργές ειδοποιήσεις τώρα.",
                 "Nuk ka njoftime aktive tani.",
                 it = "Non ci sono avvisi di servizio attivi al momento."))
         }
+    }
+
+    /**
+     * One line describing the widest active closure, or null when nothing is
+     * closed. A network-wide suspension (a strike) is entered as a single
+     * closure covering every affected stop, so the station count is the honest
+     * measure of how big it is.
+     */
+    private suspend fun activeClosureHeadline(): String? {
+        val repo = closuresRepository ?: return null
+        runCatching { repo.hydrateFromBundleIfNeeded() }
+        val now = com.syrmos.core.data.sync.ClosuresRepository.nowEpochSeconds()
+        val lang = LocalizationManager.language.value
+        val active = repo.closures.value
+            .filter { com.syrmos.core.common.StationClosures.isActive(it, now) }
+            .filter { it.mode == com.syrmos.core.common.ClosureMode.CLOSED }
+            .maxByOrNull { it.stationIds.size } ?: return null
+        val reason = active.reason?.text(lang).orEmpty().trim()
+        val count = active.stationIds.size
+        val head = t("Yes. $count stations are closed right now.",
+            "Ναι. $count σταθμοί είναι κλειστοί αυτή τη στιγμή.",
+            "Po. $count stacione janë të mbyllura tani.",
+            it = "Sì. $count stazioni sono chiuse in questo momento.")
+        return if (reason.isBlank()) head else "$head $reason"
     }
 
     private fun resolveOpenMap(intent: AssistantIntent.OpenMap): AssistantMessage {

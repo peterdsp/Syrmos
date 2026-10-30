@@ -98,8 +98,51 @@ class AthensTransitParserTest {
     }
 
     @Test
+    fun the_greetings_own_example_plans_a_trip_to_the_airport() {
+        // "airport by 21:30" is the worked example in Ariadne's own greeting.
+        // It used to parse as departures FROM the airport, the opposite of the
+        // question, because an arrival anchor was not a planning cue.
+        val intent = parser.parse("airport by 21:30")
+        val clar = assertIs<AssistantIntent.NeedsClarification>(intent)
+        assertEquals(MissingSlot.ORIGIN_STATION, clar.missing)
+        val base = assertIs<AssistantIntent.PlanTripByArrival>(clar.base)
+        assertEquals("M3_AER", base.toStationId)
+        assertEquals(null, base.fromStationId)
+    }
+
+    @Test
+    fun an_origin_framed_question_with_a_time_stays_departures() {
+        // The non-regression: "from X" keeps the departures reading even with
+        // a clock in the sentence.
+        assertIs<AssistantIntent.ShowDepartures>(parser.parse("trains from Syntagma at 21:30"))
+    }
+
+    @Test
     fun alerts_query() {
         assertIs<AssistantIntent.ShowAlerts>(parser.parse("any service alerts today?"))
+    }
+
+    @Test
+    fun a_strike_question_is_an_alerts_question_not_a_departures_one() {
+        // Verified broken on a real device during the 30 Oct 2026 Hellenic
+        // Train strike: "is there a strike today" had no matching keyword, fell
+        // through to departures and answered with train times from the nearest
+        // station, telling the rider the opposite of the truth on a strike day.
+        for (q in listOf(
+            "is there a strike today",
+            "strike",
+            "any stoppage tomorrow?",
+            "train walkout",
+        )) {
+            assertIs<AssistantIntent.ShowAlerts>(parser.parse(q), q)
+        }
+    }
+
+    @Test
+    fun strikes_are_recognised_in_all_four_languages() {
+        assertIs<AssistantIntent.ShowAlerts>(parser.parse("υπαρχει απεργια σημερα"), "el")
+        assertIs<AssistantIntent.ShowAlerts>(parser.parse("a ka greve sot"), "sq")
+        assertIs<AssistantIntent.ShowAlerts>(parser.parse("c'e uno sciopero oggi"), "it")
     }
 
     @Test

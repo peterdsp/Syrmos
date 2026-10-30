@@ -75,8 +75,8 @@ android {
         // never be reused. Bump this before every release; Play refuses a code
         // it has already seen, even from a discarded upload. 233 shipped as
         // v3.0.0-beta.28, 234 as beta.29, 235 as beta.30, 236 as beta.31, 237 as beta.32, 238 as beta.33, 239 as beta.34, 240 as beta.35, 241 as beta.36, 242 as beta.37, 243 as beta.38, 244 as beta.39, 245 as beta.40, 246 as beta.41, 247 as beta.42, 248 as beta.43, 249 as beta.44, 250 as beta.45, 251 as beta.46, 252 as beta.47, 253 as beta.48, 254 as beta.49, 255 as beta.50, 256 as beta.51, 257 as beta.52, 258 as beta.53, 259 as beta.54, 260 as beta.55, 261 as beta.56, 262 as beta.57, 263 as beta.58, 264 as beta.59, 265 as beta.60, 266 as the 3.0.0 release; 267 is the 3.0.0 build 2 (weather + Android parity); 268 broken weather fetch (unused); 269 is 3.0.1 weather fix; 270 adds storm lightning + Ichnos scope hardening; 271 is 3.0.2 (closures, broadcasts, nearby and calendar notifications); 272 is the 3.0.2 release build; 273 adds Greek station names on the Home board, the startup notification permission request, the offline Athens network map, tappable map stations (the pin bitmap was drawn in raw pixels, so it was ~8dp on a dense screen), trains removed from the map on a suspended line (strike), the Ariadne model opt-in moved to Settings with an honest engine readout, a working Open-app-settings route out of a permanent permission denial, the non-Athens departures fallback, and the Hellenic Train strike surfacing.
-        versionCode = 274
-        versionName = "3.0.3"
+        versionCode = 275
+        versionName = "3.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Firebase Cloud Messaging without google-services.json: the values come
         // from local.properties or the environment (CI secrets). When any is

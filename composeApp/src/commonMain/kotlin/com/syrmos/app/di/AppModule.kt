@@ -57,6 +57,7 @@ val featureModule = module {
             modelDownloader = com.syrmos.app.platform.provideModelDownloader(),
             ariadneChatService = get(),
             closuresRepository = get(),
+            stationComplexRepository = get(),
         )
     }
     single { LinesViewModel(getLinesUseCase = get()) }

@@ -219,18 +219,33 @@ class AthensTransitParser(
         //    a trip, so "from" alone does not trigger planning.
         val hasToMarker = TO_MARKERS.any { text.contains(it) }
         val preference = RoutePreference.fromFolded(text)
+        // "airport by 21:30" is a trip to the airport, not a list of departures
+        // out of it. An arrival-time anchor next to a single station, with no
+        // "from" framing, is a planning cue in its own right. Without this the
+        // greeting's own worked example answered with departures FROM the
+        // airport, which is the opposite of what was asked.
+        val targetTime = extractTargetTime(text)
+        val arriveByDestinationOnly = targetTime != null &&
+            mentionedStations.size == 1 &&
+            FROM_MARKERS.none { text.contains(it) }
         val planning = containsAny(text, PLAN_PHRASES) ||
             weather ||
             (preference != RoutePreference.BALANCED && mentionedStations.isNotEmpty()) ||
             (hasToMarker && mentionedStations.isNotEmpty()) ||
+            arriveByDestinationOnly ||
             mentionedStations.size >= 2
         if (planning) {
             // Before the standard PlanTrip, see if the user anchored an
             // arrival time. "I need to be at Piraeus by 21:30" / "airport
             // in 45 minutes" / "at 9pm at Syntagma".
-            val target = extractTargetTime(text)
+            val target = targetTime
             if (target != null) {
-                val (from, to) = resolveTripEndpoints(text, mentionedStations)
+                val (from, to) = if (arriveByDestinationOnly) {
+                    // The lone station is where the rider wants to BE by then.
+                    null to mentionedStations[0]
+                } else {
+                    resolveTripEndpoints(text, mentionedStations)
+                }
                 val base = AssistantIntent.PlanTripByArrival(
                     fromStationId = from,
                     toStationId = to,
@@ -757,6 +772,10 @@ class AthensTransitParser(
         private val TO_MARKERS = listOf(
             " to ", " for ", "->", "→", " προς ", " για ", " te ", " per ", " ne ", " verso ",
         )
+        /** Origin framing, so "trains from X at 9pm" stays a departures question. */
+        private val FROM_MARKERS = listOf(
+            " from ", " απο ", " nga ", " da ", " dal ", " dalla ",
+        )
         private val FIND_WORDS = listOf(
             "where is", "find", "locate", "nearest", "near me", "closest",
             "which station", "what station", "where's",
@@ -788,9 +807,25 @@ class AthensTransitParser(
         )
         private val ALERT_WORDS = listOf(
             "alert", "alerts", "status", "disruption", "delay", "delays", "problem", "closed", "closure",
-            "ειδοποι", "κατασταση", "καθυστερη", "προβλημα", "κλειστ", "διακοπη",
-            "njoftim", "vonese", "problem", "mbyll",
+            // containsToken matches WHOLE words, so a stem like "ειδοποι" can
+            // never fire on "ειδοποιησεις": inflected Greek has to be spelled
+            // out. (Final sigma folds to σ, so list the folded form.)
+            "ειδοποιηση", "ειδοποιησεισ", "ειδοποιησεις",
+            "κατασταση", "καθυστερηση", "καθυστερησεισ", "καθυστερησεις",
+            "προβλημα", "προβληματα", "κλειστο", "κλειστα", "κλειστη", "διακοπη", "διακοπες", "διακοπεσ",
+            "njoftim", "njoftime", "vonese", "vonesa", "problem", "mbyll", "mbyllur",
             "avviso", "avvisi", "ritardo", "ritardi", "interruzione", "chiuso", "chiusura",
+            // Strikes. Greek rail and city transport strike often, and the word
+            // was missing entirely: "is there a strike today" had no keyword,
+            // fell through to a departures intent and answered with train times
+            // from the nearest station, telling the rider the opposite of the
+            // truth on a strike day. Found on a real device during the
+            // 30 Oct 2026 Hellenic Train strike.
+            "strike", "strikes", "stoppage", "walkout", "industrial action",
+            "απεργια", "απεργιασ", "απεργιας", "απεργιες", "απεργιεσ", "απεργουν",
+            "σταση εργασιας", "σταση εργασιασ",
+            "greve", "grevë", "greva", "grevë", "grevat",
+            "sciopero", "scioperi",
         )
         private val MAP_WORDS = listOf(
             "map", "show on map", "on the map",
