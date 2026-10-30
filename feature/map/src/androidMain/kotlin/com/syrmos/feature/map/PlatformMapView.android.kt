@@ -535,7 +535,7 @@ internal actual fun PlatformMapView(
             // bullseye icons with baked-in "M3 AM" labels) on selection - that is
             // precisely the "wrong icons" divergence from web, which draws none.
             // Selection just grows the dot; the label lives in the sheet.
-            val icon = buildZoomPin(tintArgb, station.isInterchange, isSelected, bucket = if (isSelected) 2 else 1)
+            val icon = buildZoomPin(context.resources, tintArgb, station.isInterchange, isSelected, bucket = if (isSelected) 2 else 1)
 
             if (existing != null) {
                 existing.position = GeoPoint(station.latitude, station.longitude)
@@ -785,27 +785,37 @@ private fun parseHex(hex: String): Int {
  * interchange: white core + coloured "target" ring
  */
 private fun buildZoomPin(
+    res: android.content.res.Resources,
     color: Int,
     interchange: Boolean,
     selected: Boolean,
     bucket: Int,
 ): android.graphics.drawable.Drawable {
-    // Sizes from the shared MapDesignTokens (scaled up for the Android bitmap,
-    // which is drawn at these px then centre-anchored).
-    val baseSize = when (bucket) {
+    // MapDesignTokens are LOGICAL POINTS, as its own doc comment says. This
+    // function used to draw them as raw pixels while buildCapsuleTrainBitmap
+    // right below multiplied by density, so on a modern phone the vehicles were
+    // the intended size and the station dots were a third of it: a 22-point dot
+    // came out 22px, about 8dp on a 2.75x screen, far below anything a finger
+    // can hit. Scale by density like every other bitmap here.
+    val density = res.displayMetrics.density
+    val dotPoints = when (bucket) {
         0 -> com.syrmos.core.common.map.MapDesignTokens.DOT_COUNTRY + 5   // 15
         1 -> com.syrmos.core.common.map.MapDesignTokens.DOT_CITY + 9      // 22
         else -> com.syrmos.core.common.map.MapDesignTokens.DOT_SELECTED + 12  // 30
     }
-    // Extra room so the selected halo isn't clipped.
-    val pad = if (selected) (baseSize * 0.5f).toInt() else 2
-    val size = baseSize + pad * 2
+    val baseSize = dotPoints * density
+    // osmdroid hit-tests a Marker against its icon bounds, so the bitmap is also
+    // the tap target. The shared rule pads it out (transparently, the dot keeps
+    // its size) to the 48-point minimum, which is what makes these stations
+    // tappable at all.
+    val size = (com.syrmos.core.common.map.MapDesignTokens
+        .pinBitmapSize(dotPoints, selected) * density).toInt().coerceAtLeast(1)
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val cx = size / 2f
     val cy = size / 2f
     val r = baseSize / 2f
-    val ring = maxOf(1.5f, baseSize * 0.11f)
+    val ring = maxOf(1.5f * density, baseSize * 0.11f)
 
     if (selected) {
         val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {

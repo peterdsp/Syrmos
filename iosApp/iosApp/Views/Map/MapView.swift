@@ -2015,7 +2015,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let primary = station.station.lineIds.first ?? "M3"
                 let image = stationImage(for: station.station, primaryLineId: primary)
                 v.image = image
-                v.frame.size = image.size
+                // MKAnnotationView hit-tests against its bounds and centres the
+                // image inside them, so the view, not the 15pt dot, is the tap
+                // target. Size it to the shared minimum: the dot looks the same
+                // and a finger can actually land on it.
+                let tap = MapDesignTokens.pinBitmapSize(dotSize: image.size.width, selected: false)
+                v.frame.size = CGSize(width: tap, height: tap)
                 v.centerOffset = .zero
                 // Three-tier decluttering: hide stops not in the current zoom band.
                 v.isHidden = !shouldShow(station.station, band: currentBand)
@@ -2028,7 +2033,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.annotation = annotation
                 v.canShowCallout = false
                 v.image = trainImage(for: train)
-                let capsuleCanvas = max(MapDesignTokens.vehicleW, MapDesignTokens.vehicleH) + 8
+                // Same rule as the stations: the capsule is 24x13pt, so without
+                // this a moving train is a ~32pt target, under the 44pt minimum.
+                let capsuleCanvas = max(
+                    max(MapDesignTokens.vehicleW, MapDesignTokens.vehicleH) + 8,
+                    MapDesignTokens.minTapTarget,
+                )
                 v.frame.size = CGSize(width: capsuleCanvas, height: capsuleCanvas)
                 // Same decluttering rule as stations: below the regional band the
                 // whole fleet would pile into one blob on the coastline, so hide
@@ -2358,7 +2368,14 @@ struct AirportBusVehicleDetailSheet: View {
     }
 
     private var orderedStops: [AirportBusService.UnifiedStop] {
-        (route?.stops ?? []).sorted { ($0.sequence ?? .max) < ($1.sequence ?? .max) }
+        // Scope to the run this bus is actually on. Sorting the line's whole
+        // stops array by sequence interleaved X97's four route codes, which is
+        // why the sheet listed the airport terminal twice.
+        AirportBusStops.itinerary(
+            route?.stops ?? [],
+            routeCode: vehicle.routeCode,
+            direction: vehicle.toAirport.map { $0 ? "to_airport" : "from_airport" }
+        )
     }
 
     private var nextStop: AirportBusService.UnifiedStop? {
@@ -2399,7 +2416,7 @@ struct AirportBusVehicleDetailSheet: View {
                     }
                     if let nextStop {
                         LabeledContent(language == .greek ? "Επόμενη στάση" : language == .albanian ? "Ndalesa tjetër" : language == .italian ? "Prossima fermata" : "Next stop") {
-                            Text(nextStop.stop_name)
+                            Text(AirportBusStops.displayName(nextStop, language: language))
                         }
                     }
                     if !orderedStops.isEmpty {
@@ -2411,7 +2428,7 @@ struct AirportBusVehicleDetailSheet: View {
                                     Image(systemName: stop.id == nextStop?.id ? "location.fill" : "circle.fill")
                                         .foregroundStyle(stop.id == nextStop?.id ? .blue : .secondary)
                                         .font(.caption)
-                                    Text(stop.stop_name)
+                                    Text(AirportBusStops.displayName(stop, language: language))
                                     Spacer()
                                 }
                                 .padding(.vertical, 4)

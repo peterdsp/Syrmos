@@ -18,6 +18,8 @@ data class AirportBusVehicle(
     val heading: Double = 0.0,
     val toAirport: Boolean? = null,
     val operator: String = "oasa",
+    /** The route code of this run, so the sheet shows one itinerary. */
+    val routeCode: Int? = null,
 )
 
 object AirportBusVehicles {
@@ -67,7 +69,8 @@ object AirportBusVehicles {
                     longitude = v.longitude,
                     heading = v.heading,
                     toAirport = v.to_airport,
-                    operator = v.operator
+                    operator = v.operator,
+                    routeCode = v.route_code
                 )
             }
         }

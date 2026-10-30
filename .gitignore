@@ -56,3 +56,7 @@ iosApp/iosApp/Resources/model/
 fastlane/report.xml
 fastlane/README.md
 fastlane/test_output
+
+# Python bytecode from the ops/ API tests and scrapers.
+__pycache__/
+*.pyc

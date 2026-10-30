@@ -902,6 +902,35 @@ final class AriadneModel: ObservableObject {
         return jokes.randomElement() ?? jokes[0]
     }
 
+    /// Departures across a station complex, each line asked at its own stop.
+    ///
+    /// Mirrors `StationDepartureScope` in core/domain: a boarding stop serves
+    /// only its own lines, so projecting `M3` against `M2_SYN` yields nothing.
+    /// `lineFilter` keeps one line for "next M3 from Syntagma", normalised so
+    /// `M3_AIR` matches `M3`.
+    private func complexDepartures(
+        memberStopIds: [String],
+        lineFilter: String?,
+        limit: Int,
+        dayOffset: Int = 0
+    ) -> [Departure] {
+        let wanted = lineFilter.map { $0.hasPrefix("M3") ? "M3" : $0 }
+        var out: [Departure] = []
+        for stopId in memberStopIds {
+            guard let member = station(stopId) else { continue }
+            let lines = member.lineIds.filter { line in
+                guard let wanted else { return true }
+                return (line.hasPrefix("M3") ? "M3" : line) == wanted
+            }
+            guard !lines.isEmpty else { continue }
+            out += ScheduleProjector.nextDepartures(
+                for: stopId, lineIds: lines, limit: limit, dayOffset: dayOffset
+            )
+        }
+        let sorted = out.sorted { $0.minutesAway < $1.minutesAway }
+        return Array(sorted.prefix(limit))
+    }
+
     private func resolveDepartures(stationId: String?, lineId: String?, day: DayContext) -> AriadneMessage {
         guard let station = resolveStation(stationId: stationId, lineId: lineId) else {
             return bot(clarify(.station))
@@ -912,7 +941,14 @@ final class AriadneModel: ObservableObject {
             return resolveDeparturesForDay(day: day, station: station, lineIds: lineIds)
         }
 
-        let deps = ScheduleProjector.nextDepartures(for: station.id, lineIds: lineIds, limit: 4)
+        // Ask every line of the COMPLEX at its own boarding stop. Boarding
+        // stops are per line (Syntagma is M2_SYN AND M3_SYN), so projecting
+        // every line against the single row the name resolved to returned
+        // nothing for the others: "next train from Syntagma" answered with M2
+        // departures only and silently dropped half the interchange.
+        let members = StationComplexRegistry.complex(forStopId: station.id)?.memberStopIds ?? []
+        let stopIds: [String] = members.isEmpty ? [station.id] : members
+        let deps = complexDepartures(memberStopIds: stopIds, lineFilter: lineId, limit: 4)
         if deps.isEmpty {
             return bot(t("No more trains from \(name(station)) right now.",
                 "Δεν υπάρχουν άλλα δρομολόγια από \(name(station)) τώρα.",

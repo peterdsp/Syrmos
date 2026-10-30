@@ -81,6 +81,22 @@ enum MapDesignTokens {
     /// network alone carries the map. Mirrors MapDesignTokens.LINES_ONLY_MAX_ZOOM.
     static let linesOnlyMaxZoom: Double = 7
 
+    /// Minimum tap target, from the Apple and Android accessibility guidance
+    /// (44pt / 48dp; take the larger). Mirrors MapDesignTokens.MIN_TAP_TARGET.
+    ///
+    /// A marker's artwork is also its hit rect, so a station drawn at `dotCity`
+    /// is a 13pt tap target. Annotation views are sized to this instead and the
+    /// dot stays centred inside, keeping the design size while the touchable
+    /// area grows around it.
+    static let minTapTarget: CGFloat = 48
+
+    /// Edge of the square an annotation occupies: the dot plus halo room, never
+    /// below `minTapTarget`. Mirrors MapDesignTokens.pinBitmapSize.
+    static func pinBitmapSize(dotSize: CGFloat, selected: Bool) -> CGFloat {
+        let halo = selected ? dotSize * 0.5 : 2
+        return max(dotSize + halo * 2, minTapTarget)
+    }
+
     // Vehicle capsule markers.
     static let vehicleW: CGFloat = 24
     static let vehicleH: CGFloat = 13

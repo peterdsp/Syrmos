@@ -1,12 +1,14 @@
 package com.syrmos.feature.stations
 
 import com.syrmos.core.domain.interchange.InterchangeTarget
+import com.syrmos.core.domain.station.StationDepartureFallback
 import com.syrmos.core.domain.usecase.GetInterchangeTargetsUseCase
 import com.syrmos.core.domain.usecase.GetNextDeparturesUseCase
 import com.syrmos.core.domain.usecase.GetStationDetailUseCase
 import com.syrmos.core.domain.usecase.GetStationDeparturesUseCase
 import com.syrmos.core.domain.usecase.UpcomingDeparture
 import com.syrmos.core.model.transit.Line
+import com.syrmos.core.model.transit.Region
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +41,15 @@ data class StationDetailUiState(
     val focusLineId: String? = null,
     val isLoading: Boolean = true,
     val hasLoadedDepartures: Boolean = false,
+    /**
+     * The last departures call failed and we have nothing to show. Distinct
+     * from "no departures": outside Athens the board comes from the network, so
+     * conflating the two told a rider with bad signal that their line was
+     * closed. Drives the operator-timetable fallback.
+     */
+    val departuresFailed: Boolean = false,
+    /** Which network this station belongs to, for that fallback. */
+    val region: Region = Region.ATHENS,
 )
 
 class StationDetailViewModel(
@@ -82,6 +93,8 @@ class StationDetailViewModel(
                 isSuburban = false,
                 departures = emptyList(),
                 hasLoadedDepartures = false,
+                departuresFailed = false,
+                region = Region.ATHENS,
                 interchangeTargets = emptyList(),
                 focusLineId = focusLineId,
                 isLoading = true,
@@ -109,6 +122,7 @@ class StationDetailViewModel(
                     lineIds = detail.station.lineIds,
                     isInterchange = detail.station.isInterchange,
                     isSuburban = detail.station.lineIds.any { id -> id in suburbanIds },
+                    region = StationDepartureFallback.regionOf(detail.connectingLines.map { l -> l.region }),
                     isLoading = false,
                 )
             }
@@ -157,7 +171,13 @@ class StationDetailViewModel(
                     // another station OR changed the focused line (belt-and-suspenders
                     // over the cancel).
                     if (loadedStationId == stationId && loadedFocusLineId == focusLineId) {
-                        _uiState.update { it.copy(departures = departures, hasLoadedDepartures = true) }
+                        _uiState.update {
+                            it.copy(
+                                departures = departures,
+                                hasLoadedDepartures = true,
+                                departuresFailed = false,
+                            )
+                        }
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -165,6 +185,18 @@ class StationDetailViewModel(
                     // Transient failure on one tick: keep the last departures and
                     // retry next interval rather than killing the loop permanently
                     // (which froze the countdowns and could crash on Android).
+                    // With nothing to keep, say so: the screen otherwise sat on
+                    // "Loading departures..." forever, or claimed the line was
+                    // closed once a later tick returned an empty list.
+                    if (loadedStationId == stationId && loadedFocusLineId == focusLineId) {
+                        _uiState.update {
+                            if (it.departures.isEmpty()) {
+                                it.copy(hasLoadedDepartures = true, departuresFailed = true)
+                            } else {
+                                it
+                            }
+                        }
+                    }
                 }
                 delay(REFRESH_INTERVAL_MS)
             }

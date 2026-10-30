@@ -216,6 +216,8 @@
 		FE0000000000000000000C47 /* TravelCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C46 /* TravelCopy.swift */; };
 		FE0000000000000000000C49 /* Fixture302.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C48 /* Fixture302.swift */; };
 		FE0000000000000000000C4B /* StationClosuresTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C4A /* StationClosuresTests.swift */; };
+		FE0000000000000000000C68 /* AirportBusStops.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C67 /* AirportBusStops.swift */; };
+		FE0000000000000000000C66 /* MapTapTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C65 /* MapTapTargetTests.swift */; };
 		FE0000000000000000000C4D /* NearbyDepartureCoachTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C4C /* NearbyDepartureCoachTests.swift */; };
 		FE0000000000000000000C4F /* CalendarLeaveByTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C4E /* CalendarLeaveByTests.swift */; };
 		FE0000000000000000000C51 /* ClosuresStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000C50 /* ClosuresStore.swift */; };
@@ -495,6 +497,8 @@
 		FE0000000000000000000C46 /* TravelCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Localization/TravelCopy.swift; sourceTree = SOURCE_ROOT; };
 		FE0000000000000000000C48 /* Fixture302.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Fixture302.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C4A /* StationClosuresTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StationClosuresTests.swift; sourceTree = "<group>"; };
+		FE0000000000000000000C67 /* AirportBusStops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/AirportBusStops.swift; sourceTree = SOURCE_ROOT; };
+		FE0000000000000000000C65 /* MapTapTargetTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapTapTargetTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C4C /* NearbyDepartureCoachTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NearbyDepartureCoachTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C4E /* CalendarLeaveByTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarLeaveByTests.swift; sourceTree = "<group>"; };
 		FE0000000000000000000C50 /* ClosuresStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp/Core/Networking/ClosuresStore.swift; sourceTree = SOURCE_ROOT; };
@@ -581,6 +585,7 @@
 				FE0000000000000000000C4E /* CalendarLeaveByTests.swift */,
 				FE0000000000000000000C4C /* NearbyDepartureCoachTests.swift */,
 				FE0000000000000000000C4A /* StationClosuresTests.swift */,
+				FE0000000000000000000C65 /* MapTapTargetTests.swift */,
 				FE0000000000000000000C48 /* Fixture302.swift */,
 				FE0000000000000000000C1C /* SavedDepartureStoreTests.swift */,
 				FE0000000000000000000C0C /* AccessibilityDisclosureTests.swift */,
@@ -764,6 +769,7 @@
 				E1A2B3C4D5E60718293A4B5D /* SyrmosDeparturesService.swift */,
 				34EB2F2BCAE242BAB284D68C /* AirportBusVehicles.swift */,
 				C0F8EA0447A54742B5757B83 /* AirportBusService.swift */,
+				FE0000000000000000000C67 /* AirportBusStops.swift */,
 				E1A2B3C4D5E60718293A4B6F /* LivePositionsService.swift */,
 				D1E2F3A4B5C6071829304142 /* STASYService.swift */,
 				31E31FFAA5B22EE54B9E980E /* RailNewsService.swift */,
@@ -1213,6 +1219,7 @@
 				916AAEDEC08D4BF3B6705852 /* AirportBusVehicles.swift in Sources */,
 				2A2181AFDFE94E2B8CEBD412 /* AirportServiceRows.swift in Sources */,
 				2D82DB91972D4DB8BBDE77DB /* AirportBusService.swift in Sources */,
+				FE0000000000000000000C68 /* AirportBusStops.swift in Sources */,
 				AAAA111111111111111111B1 /* OnboardingView.swift in Sources */,
 				DA7A0011F00D0011F00D0011 /* AriadneParser.swift in Sources */,
 				DA7A0211F00D0211F00D0211 /* AriadneDomain.swift in Sources */,
@@ -1319,6 +1326,7 @@
 				FE0000000000000000000C4F /* CalendarLeaveByTests.swift in Sources */,
 				FE0000000000000000000C4D /* NearbyDepartureCoachTests.swift in Sources */,
 				FE0000000000000000000C4B /* StationClosuresTests.swift in Sources */,
+				FE0000000000000000000C66 /* MapTapTargetTests.swift in Sources */,
 				FE0000000000000000000C49 /* Fixture302.swift in Sources */,
 				511EC33D51F14B25AA6E90C3 /* StationBoardIchnosTests.swift in Sources */,
 				D93ECD99B5B84F839EAF217E /* AriadneOrchestrationTests.swift in Sources */,

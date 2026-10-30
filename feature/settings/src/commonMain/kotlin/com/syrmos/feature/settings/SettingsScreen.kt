@@ -65,6 +65,8 @@ fun SettingsScreen(
     ariadneEngine: AriadneEngineStatus? = null,
     onAriadneClick: (() -> Unit)? = null,
     onStationClick: ((stationId: String) -> Unit)? = null,
+    onRailMapClick: (() -> Unit)? = null,
+    onOpenAppSettings: (() -> Unit)? = null,
 ) {
     val lang by LocalizationManager.language.collectAsState()
     val themeMode by ThemeManager.theme.collectAsState()
@@ -280,6 +282,19 @@ fun SettingsScreen(
                     AppLanguage.ITALIAN -> "Operatori"
                     else -> "Operators"
                 }) {
+                    if (onRailMapClick != null) {
+                        SettingsRow(
+                            title = when (lang) {
+                                AppLanguage.GREEK -> "Χάρτης δικτύου (εκτός σύνδεσης)"
+                                AppLanguage.ALBANIAN -> "Harta e rrjetit (jashtë linje)"
+                                AppLanguage.ITALIAN -> "Mappa della rete (offline)"
+                                else -> "Network map (offline)"
+                            },
+                            value = "›",
+                            onClick = onRailMapClick,
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    }
                     OperatorRow(
                         name = "STASY",
                         detail = when (lang) {
@@ -634,6 +649,46 @@ fun SettingsScreen(
             }
         }
 
+        // Permissions. Once Android records a permanent denial, the in-app
+        // request is a no-op forever: nearby stations, locate-me, geofences and
+        // the widget snapshot go quiet with no way back. This row is that way
+        // back. Hidden on platforms with no app settings page to open.
+        onOpenAppSettings?.let { openAppSettings ->
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SettingsSection(title = when (lang) {
+                        AppLanguage.GREEK -> "Άδειες"
+                        AppLanguage.ALBANIAN -> "Lejet"
+                        AppLanguage.ITALIAN -> "Autorizzazioni"
+                        else -> "Permissions"
+                    }) {
+                        SettingsRow(
+                            title = when (lang) {
+                                AppLanguage.GREEK -> "Άνοιγμα ρυθμίσεων εφαρμογής"
+                                AppLanguage.ALBANIAN -> "Hap cilësimet e aplikacionit"
+                                AppLanguage.ITALIAN -> "Apri le impostazioni dell'app"
+                                else -> "Open app settings"
+                            },
+                            value = "",
+                            onClick = openAppSettings,
+                            interactive = true,
+                        )
+                    }
+                    Text(
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Η τοποθεσία και οι ειδοποιήσεις ελέγχονται από το σύστημα. Αν τις έχεις απορρίψει μόνιμα, άλλαξέ τες από εδώ."
+                            AppLanguage.ALBANIAN -> "Vendndodhja dhe njoftimet kontrollohen nga sistemi. Nëse i ke refuzuar përgjithmonë, ndryshoji nga këtu."
+                            AppLanguage.ITALIAN -> "Posizione e notifiche sono gestite dal sistema. Se le hai rifiutate definitivamente, cambiale da qui."
+                            else -> "Location and notifications are controlled by the system. If you denied them permanently, change them here."
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+            }
+        }
+
         // Ariadne engine status
         ariadneEngine?.let { engine ->
             item {
@@ -887,6 +942,12 @@ private fun AriadneEngineStatus.engineDetail(lang: AppLanguage): String = when (
         AppLanguage.ALBANIAN -> "Gemini Nano rregullon pyetjen tuaj para analizës, plotësisht në pajisje."
         AppLanguage.ITALIAN -> "Gemini Nano corregge la tua domanda prima dell'analisi, interamente sul dispositivo."
         else -> "Gemini Nano cleans up your question before parsing, fully on device."
+    }
+    AriadneEngineStatus.LOCAL_MODEL -> when (lang) {
+        AppLanguage.GREEK -> "Το μοντέλο που κατέβασες κατανοεί την ερώτησή σου πριν την ανάλυση, εξ ολοκλήρου εκτός σύνδεσης."
+        AppLanguage.ALBANIAN -> "Modeli që shkarkove e kupton pyetjen tënde para analizës, plotësisht jashtë linje."
+        AppLanguage.ITALIAN -> "Il modello che hai scaricato capisce la tua domanda prima dell'analisi, completamente offline."
+        else -> "The on-device model you downloaded understands your question before parsing, fully offline."
     }
     AriadneEngineStatus.MODEL_NOT_DOWNLOADED -> when (lang) {
         AppLanguage.GREEK -> "Το μοντέλο στη συσκευή δεν έχει κατέβει ακόμη. Το Syrmos χρησιμοποιεί τον αναλυτή κανόνων."

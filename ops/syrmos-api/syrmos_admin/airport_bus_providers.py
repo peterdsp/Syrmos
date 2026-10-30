@@ -103,6 +103,12 @@ class NormalizedVehicle:
     confidence: ConfidenceLevel
     attribution: str
     to_airport: Optional[bool] = None  # True=heading to airport, False=heading from airport, None=unknown
+    # The operator's own route code for the run this bus is on (OASA: X97 has
+    # 5373/5375 towards the airport and 5374/5376 back). A line's `stops` array
+    # is the concatenation of all its codes, so without this the client cannot
+    # tell which itinerary a given bus is actually following and ends up
+    # interleaving them.
+    route_code: Optional[int] = None
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -767,6 +773,7 @@ class OasaAirportProvider(AirportTransitProvider):
                         latitude=lat,
                         longitude=lng,
                         heading=heading,
+                        route_code=int(item.get("ROUTE_CODE", code) or code),
                         to_airport=to_airport if direction != Direction.UNKNOWN else None,
                         observed_at=vehicle_ts,
                         source="oasa_telematics",

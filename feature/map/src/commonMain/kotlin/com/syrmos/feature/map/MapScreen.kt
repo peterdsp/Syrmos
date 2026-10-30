@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.zIndex
+import com.syrmos.core.common.AirportBusStops
 import com.syrmos.core.common.AppLanguage
 import com.syrmos.core.common.TrainSelectionBus
 import com.syrmos.core.common.L
@@ -298,11 +299,25 @@ fun MapScreen(
             val bus = uiState.selectedBus
             if (bus != null) {
                 val route = uiState.airportBusRoutes.firstOrNull { it.route_id == bus.lineId }
-                val nextStop = route?.stops?.firstOrNull { stop ->
-                    bus.toAirport == null ||
-                        (bus.toAirport == true && stop.direction == "to_airport") ||
-                        (bus.toAirport == false && stop.direction == "from_airport")
-                }
+                // Scope to the run this bus is on. A line's stop array
+                // concatenates every route code it runs (X97 publishes four)
+                // with sequences restarting at 1, so taking the first matching
+                // direction listed every variant interleaved.
+                val itinerary = AirportBusStops.itinerary(
+                    (route?.stops ?: emptyList()).map { st ->
+                        AirportBusStops.Stop(
+                            stopId = st.stop_id,
+                            name = st.stop_name,
+                            nameEl = st.stop_name_el,
+                            routeCode = st.route_code,
+                            direction = st.direction,
+                            sequence = st.sequence,
+                        )
+                    },
+                    routeCode = bus.routeCode,
+                    direction = bus.toAirport?.let { if (it) "to_airport" else "from_airport" },
+                )
+                val nextStop = itinerary.firstOrNull()
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding().padding(bottom = 88.dp),
                     shape = RoundedCornerShape(24.dp),
@@ -315,7 +330,7 @@ fun MapScreen(
                         }
                         Text(vehicleText(lang, "Live vehicle position", "Ζωντανή θέση οχήματος", "Pozicioni i mjetit në kohë reale", "Posizione del veicolo in tempo reale"), color = SyrmosColorTokens.live, fontWeight = FontWeight.SemiBold)
                         Text(route?.destination ?: vehicleText(lang, "Destination unavailable from operator feed", "Ο προορισμός δεν είναι διαθέσιμος από τον πάροχο", "Destinacioni s'është i disponueshëm nga operatori", "Destinazione non disponibile dal gestore"), style = MaterialTheme.typography.bodyMedium)
-                        Text("${vehicleText(lang, "Next stop", "Επόμενη στάση", "Ndalesa tjetër", "Prossima fermata")}: ${nextStop?.stop_name ?: vehicleText(lang, "not supplied by the verified feed", "δεν παρέχεται από την επαληθευμένη ροή", "s'jepet nga burimi i verifikuar", "non fornita dal feed verificato")}", style = MaterialTheme.typography.bodyMedium)
+                        Text("${vehicleText(lang, "Next stop", "Επόμενη στάση", "Ndalesa tjetër", "Prossima fermata")}: ${nextStop?.let { AirportBusStops.displayName(it, lang) } ?: vehicleText(lang, "not supplied by the verified feed", "δεν παρέχεται από την επαληθευμένη ροή", "s'jepet nga burimi i verifikuar", "non fornita dal feed verificato")}", style = MaterialTheme.typography.bodyMedium)
                         val etas = uiState.airportBusArrivals.filter { arrival ->
                             arrival.line_id == bus.lineId || arrival.route_id == bus.lineId
                         }.sortedBy { it.estimated_minutes ?: Int.MAX_VALUE }.take(3)
@@ -326,6 +341,20 @@ fun MapScreen(
                             }
                         } else {
                             Text(vehicleText(lang, "Next-bus ETAs are not available from the current snapshot", "Οι χρόνοι επόμενων λεωφορείων δεν είναι διαθέσιμοι αυτή τη στιγμή", "Oraret e autobusëve të ardhshëm s'janë të disponueshme tani", "Gli orari dei prossimi autobus non sono disponibili al momento"), style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (itinerary.isNotEmpty()) {
+                            Text(
+                                vehicleText(lang, "Route stops", "Στάσεις διαδρομής", "Ndalesat e rrugës", "Fermate del percorso"),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            itinerary.forEach { stop ->
+                                Text(
+                                    AirportBusStops.displayName(stop, lang),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         Text(vehicleText(lang, "Speed: not supplied by the verified operator feed", "Ταχύτητα: δεν παρέχεται από τον επαληθευμένο πάροχο", "Shpejtësia: s'jepet nga operatori i verifikuar", "Velocità: non fornita dal gestore verificato"), style = MaterialTheme.typography.bodySmall)
                         Text(vehicleText(lang, "Weather: use the free Open-Meteo weather card for the vehicle area", "Καιρός: χρησιμοποιήστε την κάρτα καιρού Open-Meteo για την περιοχή του οχήματος", "Moti: përdorni kartën e motit Open-Meteo për zonën e mjetit", "Meteo: usa la scheda meteo Open-Meteo per la zona del veicolo"), style = MaterialTheme.typography.bodySmall)

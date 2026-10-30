@@ -1,5 +1,6 @@
 package com.syrmos.app.platform
 
+import android.os.StatFs
 import com.syrmos.core.common.AriadneModelManifest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ import java.security.MessageDigest
  */
 object AriadneModelStore {
 
-    enum class Status { NOT_DOWNLOADED, DOWNLOADING, READY, ERROR }
+    enum class Status { NOT_DOWNLOADED, DOWNLOADING, VERIFYING, INSUFFICIENT_STORAGE, READY, ERROR }
 
     private val _status = MutableStateFlow(Status.NOT_DOWNLOADED)
     val statusFlow: StateFlow<Status> = _status.asStateFlow()
@@ -43,10 +44,30 @@ object AriadneModelStore {
         return ready
     }
 
+    /**
+     * True when the volume holding app storage has room for the model plus a
+     * 10% margin. Mirrors the iOS preflight: fail before 1.1 GB of transfer,
+     * not after it.
+     */
+    fun hasSpaceForModel(): Boolean {
+        val dir = modelFile()?.parentFile ?: return true
+        return try {
+            val stat = StatFs(dir.absolutePath)
+            stat.availableBytes > AriadneModelManifest.APPROX_BYTES +
+                AriadneModelManifest.APPROX_BYTES / 10
+        } catch (_: Throwable) {
+            true // capacity unknown: stay optimistic and let the write fail if it must
+        }
+    }
+
     /** Explicit, user-triggered download. Idempotent; verifies the checksum. */
     suspend fun download(): Boolean = withContext(Dispatchers.IO) {
         if (isReady()) return@withContext true
         val out = modelFile() ?: return@withContext false
+        if (!hasSpaceForModel()) {
+            _status.value = Status.INSUFFICIENT_STORAGE
+            return@withContext false
+        }
         _status.value = Status.DOWNLOADING
         _progress.value = 0f
         val tmp = File(out.parentFile, out.name + ".part")
@@ -55,6 +76,11 @@ object AriadneModelStore {
                 connectTimeout = 30_000
                 readTimeout = 60_000
                 instanceFollowRedirects = true
+            }
+            // Without this check an error page is streamed to disk and only
+            // rejected by the checksum, after the whole transfer.
+            if (conn.responseCode != 200) {
+                conn.disconnect(); _status.value = Status.ERROR; return@withContext false
             }
             conn.inputStream.use { input ->
                 tmp.outputStream().use { output ->
@@ -70,6 +96,9 @@ object AriadneModelStore {
                     }
                 }
             }
+            // Hashing 1.1 GB takes seconds. Say so, or the bar sits at 100%
+            // looking hung.
+            _status.value = Status.VERIFYING
             if (sha256(tmp) != AriadneModelManifest.SHA256) {
                 tmp.delete(); _status.value = Status.ERROR; return@withContext false
             }

@@ -4,6 +4,7 @@ import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.proofreading.ProofreaderOptions
 import com.google.mlkit.genai.proofreading.Proofreading
 import com.syrmos.core.common.AriadneEngineStatus
+import com.syrmos.llm.LlamaBridge
 import kotlinx.coroutines.guava.await
 
 /**
@@ -15,8 +16,13 @@ import kotlinx.coroutines.guava.await
  * ML Kit reports UNAVAILABLE both for devices without AICore and for ineligible
  * hardware, so we can't reliably split AICORE_MISSING from DEVICE_NOT_ELIGIBLE
  * here; we report the honest DEVICE_NOT_ELIGIBLE.
+ *
+ * The downloaded GGUF is checked FIRST and wins. It is a different engine from
+ * Gemini Nano, and reading only the AICore verdict told a rider who had just
+ * downloaded 1.1 GB that their device cannot run an on-device model.
  */
 actual suspend fun provideAriadneEngineStatus(): AriadneEngineStatus {
+    if (LlamaBridge.available && AriadneModelStore.isReady()) return AriadneEngineStatus.LOCAL_MODEL
     val context = androidPlatformContext() ?: return AriadneEngineStatus.RULE_PARSER
     return try {
         val proofreader = Proofreading.getClient(

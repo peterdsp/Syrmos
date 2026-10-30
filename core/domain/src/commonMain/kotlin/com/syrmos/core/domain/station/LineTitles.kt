@@ -111,3 +111,16 @@ fun Line.localizedTerminals(lang: AppLanguage): String = LineTitles.terminals(th
 /** The line's terminal in [lang]: terminalB when [outbound], else terminalA. */
 fun Line.localizedTerminal(outbound: Boolean, lang: AppLanguage): String =
     LineTitles.stationName(if (outbound) terminalB else terminalA, id, lang)
+
+/**
+ * Shared localized station name. The seed carries a Latin `name` plus `name_el`
+ * / `name_sq`, so a screen that renders `station.name` directly shows "Nikaia"
+ * to a Greek user. Every surface must go through this.
+ */
+fun Station.localizedName(lang: AppLanguage): String = when (lang) {
+    AppLanguage.GREEK -> nameEl.ifBlank { name }
+    AppLanguage.ALBANIAN -> nameSq?.ifBlank { null } ?: name
+    // The seed has no Italian station names; Latin is the correct fallback.
+    AppLanguage.ITALIAN -> name
+    AppLanguage.ENGLISH -> name
+}

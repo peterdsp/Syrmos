@@ -134,12 +134,35 @@ def test_load_closures_tolerates_unmigrated_db():
     assert closures.public_closures(conn) == []
 
 
-def test_seed_closures_json_is_empty_contract_and_hashed():
-    expected = closures.canonical_bytes(closures.seed_payload([]))
-    assert expected == b'{"schemaVersion":1,"closures":[]}'
+def test_seed_closures_json_is_canonical_identical_and_hashed():
+    """The bundled closures.json is the offline fallback, not necessarily empty.
+
+    This used to assert the file was exactly `{"schemaVersion":1,"closures":[]}`,
+    which contradicted `scripts/snapshot-api-to-seed.py` in the very same commit:
+    that script deliberately bundles the live closures so a cold install with no
+    network still knows about one. The assertion only held while no closure
+    existed, and the first real one (the 30 October 2026 rail strike) turned
+    master red.
+
+    What actually has to hold is unchanged: canonical bytes, byte-identical
+    across every seed copy, and a manifest hash that matches.
+    """
+    assert closures.canonical_bytes(closures.seed_payload([])) == b'{"schemaVersion":1,"closures":[]}'
+
+    first: bytes | None = None
     for d in SEED_DIRS:
         raw = (d / "closures.json").read_bytes()
-        assert raw == expected, d
+        payload = json.loads(raw.decode("utf-8"))
+        assert payload["schemaVersion"] == 1, d
+        assert isinstance(payload["closures"], list), d
+        # Canonical: re-serialising what we parsed reproduces the bytes exactly,
+        # so the file can never drift into pretty-printed or reordered form.
+        assert raw == closures.canonical_bytes(closures.seed_payload(payload["closures"])), d
+        # Byte-identical across the copies, which is what makes one hash valid.
+        if first is None:
+            first = raw
+        else:
+            assert raw == first, d
         manifest = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
         assert manifest["closuresHash"] == hashlib.sha256(raw).hexdigest(), d
 

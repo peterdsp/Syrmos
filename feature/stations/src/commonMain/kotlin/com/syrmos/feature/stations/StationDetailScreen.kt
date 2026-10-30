@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.domain.station.StationDepartureFallback
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.core.domain.departures.ResolvedDeparture
 import com.syrmos.core.domain.departures.groupDepartures
@@ -336,6 +337,32 @@ fun StationDetailScreen(
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
+            } else if (uiState.departures.isEmpty() &&
+                uiState.departuresFailed &&
+                StationDepartureFallback.showsFallback(uiState.region)
+            ) {
+                // Outside Athens the board is a network call, so a failure is not
+                // "the line is closed". Say what actually happened and offer the
+                // operator's own timetable, which still works when ours does not.
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = StationDepartureFallback.couldNotLoad(lang),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val operatorUrl = StationDepartureFallback.operatorUrl(uiState.region)
+                        val operatorLabel = StationDepartureFallback.checkTimetablesOn(uiState.region, lang)
+                        if (operatorUrl != null && operatorLabel != null) {
+                            Button(onClick = { uriHandler.openUri(operatorUrl) }) {
+                                Text(operatorLabel)
+                            }
+                        }
+                    }
+                }
             } else if (uiState.departures.isEmpty()) {
                 item {
                     Text(
@@ -480,7 +507,12 @@ fun StationDetailScreen(
                     Text(line.localizedName(lang), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (lang == AppLanguage.GREEK) "Αγορά εισιτηρίου για τον προαστιακό" else "Buy a suburban railway ticket",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Αγορά εισιτηρίου για τον προαστιακό"
+                            AppLanguage.ALBANIAN -> "Bli një biletë për hekurudhën periferike"
+                            AppLanguage.ITALIAN -> "Acquista un biglietto per la ferrovia suburbana"
+                            else -> "Buy a suburban railway ticket"
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -491,11 +523,21 @@ fun StationDetailScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (lang == AppLanguage.GREEK) "Αγορά στην Hellenic Train" else "Buy on Hellenic Train")
+                        Text(when (lang) {
+                            AppLanguage.GREEK -> "Αγορά στην Hellenic Train"
+                            AppLanguage.ALBANIAN -> "Bli në Hellenic Train"
+                            AppLanguage.ITALIAN -> "Acquista su Hellenic Train"
+                            else -> "Buy on Hellenic Train"
+                        })
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = if (lang == AppLanguage.GREEK) "Η πληρωμή και η έκδοση γίνονται στον επίσημο ιστότοπο της Hellenic Train." else "Payment and ticket issuance happen on the official Hellenic Train website.",
+                        text = when (lang) {
+                            AppLanguage.GREEK -> "Η πληρωμή και η έκδοση γίνονται στον επίσημο ιστότοπο της Hellenic Train."
+                            AppLanguage.ALBANIAN -> "Pagesa dhe lëshimi i biletës bëhen në faqen zyrtare të Hellenic Train."
+                            AppLanguage.ITALIAN -> "Il pagamento e l'emissione del biglietto avvengono sul sito ufficiale di Hellenic Train."
+                            else -> "Payment and ticket issuance happen on the official Hellenic Train website."
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -90,6 +90,14 @@ class ClosuresRepository(
         combine(_closures, ticker()) { list, now -> StationClosures.closedStationIds(list, now) }
             .distinctUntilChanged()
 
+    fun suspendedLineIds(now: Long = nowEpochSeconds()): Set<String> =
+        StationClosures.suspendedLineIds(_closures.value, now)
+
+    /** Lines with no service right now (a strike), on the same 30 s re-evaluation. */
+    fun suspendedLineIdsFlow(): Flow<Set<String>> =
+        combine(_closures, ticker()) { list, now -> StationClosures.suspendedLineIds(list, now) }
+            .distinctUntilChanged()
+
     private fun ticker(): Flow<Long> = flow {
         while (true) {
             emit(nowEpochSeconds())

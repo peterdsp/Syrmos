@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.syrmos.core.common.AppLanguage
+import com.syrmos.core.common.BoardScopeCopy
 import com.syrmos.core.common.DataFreshness
 import com.syrmos.core.common.DepartureTracking
 import com.syrmos.core.common.L
@@ -340,6 +341,11 @@ fun HomeScreen(
                 }
             } else {
                 AnswerHero(
+                    stationNames = remember(uiState.stationsByLine, lang) {
+                        uiState.stationsByLine.values.flatten()
+                            .distinctBy { it.id }
+                            .associate { it.id to it.localizedName(lang) }
+                    },
                     next = uiState.nextDeparture,
                     line = uiState.nextDepartureLine,
                     upcoming = uiState.upcomingDepartures,
@@ -831,6 +837,7 @@ private fun emergencyLabelOASA(lang: AppLanguage): String = when (lang) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AnswerHero(
+    stationNames: Map<String, String> = emptyMap(),
     next: UpcomingDeparture?,
     line: Line?,
     upcoming: List<UpcomingDeparture> = emptyList(),
@@ -927,6 +934,7 @@ private fun AnswerHero(
                 // gap degrades instead of blanking the screen.
                 if (stationBoard != null && stationBoard.timedGroupCount > 0) {
                     StationComplexBoardCard(
+                        stationNames = stationNames,
                         board = stationBoard,
                         lines = lines,
                         selectedGroupId = selectedBoardGroupId,
@@ -1057,6 +1065,7 @@ private fun AnswerHero(
  */
 @Composable
 private fun StationComplexBoardCard(
+    stationNames: Map<String, String> = emptyMap(),
     board: StationComplexBoard.Board,
     lines: List<Line>,
     selectedGroupId: String?,
@@ -1085,7 +1094,8 @@ private fun StationComplexBoardCard(
             )
             Text(
                 text = "${allDirectionsLabel(lang).uppercase()} · " +
-                    "${board.timedGroupCount} ${servicesLabel(lang)}",
+                    "${board.timedGroupCount} " +
+                    BoardScopeCopy.services(board.timedGroupCount, lang),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1143,7 +1153,10 @@ private fun StationComplexBoardCard(
                         // headsign is how a board hides a direction it claims
                         // to show.
                         Text(
-                            text = group.destination,
+                            // The seed headsign is Latin; resolve it to the
+                            // rider's language via the destination station id.
+                            text = group.destinationId?.let { stationNames[it] }
+                                ?: group.destination,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (group.id == featuredId) {
                                 FontWeight.SemiBold
@@ -1209,13 +1222,6 @@ private fun allDirectionsLabel(lang: AppLanguage): String = when (lang) {
     AppLanguage.ALBANIAN -> "Të gjitha drejtimet"
     AppLanguage.ITALIAN -> "Tutte le direzioni"
     else -> "All directions"
-}
-
-private fun servicesLabel(lang: AppLanguage): String = when (lang) {
-    AppLanguage.GREEK -> "υπηρεσίες"
-    AppLanguage.ALBANIAN -> "shërbime"
-    AppLanguage.ITALIAN -> "servizi"
-    else -> "services"
 }
 
 private fun partialCoverageLabel(lang: AppLanguage): String = when (lang) {

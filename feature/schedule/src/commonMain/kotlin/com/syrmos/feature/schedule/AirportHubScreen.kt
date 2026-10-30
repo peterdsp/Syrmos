@@ -901,6 +901,7 @@ private fun ServiceTile(route: String, icon: ImageVector, main: String, destinat
 
 @Composable
 private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: List<ProjectedDeparture>, suburbanDepartures: List<ProjectedDeparture>, liveBuses: LiveAirportBuses, onOpenStation: (String) -> Unit) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     // Group by (line, destination) into one card carrying the next few times,
     // instead of a stack of identical "M3 · Syntagma · Scheduled" rows differing
     // only by the clock time. Mirrors the grouped station board (groupDepartures)
@@ -924,16 +925,22 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
         if (mins != null) {
             AirportRow(line, dest, airportText(lang, "Live to the airport stop", "Ζωντανά στη στάση του αεροδρομίου", "Drejtpërdrejt te stacioni i aeroportit", "In tempo reale alla fermata dell'aeroporto"), listOf(formatMinutes(mins, lang)), SyrmosColorTokens.warning, confidence = SourceConfidence.LIVE)
         } else {
-            AirportRow(line, dest, airportText(lang, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"), listOf("24/7"), SyrmosColorTokens.warning, confidence = SourceConfidence.OPERATOR_LINK)
+            // No live vehicle: "24/7" is operator information, not a departure.
+            // Carry the link the OPERATOR_LINK confidence promises, so the row
+            // can say "check operator" and actually take the rider there. iOS
+            // makes the same point in AirportBusDetailSheet.
+            AirportRow(line, dest, airportText(lang, "24-hour express bus", "24ωρο λεωφορείο express", "Autobus express 24 orë", "Bus express 24 ore"), listOf("24/7"), SyrmosColorTokens.warning, confidence = SourceConfidence.OPERATOR_LINK, operatorUrl = OASA_TELEMATICS_URL)
         }
     }
     val rows = metroRows + suburbanRows + busRows
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.take(9).forEach { row ->
-            val rowModifier = if (row.stationId != null) {
-                Modifier.clip(RoundedCornerShape(16.dp)).clickable { onOpenStation(row.stationId) }
-            } else {
-                Modifier
+            val rowModifier = when {
+                row.stationId != null ->
+                    Modifier.clip(RoundedCornerShape(16.dp)).clickable { onOpenStation(row.stationId) }
+                row.operatorUrl != null ->
+                    Modifier.clip(RoundedCornerShape(16.dp)).clickable { uriHandler.openUri(row.operatorUrl) }
+                else -> Modifier
             }
             Surface(modifier = rowModifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -945,9 +952,12 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
                         Text(row.destination, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         // Live bus rows carry a Live chip so the source reads the
                         // same as every other departure surface; others keep text.
-                        if (row.confidence == SourceConfidence.LIVE) {
+                        if (row.confidence == SourceConfidence.LIVE || row.confidence == SourceConfidence.OPERATOR_LINK) {
+                            // An OPERATOR_LINK row shows "24/7" in the time slot,
+                            // which reads exactly like a departure. The chip says
+                            // it is operator information instead.
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                SourceConfidenceChip(SourceConfidence.LIVE)
+                                SourceConfidenceChip(row.confidence)
                                 Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         } else {
@@ -966,7 +976,7 @@ private fun AirportDepartureRows(lang: AppLanguage, dayOffset: Int, departures: 
                     }
                     Text(row.times.firstOrNull() ?: "-", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = row.color)
                     // Chevron signals the row opens the station's full departures.
-                    if (row.stationId != null) {
+                    if (row.stationId != null || row.operatorUrl != null) {
                         Spacer(Modifier.width(8.dp))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
@@ -1028,7 +1038,10 @@ private fun AirportCard(content: @Composable () -> Unit) {
 
 // stationId is the airport-side stop a row opens in Station Detail; null for
 // buses (no per-stop timetable), which keeps their row non-tappable.
-private data class AirportRow(val route: String, val destination: String, val detail: String, val times: List<String>, val color: Color, val stationId: String? = null, val confidence: SourceConfidence = SourceConfidence.SCHEDULED)
+private data class AirportRow(val route: String, val destination: String, val detail: String, val times: List<String>, val color: Color, val stationId: String? = null, val confidence: SourceConfidence = SourceConfidence.SCHEDULED, val operatorUrl: String? = null)
+
+/** OASA's own telematics page, the same destination iOS opens from the bus sheet. */
+private const val OASA_TELEMATICS_URL = "https://www.oasa.gr/en/telematics/"
 
 // MARK: - Multi-airport hubs (mirrors iOS AirportData.swift)
 

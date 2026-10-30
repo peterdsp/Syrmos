@@ -43,6 +43,7 @@
             board_open_group: "Open departures towards {destination}",
             board_cancelled: "Cancelled",
             board_services: "{n} services",
+            board_service_one: "{n} service",
             brand_subtitle: "Athens rail map",
             athens: "Athens",
             thessaloniki: "Thessaloniki",
@@ -66,7 +67,7 @@
             popular_stations: "Popular stations",
             oasa_tickets: "Fares",
             fare_at_booking: "at booking",
-            plan_trip: "Plan a trip — fare",
+            plan_trip: "Plan a trip: fare",
             fare_from: "From station",
             fare_to: "To station",
             view_on_oasa: "View on OASA ↗",
@@ -147,12 +148,12 @@
             ariadne_title: "Ariadne",
             ariadne_placeholder: "Ask Ariadne...",
             send: "Send",
-            ariadne_greeting: "Hi, I'm Ariadne. Ask me about Athens transit — next departures, last train tonight, a trip A to B, service alerts, or ticket prices.",
+            ariadne_greeting: "Hi, I'm Ariadne. Ask me about Athens transit: next departures, last train tonight, a trip A to B, service alerts, or ticket prices.",
             ariadne_looking_up: "Looking up {station}...",
             ariadne_next_from: "Next from {station}:",
             ariadne_none_now: "No more trains from {station} right now.",
             ariadne_no_station: "I couldn't match that to an Athens station. Try Syntagma, Piraeus, Airport.",
-            ariadne_did_you_mean: "I didn't quite catch that — did you mean {station}? Try \"next trains from {station}\".",
+            ariadne_did_you_mean: "I didn't quite catch that. Did you mean {station}? Try \"next trains from {station}\".",
             ariadne_try_asking: "I didn't catch that. Ask me about departures, a route between two stations, or the last train home.",
             search_ask_ariadne: "Ask Ariadne",
             ariadne_open_map: "Opening {station} on the map.",
@@ -164,7 +165,7 @@
             ariadne_line: "Line {id} runs between {a} and {b}. Tap the line on the map to see all stations.",
             ariadne_fare: "The standard Athens (OASA) integrated ticket is €1.20 (reduced €0.50). The airport metro single is €9. See Fares in the side panel for every network.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
-            ariadne_fare_booking: "{from} → {to} is an intercity trip — the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
+            ariadne_fare_booking: "{from} → {to} is an intercity trip: the price is set at booking (route, date, class). Discounts include early-booking up to 15%, return 20% and students up to 50%. Book on hellenictrain.gr for the exact fare.",
             whatsnew_title: "What's new in Syrmos",
             whatsnew_i1: "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers",
             whatsnew_i2: "Ariadne now links to stations and lines: tap any answer to jump straight there",
@@ -185,6 +186,7 @@
             board_open_group: "Άνοιγμα αναχωρήσεων προς {destination}",
             board_cancelled: "Ακυρώθηκε",
             board_services: "{n} υπηρεσίες",
+            board_service_one: "{n} υπηρεσία",
             brand_subtitle: "Χάρτης σιδηροδρόμων Αθήνας",
             athens: "Αθήνα",
             thessaloniki: "Θεσσαλονίκη",
@@ -294,7 +296,7 @@
             ariadne_next_from: "Επόμενα από {station}:",
             ariadne_none_now: "Δεν υπάρχουν άλλα δρομολόγια από {station} τώρα.",
             ariadne_no_station: "Δεν αναγνώρισα σταθμό. Δοκίμασε Σύνταγμα, Πειραιά ή Αεροδρόμιο.",
-            ariadne_did_you_mean: "Δεν το κατάλαβα ακριβώς — μήπως εννοείς {station}; Δοκίμασε «επόμενα τρένα από {station}».",
+            ariadne_did_you_mean: "Δεν το κατάλαβα ακριβώς. Μήπως εννοείς {station}; Δοκίμασε «επόμενα τρένα από {station}».",
             ariadne_try_asking: "Δεν το κατάλαβα. Ρώτησέ με για αναχωρήσεις, διαδρομή μεταξύ δύο σταθμών ή το τελευταίο τρένο.",
             search_ask_ariadne: "Ρώτησε την Αριάδνη",
             ariadne_open_map: "Άνοιγμα του {station} στον χάρτη.",
@@ -306,7 +308,7 @@
             ariadne_line: "Η Γραμμή {id} συνδέει {a} και {b}. Πάτα τη γραμμή στον χάρτη για όλους τους σταθμούς.",
             ariadne_fare: "Το ενιαίο εισιτήριο Αθήνας (OASA) είναι €1,20 (μειωμένο €0,50). Το εισιτήριο μετρό για το αεροδρόμιο είναι €9. Δες τις Τιμές στο πλαϊνό πάνελ για όλα τα δίκτυα.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
-            ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο — η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
+            ariadne_fare_booking: "{from} → {to} είναι υπεραστικό δρομολόγιο: η τιμή ορίζεται στην κράτηση (διαδρομή, ημέρα, θέση). Εκπτώσεις: έγκαιρη κράτηση έως 15%, επιστροφή 20%, φοιτητές έως 50%. Κάνε κράτηση στο hellenictrain.gr για την ακριβή τιμή.",
             whatsnew_title: "Τι νέο υπάρχει στο Syrmos",
             whatsnew_i1: "Hellenic Rail Atlas: νέος σχεδιασμός με απαντήσεις στη μια ματιά",
             whatsnew_i2: "Η Αριάδνη τώρα συνδέεται με σταθμούς και γραμμές: πάτα και πήγαινε κατευθείαν",
@@ -327,6 +329,7 @@
             board_open_group: "Hap nisjet drejt {destination}",
             board_cancelled: "Anuluar",
             board_services: "{n} shërbime",
+            board_service_one: "{n} shërbim",
             brand_subtitle: "Harta e hekurudhave të Athinës",
             athens: "Athina",
             thessaloniki: "Selanik",
@@ -436,7 +439,7 @@
             ariadne_next_from: "Të ardhshmet nga {station}:",
             ariadne_none_now: "Nuk ka më trena nga {station} tani.",
             ariadne_no_station: "S'e njoha stacionin. Provo Syntagma, Piraeus ose Aeroporti.",
-            ariadne_did_you_mean: "Nuk e kuptova mirë — mos ke parasysh {station}? Provo «trenat e ardhshëm nga {station}».",
+            ariadne_did_you_mean: "Nuk e kuptova mirë. Mos ke parasysh {station}? Provo «trenat e ardhshëm nga {station}».",
             ariadne_try_asking: "Nuk e kuptova. Më pyet për nisje, një udhëtim mes dy stacioneve ose trenin e fundit.",
             search_ask_ariadne: "Pyet Ariadnen",
             ariadne_open_map: "Po hap {station} në hartë.",
@@ -448,7 +451,7 @@
             ariadne_line: "Linja {id} lidh {a} me {b}. Prek linjën në hartë për të gjitha stacionet.",
             ariadne_fare: "Bileta e integruar e Athinës (OASA) është €1,20 (e reduktuar €0,50). Bileta metro për aeroport është €9. Shiko Çmimet në panelin anësor për të gjitha rrjetet.",
             ariadne_fare_trip: "{from} → {to}: {price}. {product} · {operator}.",
-            ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës — çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
+            ariadne_fare_booking: "{from} → {to} është udhëtim ndërqytetës: çmimi caktohet në rezervim (rruga, dita, klasa). Zbritje: rezervim i hershëm deri 15%, kthim 20%, studentë deri 50%. Rezervo në hellenictrain.gr për çmimin e saktë.",
             whatsnew_title: "Çfarë ka të re në Syrmos",
             whatsnew_i1: "Hellenic Rail Atlas: dizajn i ri me përgjigje në një shikim",
             whatsnew_i2: "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt",
@@ -469,6 +472,7 @@
             board_open_group: "Apri le partenze verso {destination}",
             board_cancelled: "Cancellato",
             board_services: "{n} servizi",
+            board_service_one: "{n} servizio",
             brand_subtitle: "Mappa ferroviaria di Atene",
             athens: "Atene",
             thessaloniki: "Salonicco",
@@ -990,11 +994,11 @@
     const liveTrainMarkers = new Map();
     // Live trains live in a dedicated layer group. clearLayers() wipes EVERY
     // marker each render, so nothing can leak. The old code tracked markers in a
-    // Map keyed by train.id and cleared by iterating it — but trains sharing an
+    // Map keyed by train.id and cleared by iterating it - but trains sharing an
     // id (or a null id, e.g. the "P … to unknown" suburban trains that resolve to
     // the same key) overwrote each other in the Map, stranding the untracked
     // marker on the map forever. Those orphans piled up over every 10s poll and
-    // marched out into the Saronic Gulf — the "live trains in the sea" the feed
+    // marched out into the Saronic Gulf - the "live trains in the sea" the feed
     // never actually reported.
     const liveTrainLayer = L.layerGroup();
     // Live airport express-bus vehicles (X93/95/96/97) ride in their own layer,
@@ -1120,7 +1124,7 @@
         const train = list.find((c) => String(c.id) === id);
         if (!train) return;
         // Open the SAME shared vehicle sheet as tapping the vehicle on the map
-        // (which does not fly the map either — the sheet carries a "Show on map"
+        // (which does not fly the map either - the sheet carries a "Show on map"
         // action). Guarded so a row with a bad coord can never crash the sheet.
         try {
             showTrainSheet(kind, train);
@@ -1550,7 +1554,7 @@
     }
     function tileSourceFor() {
         const dark = isDarkTheme();
-        // Esri "Gray Canvas" — a clean, minimal, KEYLESS raster basemap, close to
+        // Esri "Gray Canvas" - a clean, minimal, KEYLESS raster basemap, close to
         // CARTO's Positron / Dark Matter (which now demands an API key). No signup,
         // no key. Note Esri uses {z}/{y}/{x} order and serves to native z16.
         return {
@@ -1613,7 +1617,7 @@
     // Source of truth order for polyline shape:
     //   1. Bundled `shapes.json` (OSM relation geometry stitched at build time,
     //      ODbL). Always available, fastest, accurate enough for every line.
-    //   2. `/line-geometry/{id}.geojson` from the API as remote override —
+    //   2. `/line-geometry/{id}.geojson` from the API as remote override -
     //      lets the Pi push corrections without an app release.
     //   3. Catmull-Rom spline through station coords as last-resort fallback.
     const geoCache = new Map();
@@ -1643,7 +1647,7 @@
     // Requesting the rest fired one 404 apiece on every load (a console flood of
     // ~15 errors) and, because this is an await-all, blocked line drawing until
     // each 404 came back. Those lines already carry accurate bundled shapes.json
-    // geometry, so a 404 changed nothing — it just fell back to the bundle. Skip
+    // geometry, so a 404 changed nothing - it just fell back to the bundle. Skip
     // the lines the server is known to lack: identical rendering, no wasted
     // round-trips. If the Pi later adds one, drop it from this set (bundled
     // geometry covers it until then).
@@ -1651,7 +1655,7 @@
         "DX1", "IC1", "KB1", "KP1", "PL1", "PS2", "PSB", "PU2",
         "RG1", "TL1", "TP1", "TP2", "TP3", "TP4", "VL1",
         // Airport shuttle buses: no OSM rail relation, so no server file and no
-        // bundled shape either — they draw from their stop list via the spline
+        // bundled shape either - they draw from their stop list via the spline
         // fallback, which is right for a road service.
         "2X", "X3",
     ]);
@@ -1727,7 +1731,7 @@
             }
         }
         if (feat && feat.geometry) {
-            // GeoJSON is [lng, lat] — Leaflet wants [lat, lng].
+            // GeoJSON is [lng, lat] - Leaflet wants [lat, lng].
             const segments = feat.geometry.type === "MultiLineString"
                 ? feat.geometry.coordinates
                 : [feat.geometry.coordinates];
@@ -1846,7 +1850,7 @@
     let selectedStationId = null;
     let userLocation = null;
     // Declared early (not next to setupHero) so it is initialised before both
-    // setupPanelBehavior and the hero run — a `let` next to the function would be
+    // setupPanelBehavior and the hero run - a `let` next to the function would be
     // in its temporal dead zone when setupHero is invoked earlier in init.
     let heroActive = false;
     // Declared here, not next to loadStationOffsets(), because the station board
@@ -1992,7 +1996,7 @@
 
         // Per-station smart-code SVG, ONLY for the selected stop (at any zoom).
         // Previously every dot ballooned into a 22px artwork icon at z14, so the
-        // whole map visibly resized at once when you crossed that threshold — a big
+        // whole map visibly resized at once when you crossed that threshold - a big
         // part of the "everything moves" churn. Now the dots keep one size and only
         // the focused station shows its artwork.
         if (selected) {
@@ -2110,7 +2114,7 @@
     // A Date whose LOCAL getters (getHours/getMinutes/getSeconds/getDate/getDay/
     // getMonth) read Europe/Athens wall-clock, so every schedule and simulation
     // computation is correct no matter what timezone the viewer's device is on.
-    // Only use it for wall-clock FIELDS — its epoch (getTime) is deliberately
+    // Only use it for wall-clock FIELDS - its epoch (getTime) is deliberately
     // shifted and must not be treated as a real instant.
     function athensNow() {
         return new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Athens" }));
@@ -2127,7 +2131,7 @@
     // and iosApp/Departure.minutesAwayDisplay. "Now" once the train is at
     // the platform, hours+min past 59 so late-night views like Nikaia M3
     // at 02:09 show "3h 25min" instead of "205 min" (which in Greek and
-    // Albanian locales rendered as "1.315 min" — thousands-separator
+    // Albanian locales rendered as "1.315 min" - thousands-separator
     // confusion that started this whole thread).
     function formatMinutesAway(minutesAway) {
         // A malformed/empty API row can leave minutesAway non-finite; blank the
@@ -2254,13 +2258,13 @@
             if (!rule) continue;
             const openMin = minutesOfDay(rule.openTime);
             const closeMin = minutesOfDay(rule.closeTime);
-            // closeTime can be 00:30, 02:00, etc. — treated as next-day if smaller than open.
+            // closeTime can be 00:30, 02:00, etc. - treated as next-day if smaller than open.
             // If we're past closeTime relative to today's window AND we're not in the
             // late-night extension of yesterday, skip.
             // Subtract the shift so today's nowMinutes lands inside the
             // descriptor's own clock domain (shift = -1440 for the yesterday
             // overnight pass). Then only reject bands that are fully in the
-            // past — future bands of today's day-type emit future slots
+            // past - future bands of today's day-type emit future slots
             // naturally, which is what we want at 02:09 Thursday when M3
             // mon_thu's first train is 05:30. 120 min upper slack mirrors
             // the iOS / Pi projector so downstream stations still emit
@@ -3013,7 +3017,7 @@
             // Airport pill: serviceType=="airport" covers both outbound (to
             // Airport) and inbound (from Airport → Dimotiko Theatro). Keeps
             // the terminus text intact so the destination column stays
-            // truthful — the pill just signals "this train touches the
+            // truthful - the pill just signals "this train touches the
             // Airport leg."
             const airportPill = group.serviceType === "airport"
                 ? `<span class="departure-card__pill departure-card__pill--airport">${t("airport")}</span>`
@@ -3131,7 +3135,7 @@
                 </span>
             `)
             .join("");
-        // Hide the whole block when there are no meaningful chips — saves
+        // Hide the whole block when there are no meaningful chips - saves
         // a row of empty space on the common single-line, accessible, Zone 1
         // case (which describes most stations in the network).
         const metaBlock = document.getElementById("stationMetaBlock");
@@ -3445,7 +3449,7 @@
     // Open framed on the ATHENS network, not the whole country. The app went
     // nationwide, but fitting every station Ioannina->Alexandroupoli->Kalamata
     // opened on an all-Greece view where Athens was a 15px corner with no dots
-    // and no trains (decluttered away) — it read as "empty". Frame the Athens
+    // and no trains (decluttered away) - it read as "empty". Frame the Athens
     // region so metro + tram + suburban + live trains are all on screen at launch;
     // zoom out for the country. (GPS "locate me" still recenters on the user.)
     // Frame the Athens METRO + TRAM core, not every athens-region stop. The
@@ -3467,8 +3471,8 @@
             console.error("fitBounds failed", e);
         }
     }
-    // Frame Athens now. But if the map booted inside a zero-size container — a
-    // hidden pane, a background tab, an embed not yet laid out — fitBounds
+    // Frame Athens now. But if the map booted inside a zero-size container - a
+    // hidden pane, a background tab, an embed not yet laid out - fitBounds
     // computes a broken all-world view (centred near null island) and never
     // recovers on its own. So when the container has no dimensions at boot,
     // re-fit exactly once as soon as it gets real size. Normal foreground loads
@@ -3490,7 +3494,7 @@
 
     // Region chips (Athens / Thessaloniki / National / Patras) fly the map to
     // that network. They were inert markup before; this makes them a real
-    // geographic filter — the network you pick frames the view.
+    // geographic filter - the network you pick frames the view.
     try {
         const chips = document.getElementById("regionChips");
         if (chips) {
@@ -3898,7 +3902,7 @@
                 // Per-row confidence chip, matching the grouped departure cards: a
                 // boardable telematics train reads LIVE, while a GPS-only position
                 // (inService false / status "position_only") reads as the muted
-                // "Position only" — the panel used to hide that distinction that
+                // "Position only" - the panel used to hide that distinction that
                 // the map already draws in grey, so a non-boardable dot looked like
                 // a normal live train in the list.
                 const notInService = train.inService === false || train.status === "position_only";
@@ -3935,7 +3939,7 @@
         // manual "Hide vehicles" toggle is on OR the map is zoomed out past the
         // regional threshold. Zoomed out, the whole Athens live fleet collapses
         // into a single full-size pile on the coastline that reads as "trains in
-        // the sea" — the same reason the simulated dots declutter at this zoom, so
+        // the sea" - the same reason the simulated dots declutter at this zoom, so
         // the live markers must follow the identical rule. The zoomend handler
         // re-runs this from lastLiveTrains, so zooming back in restores every
         // marker at its true coordinate (Piraeus, Rentis, Koropi…) untouched.
@@ -3982,7 +3986,7 @@
                 iconSize: [44, 56],
                 iconAnchor: [22, 22],
             });
-            // Plot the live train at its TRUE reported coordinate — no snapping,
+            // Plot the live train at its TRUE reported coordinate - no snapping,
             // no clamping. The feed is accurate (Piraeus port, Rentis depot,
             // Koropi…); the only reason a dot ever looked "in the sea" was the
             // zoomed-out pile-up, which the zoom guard above now handles.
@@ -4122,7 +4126,7 @@
             .sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    // Mirror of the iOS map's second-pass distance merge — folds nodes
+    // Mirror of the iOS map's second-pass distance merge - folds nodes
     // that sit within 60 m of each other even when their names differ
     // (M3 "Dimotiko Theatro" + T7 "Dimarhio / Dimotiko Theatro" are the
     // canonical example: same Piraeus square, ~32 m apart, but two
@@ -4430,7 +4434,10 @@
             stationEl.textContent = window.SyrmosStationBoard
                 ? window.SyrmosStationBoard.complexName(board.complex, currentLang)
                 : (board.complex.name || "");
-            scopeEl.textContent = `${t("board_all_directions")} · ${t("board_services", { n: board.timedGroupCount })}`;
+            // Singular at one, so the board never reads "1 services". Mirrors the
+            // shared BoardScopeCopy.services() the two mobile clients call.
+            const servicesKey = board.timedGroupCount === 1 ? "board_service_one" : "board_services";
+            scopeEl.textContent = `${t("board_all_directions")} · ${t(servicesKey, { n: board.timedGroupCount })}`;
             const partialText = board.partial ? t("board_partial") : "";
             covEl.textContent = partialText;
             covEl.hidden = !partialText;
@@ -5255,7 +5262,7 @@
                 // Project the train's TRUE position onto the nearest POINT of each
                 // segment (not the nearest vertex). Nearest-vertex snapping mapped a
                 // coastal/looping train to a far vertex, so the animated marker glided
-                // across a bay into the sea even though train.lat/lng was correct — and
+                // across a bay into the sea even though train.lat/lng was correct - and
                 // it visibly drifted while zooming. Segment projection keeps the glide
                 // target locked to the real position on the track.
                 let bestD = Infinity;
@@ -5434,7 +5441,7 @@
 
     // Theme lives in ONE place now: the top-right moon next to the language
     // pill (matching the intended top-right control cluster). The left rail's
-    // old moon AND the dead "EL" label — which never even updated — were
+    // old moon AND the dead "EL" label - which never even updated - were
     // removed, so language + theme no longer appear in two places. Apply the
     // saved / preferred theme on load regardless of the button, then wire the
     // moon. Swap the line-icon (moon in light, sun in dark) rather than a text
@@ -6039,7 +6046,7 @@
                 const anyScheduled = rows.some((r) => r.timingKind === "scheduled" || r.timingKind === "live");
                 src.textContent = anyScheduled
                     ? T("Times from the published timetable.", "Χρόνοι από το επίσημο δρομολόγιο.", "Kohët nga orari zyrtar.", "Orari dal calendario ufficiale.")
-                    : T("Estimated times — no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι — χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara — ende pa orar të drejtpërdrejtë.", "Orari stimato — nessun orario dal vivo per questo percorso.");
+                    : T("Estimated times: no live schedule for this route yet.", "Εκτιμώμενοι χρόνοι: χωρίς ζωντανό δρομολόγιο ακόμη.", "Kohë të vlerësuara: ende pa orar të drejtpërdrejtë.", "Orari stimato - nessun orario dal vivo per questo percorso.");
                 detail.appendChild(src);
 
                 // Phase R accessibility-unknown disclosure. Shared engine; no
@@ -6334,7 +6341,7 @@
                     const empty = document.createElement("div");
                     empty.className = "plan-results__empty";
                     empty.textContent = (planMode !== "now" && !hasTimetable)
-                        ? T("Schedules still loading — try again.", "Φόρτωση δρομολογίων — δοκίμασε ξανά.", "Oraret po ngarkohen — provo sërish.", "Orari in caricamento — riprova.")
+                        ? T("Schedules still loading, try again.", "Φόρτωση δρομολογίων, δοκίμασε ξανά.", "Oraret po ngarkohen, provo sërish.", "Orari in caricamento, riprova.")
                         : (planMode === "lastConnection"
                             ? T("No more trains tonight.", "Δεν υπάρχουν άλλα τρένα απόψε.", "Nuk ka më trena sonte.", "Nessun altro treno stanotte.")
                             : planMode === "arriveBy"
@@ -6842,7 +6849,7 @@
             .ariadne-launcher {
                 position: fixed; z-index: 900;
                 /* Sits directly below the top-right dark-mode toggle, aligned to
-                   the same right edge — a fixed, deliberate spot on every screen. */
+                   the same right edge - a fixed, deliberate spot on every screen. */
                 right: 16px; top: 64px; bottom: auto; left: auto;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
