@@ -57,6 +57,21 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
     ):
         station_rows_by_line[r["line_id"]].append(r)
 
+    # Which lines we actually hold times for. A line with neither schedule
+    # rules nor frequency bands can never produce a departure, and the clients
+    # used to render that as "the line is closed or today's service has ended",
+    # which is a claim about the operator we have no basis for: the Thessaloniki
+    # airport shuttles X3 and 2X run all day and we simply never had their
+    # timetable. Ship the distinction so the apps can say which one it is.
+    timetabled: set[str] = set()
+    for table in ("schedule_rules", "frequency_bands"):
+        try:
+            timetabled.update(
+                r[0] for r in conn.execute(f"SELECT DISTINCT line_id FROM {table}").fetchall()
+            )
+        except sqlite3.OperationalError:
+            pass
+
     for ln in line_rows:
         stops = station_rows_by_line.get(ln["id"], [])
         lines.append({
@@ -74,6 +89,9 @@ def _build_lines(conn: sqlite3.Connection) -> dict:
             # line that does not run looks like one that does.
             "region": ln["region"],
             "status": ln["status"],
+            # False when we hold no timetable for this line at all, so an empty
+            # board can say "no times published" instead of "closed".
+            "hasTimetable": ln["id"] in timetabled,
             "stationCount": len(stops),
             "stations": [
                 {

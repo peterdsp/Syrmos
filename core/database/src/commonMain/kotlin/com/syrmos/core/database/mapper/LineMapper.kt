@@ -23,6 +23,7 @@ fun Line_entity.toDomain(): Line = Line(
     stationCount = station_count.toInt(),
     region = Region.fromRaw(region),
     status = LineStatus.fromRaw(status),
+    hasTimetable = has_timetable != 0L,
 )
 
 fun Line.toEntity(): Line_entity = Line_entity(
@@ -41,4 +42,5 @@ fun Line.toEntity(): Line_entity = Line_entity(
         LineStatus.SUSPENDED -> "suspended"
         LineStatus.SEASONAL -> "seasonal"
     },
+    has_timetable = if (hasTimetable) 1L else 0L,
 )

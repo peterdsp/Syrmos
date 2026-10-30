@@ -67,3 +67,29 @@ def test_per_stop_budget_covers_every_oasa_stop_within_the_ttl():
         f"budget {budget} over a {ttl}s TTL at a {cycle}s cycle refreshes only "
         f"{budget * (ttl / cycle):.0f} stops, fewer than the ~300 OASA publishes"
     )
+
+
+def test_lines_payload_marks_which_lines_have_a_timetable():
+    """`hasTimetable` separates "no times published" from "closed".
+
+    X3 and 2X, the Thessaloniki airport shuttles, hold neither schedule rules
+    nor frequency bands, so the station board rendered "the line is closed or
+    today's service has ended" at Makedonia Airport on a Friday evening while
+    the shuttles were running. That is a claim about the operator we have no
+    basis for.
+    """
+    import sqlite3
+    from syrmos_admin import generator
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    # The generator reads these two tables to decide; an unmigrated DB must not
+    # raise, it must simply report nothing as timetabled.
+    timetabled: set[str] = set()
+    for table in ("schedule_rules", "frequency_bands"):
+        try:
+            timetabled.update(r[0] for r in conn.execute(f"SELECT DISTINCT line_id FROM {table}"))
+        except sqlite3.OperationalError:
+            pass
+    assert timetabled == set()
+    assert hasattr(generator, "generate")

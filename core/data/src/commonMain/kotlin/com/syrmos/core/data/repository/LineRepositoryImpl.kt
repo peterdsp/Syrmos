@@ -67,6 +67,7 @@ class LineRepositoryImpl(
                 stationCount = seed.stationCount,
                 region = Region.fromRaw(seed.region),
                 status = LineStatus.fromRaw(seed.status),
+                hasTimetable = seed.hasTimetable,
             )
         }.also {
             seedLines = it

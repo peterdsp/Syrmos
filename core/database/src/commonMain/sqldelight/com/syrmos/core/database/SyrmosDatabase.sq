@@ -13,7 +13,13 @@ CREATE TABLE line_entity (
     -- operational | under_construction. A line that does not run still renders,
     -- greyed, but must never yield a departure. Defaults to operational so an
     -- upgraded database keeps behaving exactly as it did.
-    status TEXT NOT NULL DEFAULT 'operational'
+    status TEXT NOT NULL DEFAULT 'operational',
+    -- 0 when Syrmos holds no timetable for this line at all. An empty board
+    -- then means "no times published", not "the line is closed": the
+    -- Thessaloniki airport shuttles X3 and 2X run all day and the board told
+    -- riders at Makedonia Airport that service had ended. Defaults to 1 so an
+    -- upgraded database keeps behaving exactly as it did.
+    has_timetable INTEGER NOT NULL DEFAULT 1
 );
 
 -- Stations
@@ -119,8 +125,16 @@ getLinesByType:
 SELECT * FROM line_entity WHERE type = ? ORDER BY name;
 
 insertLine:
-INSERT OR REPLACE INTO line_entity(id, name, name_el, type, color, terminal_a, terminal_b, station_count, region, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO line_entity(id, name, name_el, type, color, terminal_a, terminal_b, station_count, region, status, has_timetable)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Sync ONLY the timetable flag on a line we already hold. The migration adds
+-- the column defaulted to 1 and the refresher never updates an existing line,
+-- so without this every upgraded install would keep claiming the Thessaloniki
+-- airport shuttles are closed forever. Deliberately narrow: status, region and
+-- terminals stay seed-authoritative.
+updateLineTimetable:
+UPDATE line_entity SET has_timetable = ? WHERE id = ?;
 
 -- Stations
 getAllStations:

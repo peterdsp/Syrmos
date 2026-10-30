@@ -61,6 +61,8 @@ class SyrmosLinesService(
          * quietly promote an under-construction line back to live.
          */
         val status: String = "operational",
+        /** False when the server holds no timetable for this line at all. */
+        val hasTimetable: Boolean = true,
     )
 
     @Serializable

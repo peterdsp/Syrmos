@@ -74,6 +74,24 @@ class StationDepartureFallbackTest {
         assertEquals(4, labels.toSet().size, "each language needs its own wording: $labels")
     }
 
+    @Test fun the_no_timetable_line_never_claims_the_service_is_closed() {
+        // Makedonia Airport: X3 and 2X hold no timetable at all, and the board
+        // used to say "the line is closed or today's service has ended" while
+        // the shuttles were running.
+        for (lang in AppLanguage.entries) {
+            val text = StationDepartureFallback.noTimetable(lang).lowercase()
+            assertTrue(text.isNotBlank(), "$lang")
+            for (word in listOf("closed", "κλειστ", "mbyll", "chiusa", "chiuso")) {
+                assertFalse(word in text, "$lang must not claim a closure: $text")
+            }
+        }
+    }
+
+    @Test fun the_no_timetable_line_is_translated_into_all_four_languages() {
+        val texts = AppLanguage.entries.map { StationDepartureFallback.noTimetable(it) }
+        assertEquals(4, texts.toSet().size, "each language needs its own wording: $texts")
+    }
+
     @Test fun albanian_keeps_its_diacritics() {
         assertTrue(StationDepartureFallback.couldNotLoad(AppLanguage.ALBANIAN).contains("ë"))
         assertTrue(

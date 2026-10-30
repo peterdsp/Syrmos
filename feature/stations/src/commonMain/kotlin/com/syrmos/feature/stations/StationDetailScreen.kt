@@ -363,6 +363,34 @@ fun StationDetailScreen(
                         }
                     }
                 }
+            } else if (uiState.departures.isEmpty() &&
+                uiState.hasLoadedDepartures &&
+                uiState.connectingLines.isNotEmpty() &&
+                uiState.connectingLines.none { it.hasTimetable }
+            ) {
+                // We hold no timetable for any line here, so an empty board is
+                // our gap, not the operator's. Saying "the line is closed" told
+                // riders at Makedonia Airport that the X3 and 2X shuttles had
+                // stopped while they were running.
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = StationDepartureFallback.noTimetable(lang),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val operatorUrl = StationDepartureFallback.operatorUrl(uiState.region)
+                        val operatorLabel = StationDepartureFallback.checkTimetablesOn(uiState.region, lang)
+                        if (operatorUrl != null && operatorLabel != null) {
+                            Button(onClick = { uriHandler.openUri(operatorUrl) }) {
+                                Text(operatorLabel)
+                            }
+                        }
+                    }
+                }
             } else if (uiState.departures.isEmpty()) {
                 item {
                     Text(

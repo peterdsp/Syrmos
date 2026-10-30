@@ -1,0 +1,13 @@
+-- Schema 4 -> 5: has_timetable on lines.
+--
+-- A line with neither schedule rules nor frequency bands can never produce a
+-- departure, and the station board rendered that as "the line is closed or
+-- today's service has ended". That is a claim about the operator we have no
+-- basis for: X3 and 2X, the Thessaloniki airport shuttles, run all day and we
+-- simply never held their timetable, so Makedonia Airport told arriving
+-- passengers the shuttles had stopped.
+--
+-- Defaults to 1 so every existing row keeps today's behaviour after the
+-- upgrade; the next seed/API sync fills in the real value.
+
+ALTER TABLE line_entity ADD COLUMN has_timetable INTEGER NOT NULL DEFAULT 1;

@@ -47,6 +47,17 @@ object StationDepartureFallback {
         Region.ATHENS -> null
     }
 
+    /**
+     * "No times published for this service yet." Shown when the station's lines
+     * carry no timetable at all, instead of claiming the line is closed.
+     */
+    fun noTimetable(lang: AppLanguage): String = when (lang) {
+        AppLanguage.GREEK -> "Δεν έχουμε ακόμη δρομολόγια για αυτή τη γραμμή. Δες τον φορέα για ώρες."
+        AppLanguage.ALBANIAN -> "Nuk kemi ende orare për këtë linjë. Shih operatorin për oraret."
+        AppLanguage.ITALIAN -> "Non abbiamo ancora gli orari di questa linea. Consulta il gestore."
+        else -> "We don't have a timetable for this service yet. Check the operator for times."
+    }
+
     /** "Could not load departures. Check your connection." */
     fun couldNotLoad(lang: AppLanguage): String = when (lang) {
         AppLanguage.GREEK -> "Δεν ήταν δυνατή η φόρτωση δρομολογίων. Έλεγξε τη σύνδεσή σου."

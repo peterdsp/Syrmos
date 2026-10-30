@@ -37,6 +37,12 @@ data class SeedLine(
      * older bundle behaves exactly as it does today.
      */
     val status: String = "operational",
+    /**
+     * False when Syrmos holds no timetable for this line (neither schedule
+     * rules nor frequency bands). Defaults true so an older bundle behaves
+     * exactly as it does today.
+     */
+    val hasTimetable: Boolean = true,
     val stations: List<SeedLineStation> = emptyList(),
 )
 

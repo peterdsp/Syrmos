@@ -61,6 +61,7 @@ class DataSeeder(
                     // as operational and an under-construction line would look live.
                     region = line.region,
                     status = line.status,
+                    has_timetable = if (line.hasTimetable) 1L else 0L,
                 )
             }
 
@@ -259,7 +260,12 @@ class DataSeeder(
         // Without a bump an existing install keeps its old rows, which have
         // valid_dates NULL, and the seasonal trip keeps showing every matching
         // day. (Schema migration 3.sqm adds the column; the reseed fills it.)
-        const val SEED_VERSION = "12"
+        // 13: has_timetable. The migration adds the column defaulted to 1 and
+        // nothing else corrects an existing row (LinesRefresher only inserts
+        // NOVEL lines, and it runs from a Settings button, not at startup), so
+        // without this bump every upgraded install would keep telling riders at
+        // Makedonia Airport that the X3 and 2X shuttles had stopped running.
+        const val SEED_VERSION = "13"
 
         /**
          * Whether the bundled seed must be (re)written. Compares versions

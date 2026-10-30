@@ -61,6 +61,16 @@ class LinesRefresher(
                 // Only insert a genuinely NEW line; never overwrite a seeded line's
                 // status/region/terminals.
                 val lineIsNovel = line.id !in knownLineIds
+                // Whether we hold a timetable is a fact about our own data, not
+                // a seeded editorial value, so it syncs even for a line we
+                // already know. The column arrives defaulted to 1 by the
+                // migration and nothing else would ever correct it.
+                if (!lineIsNovel) {
+                    database.syrmosDatabaseQueries.updateLineTimetable(
+                        has_timetable = if (line.hasTimetable) 1L else 0L,
+                        id = line.id,
+                    )
+                }
                 if (lineIsNovel) {
                     database.syrmosDatabaseQueries.insertLine(
                         id = line.id,
@@ -73,6 +83,7 @@ class LinesRefresher(
                         station_count = line.stationCount.toLong(),
                         region = line.region,
                         status = line.status,
+                        has_timetable = if (line.hasTimetable) 1L else 0L,
                     )
                 }
 

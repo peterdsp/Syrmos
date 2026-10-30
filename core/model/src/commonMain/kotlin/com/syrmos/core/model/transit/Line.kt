@@ -15,6 +15,15 @@ data class Line(
     @SerialName("station_count") val stationCount: Int,
     val region: Region = Region.ATHENS,
     val status: LineStatus = LineStatus.OPERATIONAL,
+    /**
+     * False when Syrmos holds no timetable for this line at all (neither
+     * schedule rules nor frequency bands). An empty board then means "we have
+     * no times", NOT "the line is closed": the Thessaloniki airport shuttles
+     * X3 and 2X run all day and the board was telling riders at Makedonia
+     * Airport that service had ended. Defaults true so an older payload keeps
+     * the previous behaviour.
+     */
+    @SerialName("hasTimetable") val hasTimetable: Boolean = true,
 ) {
     /**
      * A line that carries scheduled service and may therefore produce a
