@@ -1,6 +1,14 @@
-Syrmos 3.0.2, plus everything new since 3.0.0.
+Syrmos 3.0.5, plus everything new since 3.0.2.
 
-NEW IN 3.0.2
+NEW IN 3.0.5
+- Ariadne answers for the whole station. Ask for the next train at an interchange like Syntagma and you get every line that calls there, not just one of them.
+- Ask about a strike. Ariadne now understands the word in English, Greek, Albanian and Italian, and leads with any closure that is actually in force.
+- "Airport by 21:30" plans the trip to the airport instead of listing departures out of it.
+- Airport buses: one clean stop list per bus, in the direction it is travelling, with Greek stop names.
+- A station with no published timetable says so and points you at the operator, instead of claiming the line is closed.
+- Clearer map: station markers are large enough to tap, and a line with no service drops its trains from the map.
+
+3.0.2
 - Station closures: when a station is closed or trains pass without stopping, Syrmos shows it on the map, the station screen and your routes, with the hours and any replacement bus. The planner routes around it.
 - Next train near you: turn on an optional notification and Syrmos tells you the next trains each way as you reach a station, with an honest heads-up when you don't need to rush.
 - Leave on time: calendar events with a place get a reminder telling you when to leave. Flights default to two hours at the airport (90 or 150 minutes if you prefer).
