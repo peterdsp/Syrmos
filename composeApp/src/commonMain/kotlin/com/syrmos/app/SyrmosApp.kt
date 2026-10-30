@@ -39,6 +39,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.ui.draw.clip
@@ -494,15 +497,57 @@ private fun LiquidGlassTabItem(
 ) {
     val tabNavigator = LocalTabNavigator.current
     val selected = tabNavigator.current == tab
-    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+
+    // The selection used to be a colour tint and nothing else, and `clickable`
+    // sat on an unclipped Column, so the only visible feedback was a ripple
+    // taking the Column's RECTANGULAR bounds: a hard grey box around the icon
+    // AND the label. Clip the touch target to a rounded shape so the ripple
+    // follows it, and give selection a real indicator: a pill that settles in
+    // behind the icon, which is the Material navigation-bar idiom and reads as
+    // deliberate rather than as a stray highlight.
+    val tint by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 180),
+        label = "tabTint",
+    )
+    val pill by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        else Color.Transparent,
+        animationSpec = tween(durationMillis = 180),
+        label = "tabPill",
+    )
+    // Springs, not a linear tween: the pill should arrive with a little weight
+    // instead of snapping, and a low-bounce spring keeps it from wobbling.
+    val pillWidth by animateDpAsState(
+        targetValue = if (selected) 48.dp else 30.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "tabPillWidth",
+    )
+
     Column(
         modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = { tabNavigator.current = tab })
             .padding(horizontal = 10.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Icon(imageVector = icon, contentDescription = tab.options.title, tint = tint)
+        Box(
+            modifier = Modifier.height(28.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(pillWidth)
+                    .height(28.dp)
+                    .background(pill, CircleShape),
+            )
+            Icon(imageVector = icon, contentDescription = tab.options.title, tint = tint)
+        }
         Text(
             text = tab.options.title,
             style = MaterialTheme.typography.labelSmall,
