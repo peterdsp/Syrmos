@@ -2368,7 +2368,14 @@ struct AirportBusVehicleDetailSheet: View {
     }
 
     private var orderedStops: [AirportBusService.UnifiedStop] {
-        (route?.stops ?? []).sorted { ($0.sequence ?? .max) < ($1.sequence ?? .max) }
+        // Scope to the run this bus is actually on. Sorting the line's whole
+        // stops array by sequence interleaved X97's four route codes, which is
+        // why the sheet listed the airport terminal twice.
+        AirportBusStops.itinerary(
+            route?.stops ?? [],
+            routeCode: vehicle.routeCode,
+            direction: vehicle.toAirport.map { $0 ? "to_airport" : "from_airport" }
+        )
     }
 
     private var nextStop: AirportBusService.UnifiedStop? {
@@ -2409,7 +2416,7 @@ struct AirportBusVehicleDetailSheet: View {
                     }
                     if let nextStop {
                         LabeledContent(language == .greek ? "Επόμενη στάση" : language == .albanian ? "Ndalesa tjetër" : language == .italian ? "Prossima fermata" : "Next stop") {
-                            Text(nextStop.stop_name)
+                            Text(AirportBusStops.displayName(nextStop, language: language))
                         }
                     }
                     if !orderedStops.isEmpty {
@@ -2421,7 +2428,7 @@ struct AirportBusVehicleDetailSheet: View {
                                     Image(systemName: stop.id == nextStop?.id ? "location.fill" : "circle.fill")
                                         .foregroundStyle(stop.id == nextStop?.id ? .blue : .secondary)
                                         .font(.caption)
-                                    Text(stop.stop_name)
+                                    Text(AirportBusStops.displayName(stop, language: language))
                                     Spacer()
                                 }
                                 .padding(.vertical, 4)

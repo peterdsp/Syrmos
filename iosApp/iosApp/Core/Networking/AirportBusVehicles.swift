@@ -9,6 +9,9 @@ struct AirportBusVehicle: Identifiable {
     let lineId: String
     let coordinate: CLLocationCoordinate2D
     let toAirport: Bool?
+    /// The operator's route code for the run this bus is on, so its sheet can
+    /// show that one itinerary instead of every variant the line publishes.
+    let routeCode: Int?
 }
 
 /// Reads the snapshot-backed /api/airport-buses feed for live X93/95/96/97 vehicle positions and
@@ -77,7 +80,8 @@ final class LiveAirportBusService: ObservableObject {
                 id: v.vehicleId,
                 lineId: v.lineId,
                 coordinate: CLLocationCoordinate2D(latitude: v.lat, longitude: v.lng),
-                toAirport: dir
+                toAirport: dir,
+                routeCode: v.routeCode
             )
         }
     }

@@ -134,6 +134,24 @@ def oasa_road_shape(route_id: str, stops: list[dict]) -> list[dict]:
     return points if has_osm_geometry else []
 
 
+def _dedupe_routes(routes: list) -> list:
+    """One row per (route_id, direction).
+
+    OSETH's discovery returned 01N, 01X, 02X, 03X, 1N and 79 twice each, so the
+    Thessaloniki airport list rendered every route a second time. Keep the first
+    occurrence, which preserves discovery order.
+    """
+    seen: set = set()
+    unique = []
+    for r in routes:
+        key = (getattr(r, "route_id", None), getattr(getattr(r, "direction", None), "value", None))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(r)
+    return unique
+
+
 class AirportBusWatcher:
     """Unified airport bus watcher with both new and legacy output."""
 
@@ -168,8 +186,14 @@ class AirportBusWatcher:
         # disable entirely and fall back to airport-stop-only arrivals.
         self._per_stop_enabled = os.environ.get("AIRPORT_PER_STOP", "1") != "0"
         self._stop_cache: dict[str, tuple[float, list]] = {}
-        self._per_stop_ttl = float(os.environ.get("AIRPORT_PER_STOP_TTL", "120"))
-        self._per_stop_budget = int(os.environ.get("AIRPORT_PER_STOP_BUDGET", "25"))
+        # OASA publishes ~300 stops across X93/X95/X96/X97. At the old 25 calls
+        # per 30 s cycle against a 120 s TTL, a given stop was refreshed roughly
+        # once every twelve cycles, so most stops were permanently empty and the
+        # per-stop sheet had nothing to show. 60 per cycle against a 300 s TTL
+        # covers the whole set (60 x 10 cycles = 600 > 300) with the same
+        # politeness delay between calls.
+        self._per_stop_ttl = float(os.environ.get("AIRPORT_PER_STOP_TTL", "300"))
+        self._per_stop_budget = int(os.environ.get("AIRPORT_PER_STOP_BUDGET", "60"))
         self._per_stop_delay = float(os.environ.get("AIRPORT_PER_STOP_DELAY", "0.25"))
 
         # Ensure output directory exists
@@ -298,11 +322,18 @@ class AirportBusWatcher:
         self._cycle_budget -= 1
         try:
             arrivals = self.oasa_provider.fetch_arrivals(stop_id=code) or []
-            # Keep only airport-bound soonest few, as serialisable dicts.
+            # The soonest few buses AT THIS STOP, whichever way they are going.
+            #
+            # This used to drop every `from_airport` arrival, which silently
+            # emptied the list for every stop on the way back from the airport:
+            # a rider standing at TROXAIA was told "no bus is approaching this
+            # stop right now" while an X97 was minutes away. The airport hub
+            # reads `airportArrivals`, not this list, so there is nothing here
+            # that needs to be airport-bound.
             rows = [
                 a.to_dict() for a in sorted(
-                    (x for x in arrivals if getattr(x, "direction", None) != "from_airport"
-                     and getattr(x, "estimated_minutes", None) is not None),
+                    (x for x in arrivals
+                     if getattr(x, "estimated_minutes", None) is not None),
                     key=lambda x: x.estimated_minutes,
                 )[:4]
             ]
@@ -336,7 +367,7 @@ class AirportBusWatcher:
                 oasa_routes, oasa_vehicles, oasa_arrivals, oasa_alerts = [], [], [], []
 
             try:
-                oseth_routes = self.oseth_provider.discover_routes()
+                oseth_routes = _dedupe_routes(self.oseth_provider.discover_routes())
                 oseth_vehicles = self.oseth_provider.fetch_vehicles()
                 oseth_arrivals = self.oseth_provider.fetch_arrivals()
                 oseth_alerts = self.oseth_provider.fetch_alerts()

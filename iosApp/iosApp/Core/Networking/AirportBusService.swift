@@ -149,10 +149,17 @@ enum AirportBusService {
     struct UnifiedStop: Decodable, Identifiable {
         let stop_id: String
         let stop_name: String
+        /// OASA publishes Greeklish in `stop_name` ("EMP/KO PARKO AERODROMIOY")
+        /// and the real Greek here ("ΕΜΠ/ΚΟ ΠΑΡΚΟ ΑΕΡΟΔΡΟΜΙΟΥ").
+        let stop_name_el: String?
         let latitude: Double
         let longitude: Double
         let sequence: Int?
         let direction: String?
+        /// The operator's route code this stop belongs to. A line's `stops`
+        /// array concatenates every code it runs, and the sequences restart at
+        /// 1 per code, so this is what separates one itinerary from another.
+        let route_code: Int?
         /// Live "next bus at this stop" arrivals, attached per stop by the
         /// watcher (OASA). Absent/empty when unavailable or for OSETH.
         let arrivals: [UnifiedArrival]?
@@ -184,6 +191,9 @@ enum AirportBusService {
         let confidence: String?
         let attribution: String?
         let to_airport: Bool?
+        /// The route code of the run this bus is on, so its sheet can show that
+        /// itinerary instead of every variant the line publishes.
+        let route_code: Int?
         var id: String { vehicle_id }
 
         enum CodingKeys: String, CodingKey {
@@ -200,6 +210,7 @@ enum AirportBusService {
             case confidence
             case attribution
             case to_airport
+            case route_code
         }
     }
 
@@ -427,7 +438,8 @@ enum AirportBusService {
                         id: vehicle.vehicle_id,
                         lineId: vehicle.line_id,
                         coordinate: coord,
-                        toAirport: vehicle.to_airport
+                        toAirport: vehicle.to_airport,
+                        routeCode: vehicle.route_code
                     )
                     vehiclesForOp.append(vehicleId)
                 }
@@ -522,7 +534,8 @@ enum AirportBusService {
                     id: vehicle.vehicle_id,
                     lineId: vehicle.line_id,
                     coordinate: coord,
-                    toAirport: vehicle.to_airport
+                    toAirport: vehicle.to_airport,
+                    routeCode: vehicle.route_code
                 )
                 vehiclesForOp.append(vehicleId)
             }

@@ -103,6 +103,13 @@ class AirportBusService(
         val longitude: Double = 0.0,
         val sequence: Int = 0,
         val direction: String? = null,
+        /**
+         * The operator's route code this stop belongs to. A line's stop array
+         * concatenates every code it runs (X97 publishes four) and the
+         * sequences restart at 1 per code, so this is what separates one
+         * itinerary from another.
+         */
+        val route_code: Int? = null,
         /** Live "next bus at this stop" arrivals attached per OASA stop. */
         val arrivals: List<UnifiedArrival> = emptyList(),
     )
@@ -166,6 +173,8 @@ class AirportBusService(
         val confidence: String? = null,
         val attribution: String? = null,
         val to_airport: Boolean? = null,
+        /** The route code of the run this bus is on, for its stop itinerary. */
+        val route_code: Int? = null,
     )
 
     /// Normalized arrival/ETA

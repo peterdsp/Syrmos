@@ -92,6 +92,17 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        // Service broadcasts (closures, disruptions) arrive over FCM, which is
+        // silently dropped on API 33+ when POST_NOTIFICATIONS was never granted.
+        // Location was asked on launch but this was not, so push could never
+        // reach a rider who had not opened a notification-specific screen.
+        // Pre-33 grants notifications at install time, so there is nothing to ask.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         // Permission is requested from the onboarding flow now, not on launch.
         setLocationPermissionRequester {
             val deferred = CompletableDeferred<Unit>()
