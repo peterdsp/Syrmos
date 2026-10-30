@@ -1,6 +1,8 @@
 """Admin pages for closures, broadcasts and push (Access session + CSRF)."""
 import json
 import time
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -57,16 +59,36 @@ def test_create_closure_converts_athens_time(admin_client, access):
     assert [c["id"] for c in public] == ["syn-parade-2026"]
 
 
+# `public_closures` only returns closures whose end is inside a 24 h grace, so a
+# hard-coded end date silently turns this test into a time bomb: it passed until
+# the date went 24 h stale, then failed with an IndexError on an empty list and
+# blocked a release. Derive the window from now instead.
+_ATHENS = ZoneInfo("Europe/Athens")
+
+
+def _future_athens_hour(days: int = 2) -> tuple[str, str]:
+    """(form value in Athens local time, the UTC instant it must convert to)."""
+    local = (datetime.now(_ATHENS) + timedelta(days=days)).replace(
+        minute=0, second=0, microsecond=0
+    )
+    return local.strftime("%Y-%m-%dT%H:00"), local.astimezone(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+
 def test_create_with_end_and_bus(admin_client):
+    ends_local, ends_utc = _future_athens_hour()
     resp = _post(admin_client, "/closures/save", _closure_form(
-        until_further_notice="", ends="2026-10-28T16:00", mode="closed",
+        until_further_notice="", ends=ends_local, mode="closed",
         bus_label_el="Έκτακτο λεωφορείο", bus_label_en="Replacement bus",
         bus_from_el="Σύνταγμα (Αμαλίας)", bus_to_el="Ευαγγελισμός", bus_headway="10",
         bus_stops="Σύνταγμα | 37.9755 | 23.7356",
     ))
     assert resp.status_code == 303
-    item = admin_client[0].get("/api/closures").json()["closures"][0]
-    assert item["endsAt"] == "2026-10-28T14:00:00Z"
+    closures = admin_client[0].get("/api/closures").json()["closures"]
+    assert closures, "a closure ending in the future must be served publicly"
+    item = closures[0]
+    assert item["endsAt"] == ends_utc
     assert item["replacementBus"] == {
         "label": {"el": "Έκτακτο λεωφορείο", "en": "Replacement bus"},
         "fromStop": {"el": "Σύνταγμα (Αμαλίας)"},
