@@ -14,6 +14,15 @@ enum class AriadneModelState {
     /** Downloading now; see [AriadneModelDownloader.progress] (0..1). */
     DOWNLOADING,
 
+    /** Transfer finished; hashing 1.1 GB to check it against the manifest.
+     *  This takes seconds, so it needs its own label: a progress bar frozen at
+     *  100% with no explanation reads as a hang. */
+    VERIFYING,
+
+    /** Not enough free space for the model. Reported from a preflight check, so
+     *  the user is told before 1.1 GB of transfer instead of after it. */
+    INSUFFICIENT_STORAGE,
+
     /** Downloaded, verified, and ready to run. */
     READY,
 

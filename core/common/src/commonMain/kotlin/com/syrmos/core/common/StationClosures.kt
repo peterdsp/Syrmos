@@ -165,6 +165,57 @@ object StationClosures {
             .toSet()
 
     /**
+     * Lines with no service at all right now, from closures that name those
+     * lines and forbid boarding everywhere they apply.
+     *
+     * This is what a strike looks like in the data: one closure covering every
+     * station of the affected operator, listing its line ids. Greying the
+     * stations was never enough on the map, because the vehicle layer projects
+     * trains from the bundled timetable and has no idea a closure exists, so a
+     * struck line still crawled with trains that were not running. A rider
+     * checking whether to go to the station saw moving trains on a strike day.
+     *
+     * Only [ClosureMode.CLOSED] suspends a line. A pass-through closure means
+     * trains still run (they just do not stop), and entry/exit-only closures are
+     * station-access rules, not service suspensions.
+     */
+    fun suspendedLineIds(closures: List<StationClosure>, now: Long): Set<String> =
+        closures.asSequence()
+            .filter { isActive(it, now) && it.mode == ClosureMode.CLOSED }
+            .flatMap { it.lineIds.asSequence() }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+    /**
+     * Lines every one of whose stations is closed right now.
+     *
+     * A strike is entered as one station-scoped closure, not a line-scoped one,
+     * because [closedStationIds] infers a line from the station id prefix and
+     * that prefix is geographic on the national network (`GR_LAR`, `EV_ALX`), so
+     * naming the lines would stop those stations greying at all. Deriving the
+     * suspension back from the closed stations keeps one closure doing both
+     * jobs, and it self-corrects: a replacement-bus line that keeps one open
+     * stop is not reported as suspended.
+     *
+     * [lineStations] is line id -> its station ids; a line with no stations is
+     * never suspended (an empty list would otherwise vacuously qualify).
+     */
+    fun linesFullyClosed(
+        lineStations: Map<String, List<String>>,
+        closedStationIds: Set<String>,
+    ): Set<String> {
+        if (closedStationIds.isEmpty()) return emptySet()
+        return lineStations.asSequence()
+            .filter { (_, stations) -> stations.isNotEmpty() && closedStationIds.containsAll(stations) }
+            .map { (lineId, _) -> lineId }
+            .toSet()
+    }
+
+    /** True when [lineId] has no service right now. */
+    fun isLineSuspended(closures: List<StationClosure>, lineId: String, now: Long): Boolean =
+        lineId.isNotBlank() && lineId in suspendedLineIds(closures, now)
+
+    /**
      * Best-effort line id from a per-line station id such as `M3_SYN` -> `M3`.
      * Station ids in this repo are `<LINE>_<CODE>`; anything else yields null,
      * which [applies] treats as "any line".

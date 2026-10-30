@@ -143,6 +143,9 @@ class MapViewModel(
     private var departureRefreshJob: Job? = null
     private var passThroughStationIds: Set<String> = emptySet()
 
+    /** Lines with no service right now (a strike or a line-wide closure). */
+    private var suspendedLineIds: Set<String> = emptySet()
+
     init {
         loadMapData()
         observeLiveTrains()
@@ -166,6 +169,20 @@ class MapViewModel(
                 passThroughStationIds = closuresRepository?.let { repo ->
                     closedIds.filter { repo.effectForStation(it).mode == com.syrmos.core.common.ClosureMode.PASS_THROUGH }.toSet()
                 }.orEmpty()
+                // A line with no service must lose its vehicles too, not just
+                // grey its stations: the projector draws from the bundled
+                // timetable and would otherwise run trains along a struck line.
+                // Both shapes count: a closure that names its lines, and one
+                // that closes every stop of a line (how a strike is entered).
+                suspendedLineIds = buildSet {
+                    addAll(closuresRepository?.suspendedLineIds().orEmpty())
+                    addAll(
+                        com.syrmos.core.common.StationClosures.linesFullyClosed(
+                            _uiState.value.lineStations.mapValues { (_, v) -> v.map { it.id } },
+                            closedIds,
+                        ),
+                    )
+                }
                 if (closedIds.isEmpty()) disruptions
                 else disruptions + closedIds.associateWith { AlertSeverity.CLOSURE }
             }.collect { disruptions ->
@@ -321,6 +338,7 @@ class MapViewModel(
                     val closedIds = state.stationDisruptions
                         .filterValues { it == AlertSeverity.CLOSURE }
                         .keys - passThroughStationIds
+                    val suspended = suspendedLineIds
                     val simulated = simulateTrains(
                         state.lines,
                         state.lineStations,
@@ -341,7 +359,7 @@ class MapViewModel(
                     val classification = classifyLiveTrains(state.liveTrains, Clock.System.now())
                     val liveMarkers = classification.markers
                     val coveredByLive = classification.coveredLineIds
-                    val filtered = simulated.filter { it.lineId !in coveredByLive }
+                    val filtered = simulated.filter { it.lineId !in coveredByLive && it.lineId !in suspended }
                     // National rail + rail-replacement buses have no live feed or
                     // offsets, so project them from the bundled timetables.
                     val now = currentAthensTime()
@@ -355,7 +373,7 @@ class MapViewModel(
                         // Athens ISO date so a date-scoped seasonal vehicle is
                         // projected only on the dates it runs.
                         todayIso = currentAthensDate().toString(),
-                    ).filter { it.lineId !in coveredByLive }
+                    ).filter { it.lineId !in coveredByLive && it.lineId !in suspended }
                     val visibleTrains = filtered + projected
                     val offline = mapShowsOffline(
                         isNetworkAvailable = LiveDataFreshness.isNetworkAvailable.value,

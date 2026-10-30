@@ -13,7 +13,10 @@ import com.syrmos.core.common.AriadneEngineStatus
 import com.syrmos.core.common.L
 import com.syrmos.core.common.LocalizationManager
 import com.syrmos.app.LocalAriadneOpener
+import com.syrmos.app.platform.canOpenAppSettings
+import com.syrmos.app.platform.openAppSettings
 import com.syrmos.app.platform.provideAriadneEngineStatus
+import com.syrmos.app.screen.AthensRailMapScreen
 import com.syrmos.feature.settings.SettingsScreen
 
 object MoreTab : Tab {
@@ -33,9 +36,16 @@ object MoreTab : Tab {
         var engine by remember { mutableStateOf<AriadneEngineStatus?>(null) }
         LaunchedEffect(Unit) { engine = provideAriadneEngineStatus() }
         val openAriadne = LocalAriadneOpener.current
+        var showRailMap by remember { mutableStateOf(false) }
+        if (showRailMap) {
+            AthensRailMapScreen(onBack = { showRailMap = false })
+            return
+        }
         SettingsScreen(
             ariadneEngine = engine,
             onAriadneClick = openAriadne,
+            onRailMapClick = { showRailMap = true },
+            onOpenAppSettings = if (canOpenAppSettings()) ({ openAppSettings() }) else null,
         )
     }
 }

@@ -6,8 +6,8 @@
     <capability android:name="actions.intent.GET_TRANSIT_SCHEDULE">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.syrmos.app"
-            android:targetClass="com.syrmos.app.MainActivity">
+            android:targetPackage="com.syrmos.android"
+            android:targetClass="com.syrmos.android.MainActivity">
             <parameter
                 android:name="transitSchedule.departureStation.name"
                 android:key="station" />
@@ -18,8 +18,8 @@
     <capability android:name="actions.intent.GET_TRANSIT_OBSERVATION">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.syrmos.app"
-            android:targetClass="com.syrmos.app.MainActivity">
+            android:targetPackage="com.syrmos.android"
+            android:targetClass="com.syrmos.android.MainActivity">
             <parameter
                 android:name="transitObservation.transitLine.lineName"
                 android:key="line" />
@@ -30,8 +30,8 @@
     <capability android:name="custom.actions.intent.ASK_ARIADNE">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.syrmos.app"
-            android:targetClass="com.syrmos.app.MainActivity">
+            android:targetPackage="com.syrmos.android"
+            android:targetClass="com.syrmos.android.MainActivity">
             <parameter
                 android:name="question"
                 android:key="question" />

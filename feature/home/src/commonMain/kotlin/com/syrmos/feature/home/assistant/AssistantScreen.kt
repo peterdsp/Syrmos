@@ -35,10 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.draw.clip
-import com.syrmos.core.common.AriadneModelState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,8 +67,6 @@ fun AssistantScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lang by LocalizationManager.language.collectAsState()
-    val modelState by viewModel.modelState.collectAsState()
-    val modelProgress by viewModel.modelProgress.collectAsState()
     val input by viewModel.draft.collectAsState()
     val listState = rememberLazyListState()
 
@@ -102,12 +98,13 @@ fun AssistantScreen(
                 )
             }
 
-            AriadneModelCard(
-                state = modelState,
-                progress = modelProgress,
-                onDownload = { viewModel.downloadModel() },
-                lang = lang,
-            )
+            // No model banner here. Ariadne answers every supported transit task
+            // from bundled, versioned data through the deterministic parser, so
+            // offering a ~1.1 GB download above the conversation made a setup step
+            // look required and implied the assistant was not ready until it
+            // finished. The opt-in lives in Settings -> Ariadne engine, where it
+            // reads as the enhancement it is. iOS made the same call; see the
+            // matching note in AriadneView.swift.
 
             LazyColumn(
                 state = listState,
@@ -125,7 +122,7 @@ fun AssistantScreen(
 
             // Suggestion chips: show while the conversation is still at
             // the greeting so a first-time user has one-tap prompts.
-            // Context-aware — the chip triplet reflects current weather
+            // Context-aware - the chip triplet reflects current weather
             // severity + time-of-day so the offering matches the moment.
             if (uiState.messages.size <= 1 && !uiState.thinking) {
                 Column(
@@ -401,93 +398,6 @@ private fun TypingDot(phase: Float, offset: Float) {
             .size(diameter.dp)
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), shape = CircleShape),
     )
-}
-
-/**
- * On-demand "Download Ariadne's brain" card. Shown only where a downloadable
- * on-device model applies (Android). Hidden when UNSUPPORTED (iOS native / Web)
- * or READY. The rule parser answers throughout, so this is purely additive.
- */
-@Composable
-private fun AriadneModelCard(
-    state: AriadneModelState,
-    progress: Float,
-    onDownload: () -> Unit,
-    lang: AppLanguage,
-) {
-    if (state == AriadneModelState.UNSUPPORTED || state == AriadneModelState.READY) return
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = when (lang) {
-                    AppLanguage.GREEK -> "Πιο έξυπνη Αριάδνη"
-                    AppLanguage.ALBANIAN -> "Ariadne më e zgjuar"
-                    AppLanguage.ITALIAN -> "Un'Ariadne più intelligente"
-                    else -> "Smarter Ariadne"
-                },
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.size(4.dp))
-            Text(
-                text = when (state) {
-                    AriadneModelState.DOWNLOADING -> when (lang) {
-                        AppLanguage.GREEK -> "Λήψη του μοντέλου AI… ${(progress * 100).toInt()}%"
-                        AppLanguage.ALBANIAN -> "Po shkarkohet modeli AI… ${(progress * 100).toInt()}%"
-                        AppLanguage.ITALIAN -> "Download del modello AI… ${(progress * 100).toInt()}%"
-                        else -> "Downloading the on-device AI… ${(progress * 100).toInt()}%"
-                    }
-                    AriadneModelState.ERROR -> when (lang) {
-                        AppLanguage.GREEK -> "Η λήψη απέτυχε. Δοκίμασε ξανά. Ο κανόνας-parser συνεχίζει να απαντά."
-                        AppLanguage.ALBANIAN -> "Shkarkimi dështoi. Provo sërish. Rregull-parser vazhdon të përgjigjet."
-                        AppLanguage.ITALIAN -> "Download non riuscito. Riprova. Il sistema di regole continua a rispondere."
-                        else -> "Download failed. Try again. The rule parser still answers."
-                    }
-                    else -> when (lang) {
-                        AppLanguage.GREEK -> "Κατέβασε ένα AI στη συσκευή (~1.1 GB, μία φορά) για να κατανοεί πιο ελεύθερη διατύπωση. Λειτουργεί offline μετά."
-                        AppLanguage.ALBANIAN -> "Shkarko një AI në pajisje (~1.1 GB, një herë) që kupton fjalët më të lira. Punon offline më pas."
-                        AppLanguage.ITALIAN -> "Scarica una volta un modello AI sul dispositivo (~1,1 GB), così Ariadne capirà domande più libere e funzionerà offline."
-                        else -> "Download an on-device AI (~1.1 GB, one time) so Ariadne understands freer wording. Works offline after."
-                    }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.size(10.dp))
-            if (state == AriadneModelState.DOWNLOADING) {
-                LinearProgressIndicator(
-                    progress = { progress.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(999.dp)),
-                )
-            } else {
-                Button(onClick = onDownload) {
-                    Text(
-                        when (state) {
-                            AriadneModelState.ERROR -> when (lang) {
-                                AppLanguage.GREEK -> "Δοκίμασε ξανά"
-                                AppLanguage.ALBANIAN -> "Provo sërish"
-                                AppLanguage.ITALIAN -> "Riprova"
-                                else -> "Try again"
-                            }
-                            else -> when (lang) {
-                                AppLanguage.GREEK -> "Λήψη (~1.1 GB)"
-                                AppLanguage.ALBANIAN -> "Shkarko (~1.1 GB)"
-                                AppLanguage.ITALIAN -> "Scarica (~1,1 GB)"
-                                else -> "Download (~1.1 GB)"
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
 }
 
 private fun assistantDepartureTime(minutes: Int, lang: AppLanguage): String = when {

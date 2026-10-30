@@ -75,6 +75,36 @@ object MapDesignTokens {
     /** White border width around a capsule. */
     const val VEHICLE_BORDER = 2
 
+    // --- Tap targets ---------------------------------------------------------
+    /**
+     * Minimum tap target in logical points, from the Android and Apple
+     * accessibility guidance (48dp / 44pt; take the larger).
+     *
+     * This matters more than it looks on a map: a marker's artwork is usually
+     * also its hit rect, so a dot drawn at [DOT_CITY] is a 13-point tap target,
+     * which a finger cannot reliably hit. Marker bitmaps are therefore padded
+     * out to this size transparently: the dot keeps its design size and the
+     * touchable area grows around it.
+     */
+    const val MIN_TAP_TARGET = 48
+
+    /**
+     * The edge length, in logical points, of the square bitmap a station pin is
+     * drawn into: the dot, plus room for the selected halo, never smaller than
+     * [MIN_TAP_TARGET].
+     *
+     * Platforms multiply this by their own scale factor (Android density, iOS
+     * screen scale). Drawing these point values as raw pixels is the bug this
+     * function exists to prevent: it silently shrinks every dot as screen
+     * density rises, which on a 2.75x phone turned a 22-point dot into roughly
+     * 8dp of tappable area.
+     */
+    fun pinBitmapSize(dotSize: Int, selected: Boolean): Double {
+        val halo = if (selected) dotSize * 0.5 else 2.0
+        val drawn = dotSize + halo * 2
+        return if (drawn > MIN_TAP_TARGET) drawn else MIN_TAP_TARGET.toDouble()
+    }
+
     // --- Line strokes --------------------------------------------------------
     /** Suspended / not-yet-open lines render greyed. */
     const val GREYED_COLOR = "#94A3B8"

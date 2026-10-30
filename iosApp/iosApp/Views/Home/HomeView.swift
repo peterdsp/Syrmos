@@ -197,7 +197,7 @@ struct HomeView: View {
                     ? "Non hai concesso a Syrmos l'accesso alla posizione. Vuoi aprire le Impostazioni per abilitarlo?"
                     : "You haven't granted Syrmos location access. Would you like to open Settings to enable it?")
             }
-            // The legacy "New data available" alert was removed — schedule
+            // The legacy "New data available" alert was removed - schedule
             // refreshes happen silently in the background and the new data
             // simply takes effect on the user's next interaction. See the
             // store comment on evaluateFreshData() for the rationale.
@@ -1034,7 +1034,10 @@ struct HomeView: View {
     private func boardScopeLabel(_ board: StationComplexBoard.Board) -> String {
         let scope = homeText("All directions", "Όλες οι κατευθύνσεις",
                              "Të gjitha drejtimet", "Tutte le direzioni")
-        let services = homeText("services", "υπηρεσίες", "shërbime", "servizi")
+        // Singular at one, so the board never reads "1 services".
+        let services = board.timedGroupCount == 1
+            ? homeText("service", "υπηρεσία", "shërbim", "servizio")
+            : homeText("services", "υπηρεσίες", "shërbime", "servizi")
         return "\(scope.uppercasedForDisplay(loc.language)) · \(board.timedGroupCount) \(services)"
     }
 
@@ -1671,7 +1674,7 @@ struct HomeView: View {
         let isAlert = status?.status == "alert"
         // When an active alert is also surfaced as a serviceAlert card
         // above, the pill would just repeat the same text. Hide it in
-        // that case — the card already conveys the message in full.
+        // that case - the card already conveys the message in full.
         let hasOverlappingAlertCard = isAlert
             && stasyService.announcements.contains { $0.category == .serviceAlert }
         let message: String? = {
@@ -1828,7 +1831,7 @@ private func heroCountdownText(secondsAway: Int, language: AppLanguage) -> Strin
 // pushes StationDetailView. If nothing matches (this happens at interchange
 // stops like Piraeus where the merged MapStationNode's stationIds and
 // lineIds arrays don't line up), it falls back to a minimal screen rather
-// than rendering an empty View — which was showing up as a black screen.
+// than rendering an empty View - which was showing up as a black screen.
 
 struct NearbyStationDestination: View {
     let node: MapStationNode

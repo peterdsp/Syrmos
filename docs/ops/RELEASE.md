@@ -48,16 +48,25 @@ step to run by hand.
 The `release` signing config in `androidApp/build.gradle.kts` reads from
 `local.properties`; the workflow writes those from secrets at build time.
 
-- `ANDROID_KEYSTORE_BASE64` — `base64 -i syrmos-release.keystore` output.
-- `RELEASE_STORE_PASSWORD` — keystore store password.
-- `RELEASE_KEY_ALIAS` — signing key alias (build default: `syrmos`).
-- `RELEASE_KEY_PASSWORD` — signing key password.
-- `PLAY_SERVICE_ACCOUNT_JSON` — Play Console service-account JSON with the
+- `ANDROID_KEYSTORE_BASE64` - `base64 -i syrmos-release.keystore` output.
+- `RELEASE_STORE_PASSWORD` - keystore store password.
+- `RELEASE_KEY_ALIAS` - signing key alias (build default: `syrmos`).
+- `RELEASE_KEY_PASSWORD` - signing key password.
+- `PLAY_SERVICE_ACCOUNT_JSON` - Play Console service-account JSON with the
   "release to testing/production" permission for `com.syrmos.android`.
 
 First upload of a brand-new package to Play must be done manually in the console
 (Google requires the first bundle by hand); the workflow handles every release
-after that. Default track is `internal`; promote in the console or change `track`.
+after that. Every build goes to the `internal` track only, so the public listing
+does not change until a release is promoted. To promote one to production, run
+**Promote Android to production** (`promote-android.yml`):
+
+1. Run it with `dry_run` on. Google validates the edit, and the log shows what is
+   live and what would be promoted.
+2. Run it again with `dry_run` off. That sends the release to Google's review.
+
+Leave `version_code` empty to promote the newest internal release. Set `rollout`
+below 100 for a staged rollout.
 
 ## iOS secrets (GitHub repo settings, Actions secrets)
 
@@ -67,16 +76,16 @@ for the upload; signing uses an imported Apple Distribution certificate and
 explicit App Store profiles, so no Admin/cloud-signing permission is needed.
 
 Signing:
-- `IOS_DIST_CERT_P12_BASE64` — base64 of your Apple Distribution certificate
+- `IOS_DIST_CERT_P12_BASE64` - base64 of your Apple Distribution certificate
   exported from Keychain Access as a `.p12` (includes the private key).
-- `IOS_DIST_CERT_P12_PASSWORD` — the password you set on that `.p12` export.
-- `CI_KEYCHAIN_PASSWORD` — any string; password for the throwaway CI keychain.
+- `IOS_DIST_CERT_P12_PASSWORD` - the password you set on that `.p12` export.
+- `CI_KEYCHAIN_PASSWORD` - any string; password for the throwaway CI keychain.
 - Four App Store provisioning profiles (base64 of each `.mobileprovision`),
   created on the developer portal and named to match `scripts/export-options.plist`:
-  - `IOS_PROFILE_APP_BASE64` — "Syrmos AppStore" (`com.syrmosApp.ios`)
-  - `IOS_PROFILE_WATCH_BASE64` — "Syrmos Watch AppStore" (`...watchkitapp`)
-  - `IOS_PROFILE_COMPLICATION_BASE64` — "Syrmos Complication AppStore" (`...watchkitapp.complications`)
-  - `IOS_PROFILE_WIDGET_BASE64` — "Syrmos Widget AppStore" (`...SyrmosWidget`)
+  - `IOS_PROFILE_APP_BASE64` - "Syrmos AppStore" (`com.syrmosApp.ios`)
+  - `IOS_PROFILE_WATCH_BASE64` - "Syrmos Watch AppStore" (`...watchkitapp`)
+  - `IOS_PROFILE_COMPLICATION_BASE64` - "Syrmos Complication AppStore" (`...watchkitapp.complications`)
+  - `IOS_PROFILE_WIDGET_BASE64` - "Syrmos Widget AppStore" (`...SyrmosWidget`)
 
 Upload (App Manager key is enough):
 - `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_API_KEY_P8_BASE64`.
