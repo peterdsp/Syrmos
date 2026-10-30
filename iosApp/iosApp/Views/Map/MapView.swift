@@ -2015,7 +2015,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 let primary = station.station.lineIds.first ?? "M3"
                 let image = stationImage(for: station.station, primaryLineId: primary)
                 v.image = image
-                v.frame.size = image.size
+                // MKAnnotationView hit-tests against its bounds and centres the
+                // image inside them, so the view, not the 15pt dot, is the tap
+                // target. Size it to the shared minimum: the dot looks the same
+                // and a finger can actually land on it.
+                let tap = MapDesignTokens.pinBitmapSize(dotSize: image.size.width, selected: false)
+                v.frame.size = CGSize(width: tap, height: tap)
                 v.centerOffset = .zero
                 // Three-tier decluttering: hide stops not in the current zoom band.
                 v.isHidden = !shouldShow(station.station, band: currentBand)
@@ -2028,7 +2033,12 @@ struct SyrmosMKMapView: UIViewRepresentable {
                 v.annotation = annotation
                 v.canShowCallout = false
                 v.image = trainImage(for: train)
-                let capsuleCanvas = max(MapDesignTokens.vehicleW, MapDesignTokens.vehicleH) + 8
+                // Same rule as the stations: the capsule is 24x13pt, so without
+                // this a moving train is a ~32pt target, under the 44pt minimum.
+                let capsuleCanvas = max(
+                    max(MapDesignTokens.vehicleW, MapDesignTokens.vehicleH) + 8,
+                    MapDesignTokens.minTapTarget,
+                )
                 v.frame.size = CGSize(width: capsuleCanvas, height: capsuleCanvas)
                 // Same decluttering rule as stations: below the regional band the
                 // whole fleet would pile into one blob on the coastline, so hide
