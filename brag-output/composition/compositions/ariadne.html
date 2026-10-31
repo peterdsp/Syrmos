@@ -1,0 +1,62 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+
+    /* The real Ariadne exchange, captured from the shipping web app.
+       Source: docs/screenshots/product-2026-09/web_ariadne_fare.png (760x772). */
+    #ar-frame {
+      position: absolute; left: 310px; top: 68px; width: 1300px; height: 898px;
+      border-radius: 26px; overflow: hidden; background: #FFFFFF;
+      border: 1px solid #E0DACF;
+      box-shadow: 0 26px 62px rgba(20, 24, 31, 0.16);
+    }
+    #ar-shot { position: absolute; left: 0; top: -185px; width: 1300px; height: auto; display: block; }
+    #ar-caption {
+      position: absolute; left: 310px; top: 1002px; width: 1300px; text-align: center;
+      font-size: 30px; font-weight: 600; letter-spacing: 0.1em; color: #C2CBD6;
+      text-shadow: 0 1px 12px rgba(8,11,17,0.55);
+    }
+  </style>
+
+  <div id="root" data-composition-id="ariadne" data-width="1920" data-height="1080">
+    <div id="ar-stage" class="clip" data-start="0" data-duration="4.84" data-track-index="1" data-layout-allow-overflow>
+      <div id="ar-frame">
+        <img id="ar-shot" src="assets/shots/web-ariadne-fare.png" alt="Ariadne answering a fare question from the offline snapshot" />
+      </div>
+      <div id="ar-caption">ARIADNE &middot; ANSWERED OFFLINE</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // The sheet rises into the stage the board just left.
+      tl.fromTo("#ar-frame",
+        { opacity: 0, y: 70, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.32, ease: "expo.out" }, 0.04);
+      tl.fromTo("#ar-caption", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.22, ease: "expo.out" }, 0.4);
+
+      // The conversation arrives the way a conversation does: the capture is
+      // uncovered from the top, so the question lands first and the answer after.
+      // beat-locked: 13.11s (strongCue 0.98) is where the answer bubble clears.
+      tl.fromTo("#ar-shot",
+        { clipPath: "inset(0% 0% 58% 0%)" },
+        { clipPath: "inset(0% 0% 40% 0%)", duration: 0.26, ease: "expo.out" }, 0.46);
+      tl.to("#ar-shot",
+        { clipPath: "inset(0% 0% 5% 0%)", duration: 0.26, ease: "expo.out" }, 2.11);
+      tl.to("#ar-shot",
+        { clipPath: "inset(0% 0% 0% 0%)", duration: 0.2, ease: "expo.out" }, 2.64);
+
+      // Two framings, landing with the question and with the answer.
+      gsap.set("#ar-shot", { transformOrigin: "42% 80%" });
+      tl.to("#ar-shot", { scale: 1.05, duration: 0.3, ease: "expo.out" }, 0.46);
+      tl.to("#ar-shot", { scale: 1.12, duration: 0.34, ease: "expo.out" }, 2.11);
+
+      // Carry across: the sheet lifts away and the claims take the stage.
+      tl.to(["#ar-frame", "#ar-caption"], { opacity: 0, y: -46, filter: "blur(9px)", duration: 0.2, ease: "power3.in" }, 4.64);
+
+      window.__timelines["ariadne"] = tl;
+    })();
+  </script>
+</template>

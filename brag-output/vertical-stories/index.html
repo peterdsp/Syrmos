@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root { --sy-surface: #f7f5f1; --sy-on-surface: #14181f; --sy-brand: #1466b8; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #080b11; }
+      #root { width: 100%; height: 100%; }
+      /* Dark floor under every scene so the living-map cuts never flash the old cream. */
+      #ground { position: absolute; inset: 0; background: #080b11; z-index: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="18.02"
+         data-width="1080" data-height="1920" data-motion-blur="on">
+      <div id="ground"></div>
+
+      <div id="v-now" data-composition-id="v-now" data-composition-src="compositions/v-now.html"
+           data-start="0" data-duration="2.73" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+      <div id="v-name" data-composition-id="v-name" data-composition-src="compositions/v-name.html"
+           data-start="2.73" data-duration="2.61" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+      <div id="v-map" data-composition-id="v-map" data-composition-src="compositions/v-map.html"
+           data-start="5.34" data-duration="3.4" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+      <div id="v-ariadne" data-composition-id="v-ariadne" data-composition-src="compositions/v-ariadne.html"
+           data-start="8.74" data-duration="3.81" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+      <div id="v-stats" data-composition-id="v-stats" data-composition-src="compositions/v-stats.html"
+           data-start="12.55" data-duration="2.74" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+      <div id="v-end" data-composition-id="v-end" data-composition-src="compositions/v-end.html"
+           data-start="15.29" data-duration="2.73" data-track-index="1" data-track-kind="graphics"
+           data-width="1080" data-height="1920" style="z-index: 1"></div>
+
+      <audio id="bed" data-start="0" data-duration="18.02" data-track-index="10"
+             data-volume="0.30" data-fade-in="0.5" data-fade-out="1.2"
+             src="assets/music/syrmos-commute-bgm.mp3"></audio>
+
+      <audio id="s-tick1" data-start="0.56" data-duration="0.06" data-track-index="11" data-volume="0.34" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="s-tick2" data-start="1.07" data-duration="0.06" data-track-index="12" data-volume="0.34" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="s-settle" data-start="1.10" data-duration="0.12" data-track-index="13" data-volume="0.46" src="assets/sfx/impact/impactSoft_medium_000.ogg"></audio>
+      <audio id="s-mark" data-start="2.73" data-duration="0.14" data-track-index="14" data-volume="0.50" src="assets/sfx/impact/impactSoft_medium_002.ogg"></audio>
+      <audio id="s-bloom" data-start="6.62" data-duration="0.15" data-track-index="15" data-volume="0.55" src="assets/sfx/impact/impactSoft_medium_004.ogg"></audio>
+      <audio id="s-count" data-start="7.95" data-duration="0.12" data-track-index="16" data-volume="0.44" src="assets/sfx/interface/bong_001.ogg"></audio>
+      <audio id="s-key1" data-start="9.12" data-duration="0.25" data-track-index="17" data-volume="0.26" src="assets/sfx/keyboard/keypress-004.wav"></audio>
+      <audio id="s-key2" data-start="9.38" data-duration="0.25" data-track-index="18" data-volume="0.24" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="s-key3" data-start="9.64" data-duration="0.25" data-track-index="19" data-volume="0.26" src="assets/sfx/keyboard/keypress-011.wav"></audio>
+      <audio id="s-answer" data-start="10.35" data-duration="0.14" data-track-index="20" data-volume="0.48" src="assets/sfx/impact/impactSoft_medium_003.ogg"></audio>
+      <audio id="s-st1" data-start="12.55" data-duration="0.06" data-track-index="21" data-volume="0.26" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="s-st2" data-start="13.11" data-duration="0.06" data-track-index="22" data-volume="0.26" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="s-st3" data-start="13.64" data-duration="0.06" data-track-index="23" data-volume="0.26" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="s-punch" data-start="14.18" data-duration="1.48" data-track-index="24" data-volume="0.46" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+      <audio id="s-end" data-start="15.27" data-duration="0.18" data-track-index="25" data-volume="0.40" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

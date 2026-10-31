@@ -1,0 +1,164 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #E8ECF2; overflow: hidden; }
+
+    /* Studio: a seamless grey sweep, lit from above-left. */
+    #dv-sweep { position: absolute; inset: 0; background: #2E3237; }
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the devices and copy stay readable. */
+    #dv-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #dv-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+    #dv-key {
+      position: absolute; left: -260px; top: -340px; width: 1700px; height: 1700px;
+      background: radial-gradient(circle at 46% 42%, rgba(236,242,250,0.30) 0%, rgba(190,202,218,0.12) 34%, rgba(46,50,55,0) 64%);
+    }
+    #dv-falloff {
+      position: absolute; left: -200px; top: 1040px; width: 1480px; height: 1180px;
+      background: radial-gradient(ellipse 150% 100% at 50% 0%, rgba(14,16,19,0) 0%, rgba(14,16,19,0.22) 38%, rgba(14,16,19,0.62) 70%, rgba(14,16,19,0.92) 100%);
+    }
+    /* The desk: a plane, read by its edge and its sheen rather than by a texture. */
+    #dv-desk { position: absolute; left: -120px; right: -120px; top: 1074px; height: 940px; background: linear-gradient(180deg, #3A3F45 0%, #2A2E33 26%, #202428 100%); }
+    #dv-desk-edge { position: absolute; left: -120px; right: -120px; top: 1074px; height: 3px; background: rgba(226,236,250,0.34); }
+    #dv-desk-sheen {
+      position: absolute; left: 60px; top: 1086px; width: 960px; height: 420px;
+      background: radial-gradient(ellipse at 44% 0%, rgba(214,230,250,0.17) 0%, rgba(214,230,250,0.05) 40%, rgba(32,36,40,0) 72%);
+    }
+
+    #dv-rig { position: absolute; inset: 0; }
+    .dv-dev { position: absolute; display: block; }
+    #dv-lap   { left: 210px; top: 372px; width: 660px; height: 401px;
+                filter: drop-shadow(0 26px 30px rgba(0,0,0,0.55))
+                        drop-shadow(0 0 1px rgba(216,230,255,0.55)) }
+    #dv-phone { left: 423px; top: 588px; width: 233px; height: 480px;
+                filter: drop-shadow(0 22px 26px rgba(0,0,0,0.62))
+                        drop-shadow(0 0 1px rgba(216,230,255,0.6)) }
+    /* device-duo-flip 850x816 -> 1.042 (iPhone Duo, open-flip at an angle) */
+    #dv-duo   { left: 495px; top: 722px; width: 360px; height: 346px;
+                filter: drop-shadow(0 18px 24px rgba(0,0,0,0.62))
+                        drop-shadow(0 0 20px rgba(120,160,220,0.26)); }
+
+
+    /* Laptop, set back. */
+
+    /* Upright handset, front left. */
+
+    /* Folding handset, half-open, standing in tent position. */
+
+    /* Screen content, shared. */
+    .dv-screen { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
+    /* One capture, painted across both leaves so the hinge falls where it really does. */
+    .dv-sweep {
+      position: absolute; top: -40%; left: -70%; width: 46%; height: 180%;
+      background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(214,236,255,0.30) 46%, rgba(255,255,255,0) 100%);
+      filter: blur(6px);
+    }
+
+    /* Reflections on the desk. */
+    .dv-refl { position: absolute; opacity: 0.22; filter: blur(8px); }
+    #dv-refl-phone { left: 423px; top: 1074px; width: 233px; height: 300px; background: linear-gradient(180deg, rgba(120,170,230,0.55) 0%, rgba(20,24,30,0) 72%); border-radius: 40px; }
+    #dv-refl-fold  { left: 495px; top: 1074px; width: 360px; height: 230px; background: linear-gradient(180deg, rgba(120,170,230,0.45) 0%, rgba(20,24,30,0) 72%); border-radius: 26px; }
+
+    #dv-copy { position: absolute; left: 70px; right: 70px; top: 1160px; text-align: center; }
+    #dv-l1 { font-size: 60px; font-weight: 600; letter-spacing: -0.025em; color: #F1F5FA; }
+    #dv-l2 { margin-top: 20px; font-size: 38px; font-weight: 600; letter-spacing: 0.08em; color: #8FA8C6; }
+
+    #dv-end { position: absolute; left: 0; right: 0; top: 520px; text-align: center; z-index: 0; }
+    #dv-end-scrim { position: absolute; left: -140px; top: 360px; width: 1360px; height: 1120px; background: radial-gradient(ellipse at 50% 50%, rgba(18,21,25,0.97) 0%, rgba(18,21,25,0.84) 42%, rgba(18,21,25,0) 74%); }
+    #dv-end img { width: 300px; height: 300px; border-radius: 66px; display: inline-block; box-shadow: 0 0 80px rgba(120,180,255,0.3); }
+    #dv-end-url { margin-top: 44px; font-size: 40px; font-weight: 600; color: #8FA8C6; }
+  </style>
+
+  <div id="root" data-composition-id="desk" data-width="1080" data-height="1920">
+    <div id="dv-stage" class="clip" data-start="0" data-duration="11.46" data-track-index="1" data-layout-allow-overflow>
+      <div id="dv-sweep"></div>
+      <img id="dv-map" src="assets/shots/bg-map-portrait-dark.png" alt="Syrmos live map" />
+      <div id="dv-map-scrim"></div>
+      <div id="dv-key"></div>
+      <div id="dv-desk"></div>
+      <div id="dv-desk-edge"></div>
+      <div id="dv-desk-sheen"></div>
+
+      <div id="dv-rig" data-layout-allow-overflow>
+        <div id="dv-refl-phone" class="dv-refl"></div>
+
+        <!-- Real hardware mockups with real Syrmos captures composited in.
+             See brag-output/MOCKUPS.md for sources and verification. -->
+        <img id="dv-lap"   class="dv-dev" src="assets/devices/device-macbook.png"   alt="Syrmos on MacBook Pro 16-inch" />
+        <img id="dv-phone" class="dv-dev" src="assets/devices/device-iphone17.png"  alt="Syrmos on iPhone 17" />
+      </div>
+
+      <div id="dv-falloff"></div>
+
+      <div id="dv-copy">
+        <div id="dv-l1"><span class="w">Free</span> <span class="w">on</span> <span class="w">every</span> <span class="w">platform.</span></div>
+        <div id="dv-l2">iPHONE &middot; ANDROID &middot; WEB</div>
+      </div>
+
+      <div id="dv-end-scrim" data-layout-allow-occlusion></div>
+      <div id="dv-end" data-layout-allow-occlusion>
+        <img src="assets/img/syrmos-icon.png" alt="Syrmos" />
+        <div id="dv-end-url">syrmos.peterdsp.dev</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const D = 11.46;
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#dv-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: D, ease: "none" }, 0);
+
+      // Camera boom up: the rig and its ground slide down together as the lens rises.
+      // Boom continues under the cuts, but the framing steps on the cues so the
+      // shot never reads as one slow creep.
+      tl.fromTo("#dv-rig", { y: 72, transformOrigin: "50% 42%" },
+        { y: -46, duration: D, ease: "none" }, 0);
+      tl.fromTo("#dv-rig", { scale: 1.12 }, { scale: 1.12, duration: 0.56, ease: "none" }, 0);
+      tl.to("#dv-rig", { scale: 1.0,  duration: 0.4,  ease: "expo.out" }, 0.56);   // beat 0.56
+      tl.to("#dv-rig", { scale: 1.07, duration: 0.3,  ease: "expo.out" }, 3.27);   // beat 3.27
+      tl.to("#dv-rig", { scale: 0.99, duration: 0.34, ease: "expo.out" }, 6.56);   // beat 6.56
+      tl.fromTo(["#dv-desk", "#dv-desk-edge", "#dv-desk-sheen"], { y: 60 },
+        { y: -38, duration: D, ease: "none" }, 0);
+      tl.fromTo("#dv-key", { y: 60, opacity: 0.8 }, { y: -40, opacity: 1, duration: D, ease: "sine.inOut" }, 0);
+
+      // The three screens sync: one light crosses them in order. // beat-grid: 1.64 / 1.91 / 2.19s
+
+
+      const panels = [];
+      const sweepAt = [1.64, 1.91, 2.19, 2.33];
+      panels.forEach(function (sel, i) {
+        tl.fromTo(sel, { xPercent: 0, opacity: 0 }, { opacity: 1, duration: 0.14, ease: "power2.out" }, sweepAt[i]);
+        tl.fromTo(sel, { xPercent: 0 }, { xPercent: 520, duration: 0.95, ease: "power2.inOut" }, sweepAt[i]);
+        tl.to(sel, { opacity: 0, duration: 0.2, ease: "power2.in" }, sweepAt[i] + 0.72);
+      });
+      // Second pass, later and softer.
+      panels.forEach(function (sel, i) {
+        const t = 6.56 + i * 0.22;
+        tl.fromTo(sel, { xPercent: 0, opacity: 0 }, { opacity: 0.7, duration: 0.14, ease: "power2.out" }, t);
+        tl.fromTo(sel, { xPercent: 0 }, { xPercent: 520, duration: 1.0, ease: "power2.inOut" }, t);
+        tl.to(sel, { opacity: 0, duration: 0.2, ease: "power2.in" }, t + 0.76);
+      });
+
+      // What the three devices are actually for. // beat-grid: 3.82s
+      gsap.set(["#dv-copy", "#dv-end", "#dv-end-scrim"], { opacity: 0 });
+      tl.to("#dv-copy", { opacity: 1, duration: 0.01, ease: "none" }, 3.81);
+      tl.fromTo("#dv-l1 .w", { opacity: 0, filter: "blur(7px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.26, ease: "power4.out", stagger: 0.05 }, 3.82);
+      tl.fromTo("#dv-l2", { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.2, ease: "expo.out" }, 4.91);
+
+      // The desk recedes under the mark.
+      tl.to("#dv-copy", { opacity: 0, filter: "blur(8px)", duration: 0.35, ease: "power2.in" }, 8.4);
+      tl.to("#dv-rig", { opacity: 0.26, duration: 0.65, ease: "power2.inOut" }, 8.5);
+      tl.fromTo("#dv-end-scrim", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 8.6);
+      tl.fromTo("#dv-end", { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.42, ease: "expo.out" }, 8.9);
+
+      window.__timelines["desk"] = tl;
+    })();
+  </script>
+</template>

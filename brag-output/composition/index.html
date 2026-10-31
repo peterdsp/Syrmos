@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Syrmos "Calm Signal" tokens, generated from core/designsystem and copied
+         from composeApp/src/wasmJsMain/resources/design-tokens.css. */
+      :root {
+        --sy-surface: #f7f5f1;
+        --sy-on-surface: #14181f;
+        --sy-brand: #1466b8;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0e16;
+      }
+      #root { width: 100%; height: 100%; }
+      #ground {
+        position: absolute;
+        inset: 0;
+        background: #0a0e16;
+        z-index: 0;
+      }
+      /* Full living-map backdrop: the real Athens Map tab, slowly drifting
+         (Ken Burns) under a dark scrim, so every scene floats over one
+         continuous transit map and the copy stays readable. */
+      #gp-map {
+        position: absolute; left: -100px; top: -80px;
+        width: 2120px; height: 1240px; object-fit: cover; z-index: 0;
+      }
+      #gp-map-scrim {
+        position: absolute; inset: 0; z-index: 0;
+        background: radial-gradient(ellipse 80% 70% at 50% 42%,
+          rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="23.6"
+      data-width="1920"
+      data-height="1080"
+      data-motion-blur="on"
+    >
+      <!-- One living Athens transit map under every scene: the film never cuts to black. -->
+      <div id="ground"></div>
+      <img id="gp-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live Athens transit map" />
+      <div id="gp-map-scrim"></div>
+
+      <div id="now" data-composition-id="now" data-composition-src="compositions/now.html"
+           data-start="0" data-duration="3" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <div id="name" data-composition-id="name" data-composition-src="compositions/name.html"
+           data-start="3" data-duration="3.5" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <div id="map" data-composition-id="map" data-composition-src="compositions/map.html"
+           data-start="6.5" data-duration="4.5" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <div id="ariadne" data-composition-id="ariadne" data-composition-src="compositions/ariadne.html"
+           data-start="11" data-duration="4.84" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <div id="coverage" data-composition-id="coverage" data-composition-src="compositions/coverage.html"
+           data-start="15.84" data-duration="4.35" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <div id="end" data-composition-id="end" data-composition-src="compositions/end.html"
+           data-start="20.19" data-duration="3.41" data-track-index="1" data-track-kind="graphics"
+           data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <!-- Music bed: 110 BPM, in from the top of the track so the cue grid lines up. -->
+      <audio id="bed" data-start="0" data-duration="23.6" data-track-index="10"
+             data-volume="0.30" data-fade-in="0.6" data-fade-out="1.4"
+             src="assets/music/syrmos-commute-bgm.mp3"></audio>
+
+      <!-- Scene 1: the countdown ticking down, then settling on 4'. -->
+      <audio id="sfx-tick-6" data-start="0.56" data-duration="0.06" data-track-index="11" data-volume="0.34" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-tick-5" data-start="1.07" data-duration="0.06" data-track-index="12" data-volume="0.34" src="assets/sfx/ui/click2.ogg"></audio>
+      <audio id="sfx-settle" data-start="1.10" data-duration="0.12" data-track-index="13" data-volume="0.46" src="assets/sfx/impact/impactSoft_medium_000.ogg"></audio>
+
+      <!-- Scene 2: the mark landing. -->
+      <audio id="sfx-mark" data-start="3.32" data-duration="0.14" data-track-index="14" data-volume="0.50" src="assets/sfx/impact/impactSoft_medium_002.ogg"></audio>
+
+      <!-- Scene 3: the network blooms, then the counter lands on 71. -->
+      <audio id="sfx-bloom" data-start="8.72" data-duration="0.15" data-track-index="15" data-volume="0.55" src="assets/sfx/impact/impactSoft_medium_004.ogg"></audio>
+      <audio id="sfx-veh-1" data-start="8.90" data-duration="0.06" data-track-index="16" data-volume="0.22" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-veh-2" data-start="9.21" data-duration="0.06" data-track-index="17" data-volume="0.20" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-count" data-start="10.35" data-duration="0.12" data-track-index="18" data-volume="0.44" src="assets/sfx/interface/bong_001.ogg"></audio>
+
+      <!-- Scene 4: the question typed, then the answer landing. -->
+      <audio id="sfx-key-1" data-start="11.50" data-duration="0.25" data-track-index="19" data-volume="0.26" src="assets/sfx/keyboard/keypress-004.wav"></audio>
+      <audio id="sfx-key-2" data-start="11.76" data-duration="0.25" data-track-index="20" data-volume="0.24" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="sfx-key-3" data-start="12.02" data-duration="0.25" data-track-index="21" data-volume="0.26" src="assets/sfx/keyboard/keypress-011.wav"></audio>
+      <audio id="sfx-key-4" data-start="12.30" data-duration="0.25" data-track-index="22" data-volume="0.23" src="assets/sfx/keyboard/keypress-026.wav"></audio>
+      <audio id="sfx-answer" data-start="13.09" data-duration="0.14" data-track-index="23" data-volume="0.48" src="assets/sfx/impact/impactSoft_medium_003.ogg"></audio>
+
+      <!-- Scene 5: three facts, a bar of nothing, then the claim. -->
+      <audio id="sfx-stat-1" data-start="16.38" data-duration="0.06" data-track-index="24" data-volume="0.24" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-stat-2" data-start="16.93" data-duration="0.06" data-track-index="25" data-volume="0.24" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-stat-3" data-start="17.47" data-duration="0.06" data-track-index="26" data-volume="0.24" src="assets/sfx/ui/rollover2.ogg"></audio>
+      <audio id="sfx-punch" data-start="18.54" data-duration="1.48" data-track-index="27" data-volume="0.46" src="assets/sfx/impact/impactBell_heavy_000.ogg"></audio>
+
+      <!-- Scene 6: one soft settle on the cut to the mark, no impact hit. -->
+      <audio id="sfx-end" data-start="20.17" data-duration="0.18" data-track-index="28" data-volume="0.40" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+    </div>
+
+    <script>
+      // The root holds only scene hosts, the ground and the mix; each scene drives itself.
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+
+      // Living-map backdrop: one slow continuous camera drift over the Athens map,
+      // spanning the whole film so every scene floats over the same living map.
+      // GSAP owns the transform; the img carries no CSS transform of its own.
+      tl.fromTo("#gp-map",
+        { scale: 1.07, x: 30, y: 22, transformOrigin: "50% 46%" },
+        { scale: 1.15, x: -32, y: -26, duration: 23.6, ease: "none" }, 0);
+
+      tl.seek(0);
+    </script>
+  </body>
+</html>

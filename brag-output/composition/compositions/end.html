@@ -1,0 +1,51 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+    #end-stage { position: absolute; inset: 0; }
+    #end-icon {
+      position: absolute; left: 790px; top: 250px; width: 340px; height: 340px;
+      border-radius: 75px; display: block;
+      box-shadow: 0 26px 60px rgba(20, 24, 31, 0.24);
+    }
+    #end-line {
+      position: absolute; left: 192px; right: 192px; top: 668px; text-align: center;
+      font-size: 58px; font-weight: 600; letter-spacing: -0.025em;
+      color: #EEF2F7; text-shadow: 0 2px 18px rgba(8,11,17,0.55);
+    }
+    #end-url {
+      position: absolute; left: 192px; right: 192px; top: 772px; text-align: center;
+      font-size: 32px; font-weight: 600; color: #C2CBD6; letter-spacing: 0.01em;
+      text-shadow: 0 1px 12px rgba(8,11,17,0.5);
+    }
+  </style>
+
+  <div id="root" data-composition-id="end" data-width="1920" data-height="1080">
+    <div id="end-stage" class="clip" data-start="0" data-duration="3.41" data-track-index="1">
+      <img id="end-icon" src="assets/img/syrmos-icon.png" alt="Syrmos" />
+      <div id="end-line">Free on iPhone, Android and web.</div>
+      <div id="end-url">syrmos.peterdsp.dev</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // The mark settles, then holds dead still for the rest of the film.
+      tl.fromTo("#end-icon",
+        { opacity: 1, scale: 0.94, filter: "blur(5px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.42, ease: "expo.out" }, 0);
+
+      // The last line holds past 2s. // beat-grid: 20.19s
+      tl.fromTo("#end-line",
+        { opacity: 0, filter: "blur(7px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.24, ease: "expo.out" }, 0.56);
+
+      tl.fromTo("#end-url",
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.22, ease: "expo.out" }, 1.09);
+
+      window.__timelines["end"] = tl;
+    })();
+  </script>
+</template>

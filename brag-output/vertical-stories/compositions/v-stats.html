@@ -1,0 +1,58 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #F1F5FA; }
+    #vs-stage { position: absolute; inset: 0; }
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the figures stay readable. */
+    #vs-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #vs-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+    #vs-rows { position: absolute; left: 150px; right: 150px; top: 420px; display: flex; flex-direction: column; gap: 34px; }
+    .vs-stat { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid rgba(226,236,250,0.22); padding-bottom: 22px; }
+    .vs-num { font-size: 108px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; color: #F1F5FA; }
+    .vs-word { font-size: 46px; font-weight: 600; color: #9FB4CE; }
+    #vs-punch { position: absolute; left: 90px; right: 90px; top: 990px; text-align: center; }
+    #vs-punch-num { font-size: 230px; font-weight: 700; letter-spacing: -0.06em; line-height: 1; color: #5AA7F0; }
+    #vs-punch-word { font-size: 66px; font-weight: 600; color: #5AA7F0; margin-top: 6px; }
+  </style>
+
+  <div id="root" data-composition-id="v-stats" data-width="1080" data-height="1920">
+    <div id="vs-stage" class="clip" data-start="0" data-duration="2.74" data-track-index="1">
+      <img id="vs-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+      <div id="vs-map-scrim"></div>
+      <div id="vs-rows">
+        <div class="vs-stat" id="vs-1"><div class="vs-num">32</div><div class="vs-word">lines</div></div>
+        <div class="vs-stat" id="vs-2"><div class="vs-num">4</div><div class="vs-word">regions</div></div>
+        <div class="vs-stat" id="vs-3"><div class="vs-num">4</div><div class="vs-word">languages</div></div>
+      </div>
+      <div id="vs-punch">
+        <div id="vs-punch-num">0</div>
+        <div id="vs-punch-word">trackers</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#vs-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: 2.74, ease: "none" }, 0);
+
+      // Three facts arrive fast and stay up as a set. // beat-grid: 12.55 / 13.11 / 13.64s
+      gsap.set(["#vs-1", "#vs-2", "#vs-3"], { opacity: 0 });
+      [["#vs-1", 0], ["#vs-2", 0.56], ["#vs-3", 1.09]].forEach(function (p) {
+        tl.fromTo(p[0], { opacity: 0, x: -28, filter: "blur(7px)" },
+          { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.18, ease: "expo.out" }, p[1]);
+      });
+
+      // A beat of nothing, then the claim. // beat-locked: 14.20s
+      gsap.set("#vs-punch", { opacity: 0 });
+      tl.fromTo("#vs-punch", { opacity: 0, scale: 0.92, transformOrigin: "center top" },
+        { opacity: 1, scale: 1, duration: 0.22, ease: "back.out(1.5)" }, 1.65);
+
+      window.__timelines["v-stats"] = tl;
+    })();
+  </script>
+</template>

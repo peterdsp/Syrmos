@@ -1,0 +1,64 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the card and caption stay readable. */
+    #va-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #va-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+
+    /* The real Ariadne exchange, captured from the shipping web app.
+       Source: docs/screenshots/product-2026-09/web_ariadne_fare.png (760x772) */
+    #va-card {
+      position: absolute; left: 70px; top: 540px; width: 940px; height: 650px;
+      border-radius: 32px; overflow: hidden; background: #FFFFFF;
+      border: 1px solid #E0DACF; box-shadow: 0 28px 64px rgba(20, 24, 31, 0.17);
+    }
+    #va-shot { position: absolute; left: 0; top: -134px; width: 940px; height: auto; display: block; }
+    #va-caption {
+      position: absolute; left: 70px; width: 940px; top: 1226px; text-align: center;
+      font-size: 36px; font-weight: 600; letter-spacing: 0.1em; color: #9FB4CE;
+    }
+  </style>
+
+  <div id="root" data-composition-id="v-ariadne" data-width="1080" data-height="1920">
+    <div id="va-stage" class="clip" data-start="0" data-duration="3.81" data-track-index="1" data-layout-allow-overflow>
+      <img id="va-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+      <div id="va-map-scrim"></div>
+      <div id="va-card"><img id="va-shot" src="assets/shots/web-ariadne-fare.png" alt="Ariadne answering a fare question from the offline snapshot" /></div>
+      <div id="va-caption">ARIADNE &middot; ANSWERED OFFLINE</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#va-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: 3.81, ease: "none" }, 0);
+
+      tl.fromTo("#va-card",
+        { opacity: 0, y: 70, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 0);
+      tl.fromTo("#va-caption", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.2, ease: "expo.out" }, 0.32);
+
+      // The capture is uncovered from the top, so the question lands before the answer.
+      // beat-locked: 10.37s is where the answer bubble clears.
+      tl.fromTo("#va-shot",
+        { clipPath: "inset(0% 0% 58% 0%)" },
+        { clipPath: "inset(0% 0% 40% 0%)", duration: 0.24, ease: "expo.out" }, 0.35);
+      tl.to("#va-shot", { clipPath: "inset(0% 0% 5% 0%)", duration: 0.24, ease: "expo.out" }, 1.63);
+      tl.to("#va-shot", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.18, ease: "expo.out" }, 2.19);
+
+      gsap.set("#va-shot", { transformOrigin: "42% 80%" });
+      tl.to("#va-shot", { scale: 1.05, duration: 0.26, ease: "expo.out" }, 0.35);
+      tl.to("#va-shot", { scale: 1.12, duration: 0.3,  ease: "expo.out" }, 1.63);
+
+      tl.to(["#va-card", "#va-caption"], { opacity: 0, y: -44, filter: "blur(9px)", duration: 0.18, ease: "power3.in" }, 3.63);
+
+      window.__timelines["v-ariadne"] = tl;
+    })();
+  </script>
+</template>

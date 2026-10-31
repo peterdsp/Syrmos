@@ -1,0 +1,1591 @@
+{
+  "ok": false,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 2
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": false,
+    "errorCount": 26,
+    "warningCount": 1,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 248.14,
+          "top": 1006.88,
+          "right": 327.49,
+          "bottom": 1026.76,
+          "width": 79.36,
+          "height": 19.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "ATHENS",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 248.14,
+          "y": 1006.88,
+          "width": 79.36,
+          "height": 19.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 4,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 444.59,
+          "top": 1007.93,
+          "right": 474.1,
+          "bottom": 1025.71,
+          "width": 29.5,
+          "height": 17.78
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Live",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 444.59,
+          "y": 1007.93,
+          "width": 29.5,
+          "height": 17.78
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 4,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 257.55,
+          "top": 1044.02,
+          "right": 300.35,
+          "bottom": 1061.8,
+          "width": 42.79,
+          "height": 17.78
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 2",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 257.55,
+          "y": 1044.02,
+          "width": 42.79,
+          "height": 17.78
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 6,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 319.17,
+          "top": 1039.31,
+          "right": 397.88,
+          "bottom": 1066.51,
+          "width": 78.7,
+          "height": 27.2
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Elliniko",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 319.17,
+          "y": 1039.31,
+          "width": 78.7,
+          "height": 27.2
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 6,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(3)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 248.14,
+          "top": 1069.65,
+          "right": 330.47,
+          "bottom": 1178.44,
+          "width": 82.33,
+          "height": 108.79
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "4'",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 248.14,
+          "y": 1069.65,
+          "width": 82.33,
+          "height": 108.79
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(4)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 248.14,
+          "top": 1175.3,
+          "right": 383.04,
+          "bottom": 1195.18,
+          "width": 134.9,
+          "height": 19.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "then 9 min, 14 min",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 248.14,
+          "y": 1175.3,
+          "width": 134.9,
+          "height": 19.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 264.88,
+          "top": 1207.73,
+          "right": 386.14,
+          "bottom": 1227.61,
+          "width": 121.27,
+          "height": 19.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 1 → Kifissia",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 264.88,
+          "y": 1207.73,
+          "width": 121.27,
+          "height": 19.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 264.88,
+          "top": 1238.07,
+          "right": 416.25,
+          "bottom": 1257.94,
+          "width": 151.37,
+          "height": 19.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 2 → Anthoupoli",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 264.88,
+          "y": 1238.07,
+          "width": 151.37,
+          "height": 19.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(3) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 264.88,
+          "top": 1268.4,
+          "right": 386.91,
+          "bottom": 1288.28,
+          "width": 122.03,
+          "height": 19.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 3 → Airport",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 264.88,
+          "y": 1268.4,
+          "width": 122.03,
+          "height": 19.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 600.84,
+          "top": 1063.76,
+          "right": 670.45,
+          "bottom": 1092.91,
+          "width": 69.61,
+          "height": 29.15
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "THESS.",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 600.84,
+          "y": 1063.76,
+          "width": 69.61,
+          "height": 29.15
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 7,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 729.1,
+          "top": 1079.83,
+          "right": 754.48,
+          "bottom": 1100.78,
+          "width": 25.38,
+          "height": 20.95
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Live",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 729.1,
+          "y": 1079.83,
+          "width": 25.38,
+          "height": 20.95
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 8,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 610.14,
+          "top": 1105.31,
+          "right": 638.99,
+          "bottom": 1127.2,
+          "width": 28.85,
+          "height": 21.89
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "TM1",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 610.14,
+          "y": 1105.31,
+          "width": 28.85,
+          "height": 21.89
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 656.83,
+          "top": 1104.82,
+          "right": 740.01,
+          "bottom": 1140.83,
+          "width": 83.18,
+          "height": 36.01
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Voulgari",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 656.83,
+          "y": 1104.82,
+          "width": 83.18,
+          "height": 36.01
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(3)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 600.84,
+          "top": 1132.45,
+          "right": 677.22,
+          "bottom": 1253.4,
+          "width": 76.38,
+          "height": 120.95
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "6'",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 600.84,
+          "y": 1132.45,
+          "width": 76.38,
+          "height": 120.95
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(4)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 600.84,
+          "top": 1248.07,
+          "right": 678.44,
+          "bottom": 1271.05,
+          "width": 77.6,
+          "height": 22.97
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "then 11 min",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 600.84,
+          "y": 1248.07,
+          "width": 77.6,
+          "height": 22.97
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 798.36,
+          "top": 1075.86,
+          "right": 848.54,
+          "bottom": 1101.84,
+          "width": 50.19,
+          "height": 25.98
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "LINES",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 798.36,
+          "y": 1075.86,
+          "width": 50.19,
+          "height": 25.98
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 8,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 923.12,
+          "top": 1064.91,
+          "right": 952,
+          "bottom": 1087.45,
+          "width": 28.88,
+          "height": 22.55
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Live",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 923.12,
+          "y": 1064.91,
+          "width": 28.88,
+          "height": 22.55
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 7,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 812.67,
+          "top": 1115.93,
+          "right": 849.96,
+          "bottom": 1139.78,
+          "width": 37.29,
+          "height": 23.85
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 1",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 812.67,
+          "y": 1115.93,
+          "width": 37.29,
+          "height": 23.85
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 812.67,
+          "top": 1147.24,
+          "right": 852.78,
+          "bottom": 1170.7,
+          "width": 40.11,
+          "height": 23.46
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 2",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 812.67,
+          "y": 1147.24,
+          "width": 40.11,
+          "height": 23.46
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 812.67,
+          "top": 1178.81,
+          "right": 852.97,
+          "bottom": 1201.63,
+          "width": 40.3,
+          "height": 22.82
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Line 3",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 812.67,
+          "y": 1178.81,
+          "width": 40.3,
+          "height": 22.82
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 812.67,
+          "top": 1209.68,
+          "right": 868.11,
+          "bottom": 1232.56,
+          "width": 55.45,
+          "height": 22.88
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Tram T6",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 812.67,
+          "y": 1209.68,
+          "width": 55.45,
+          "height": 22.88
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 0.637,
+        "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 812.67,
+          "top": 1241.18,
+          "right": 878.88,
+          "bottom": 1263.49,
+          "width": 66.22,
+          "height": 22.31
+        },
+        "containerSelector": "#dv-falloff",
+        "text": "Suburban",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 812.67,
+          "y": 1241.18,
+          "width": 66.22,
+          "height": 22.31
+        },
+        "firstSeen": 0.637,
+        "lastSeen": 10.823,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.637,
+          1.91,
+          3.183,
+          4.457,
+          5.73,
+          7.003,
+          8.277,
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 9.55,
+        "selector": "div.dv-ui.lg > div:nth-of-type(1) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 226.59,
+          "top": 438.6,
+          "right": 326.9,
+          "bottom": 462.4,
+          "width": 100.31,
+          "height": 23.8
+        },
+        "containerSelector": "#dv-end-scrim",
+        "text": "ATHENS",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 226.59,
+          "y": 438.6,
+          "width": 100.31,
+          "height": 23.8
+        },
+        "firstSeen": 9.55,
+        "lastSeen": 10.823,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "error",
+        "time": 9.55,
+        "selector": "div.dv-ui.lg > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 716.52,
+          "top": 439.1,
+          "right": 853.41,
+          "bottom": 461.91,
+          "width": 136.88,
+          "height": 22.81
+        },
+        "containerSelector": "#dv-end-scrim",
+        "text": "71 trains active",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 716.52,
+          "y": 439.1,
+          "width": 136.88,
+          "height": 22.81
+        },
+        "firstSeen": 9.55,
+        "lastSeen": 10.823,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          9.55,
+          10.823
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 9.55,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(3)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 597.68,
+          "top": 973.22,
+          "right": 670.1,
+          "bottom": 1087.89,
+          "width": 72.42,
+          "height": 114.67
+        },
+        "containerSelector": "#dv-end-url",
+        "text": "6'",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 597.68,
+          "y": 973.22,
+          "width": 72.42,
+          "height": 114.67
+        },
+        "firstSeen": 9.342,
+        "lastSeen": 11.46,
+        "occurrences": 20,
+        "heldMs": 2118.0000000000005,
+        "times": [
+          9.342,
+          9.467,
+          9.55,
+          9.592,
+          9.716,
+          9.841,
+          9.965,
+          10.09,
+          10.214,
+          10.339,
+          10.463,
+          10.588,
+          10.713,
+          10.823,
+          10.837,
+          10.962,
+          11.086,
+          11.211,
+          11.335,
+          11.46
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 10.823,
+        "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(4)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 265.46,
+          "top": 990.85,
+          "right": 392.35,
+          "bottom": 1009.54,
+          "width": 126.89,
+          "height": 18.69
+        },
+        "containerSelector": "#dv-end-url",
+        "text": "then 9 min, 14 min",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 265.46,
+          "y": 990.85,
+          "width": 126.89,
+          "height": 18.69
+        },
+        "firstSeen": 10.09,
+        "lastSeen": 11.46,
+        "occurrences": 13,
+        "heldMs": 1370.000000000001,
+        "times": [
+          10.09,
+          10.214,
+          10.339,
+          10.463,
+          10.588,
+          10.713,
+          10.823,
+          10.837,
+          10.962,
+          11.086,
+          11.211,
+          11.335,
+          11.46
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "warning",
+        "time": 8.969,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 651.15,
+          "top": 957.06,
+          "right": 730.28,
+          "bottom": 991.31,
+          "width": 79.13,
+          "height": 34.25
+        },
+        "containerSelector": "#dv-end-url",
+        "text": "Voulgari",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 651.15,
+          "y": 957.06,
+          "width": 79.13,
+          "height": 34.25
+        },
+        "firstSeen": 8.969,
+        "lastSeen": 9.342,
+        "occurrences": 4,
+        "heldMs": 373.00000000000114,
+        "times": [
+          8.969,
+          9.093,
+          9.218,
+          9.342
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "info",
+        "time": 8.969,
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 606.73,
+          "top": 957.52,
+          "right": 634.18,
+          "bottom": 978.35,
+          "width": 27.45,
+          "height": 20.83
+        },
+        "containerSelector": "#dv-end-url",
+        "text": "TM1",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 606.73,
+          "y": 957.52,
+          "width": 27.45,
+          "height": 20.83
+        },
+        "firstSeen": 8.969,
+        "lastSeen": 8.969,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          8.969
+        ]
+      }
+    ],
+    "duration": 11.46,
+    "samples": [
+      0.637,
+      1.91,
+      3.183,
+      4.457,
+      5.73,
+      7.003,
+      8.277,
+      9.55,
+      10.823
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 28,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": false,
+    "errorCount": 4,
+    "warningCount": 2,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "contrast_aa_failure",
+        "severity": "error",
+        "message": "Contrast is 3.31:1; WCAG AA requires 4.5:1.",
+        "text": "Line 2",
+        "fg": "rgb(255,255,255)",
+        "bg": "rgb(255,75,69)",
+        "ratio": 3.31,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(39,39,39)",
+        "large": false,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 248.13812255859375,
+          "y": 1039.831298828125,
+          "width": 61.621826171875,
+          "height": 26.152587890625
+        },
+        "time": 0.637,
+        "times": [
+          0.637,
+          3.183,
+          5.73,
+          8.277,
+          10.823
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "error",
+        "message": "Contrast is 2.57:1; WCAG AA requires 4.5:1.",
+        "text": "TM1",
+        "fg": "rgb(255,255,255)",
+        "bg": "rgb(47,168,255)",
+        "ratio": 2.57,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(56,56,56)",
+        "large": false,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(5) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 600.8397827148438,
+          "y": 1099.82373046875,
+          "width": 47.1148681640625,
+          "height": 32.632080078125
+        },
+        "time": 0.637,
+        "times": [
+          0.637,
+          3.183,
+          5.73,
+          8.277,
+          10.823
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "error",
+        "message": "Contrast is 4.4:1; WCAG AA requires 4.5:1.",
+        "text": "ATHENS",
+        "fg": "rgb(116,131,154)",
+        "bg": "rgb(25,29,35)",
+        "ratio": 4.4,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(118,133,156)",
+        "large": false,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 256.7591857910156,
+          "y": 919.94140625,
+          "width": 77.012451171875,
+          "height": 19.288818359375
+        },
+        "time": 5.73,
+        "times": [
+          3.183,
+          5.73,
+          8.277
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "error",
+        "message": "Contrast is 2.59:1; WCAG AA requires 4.5:1.",
+        "text": "THESS.",
+        "fg": "rgb(116,131,154)",
+        "bg": "rgb(0,65,135)",
+        "ratio": 2.59,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(166,175,190)",
+        "large": false,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(5) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 597.2281494140625,
+          "y": 885.92919921875,
+          "width": 65.4747314453125,
+          "height": 27.41552734375
+        },
+        "time": 10.823,
+        "times": [
+          8.277,
+          10.823
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 4.43:1; WCAG AA requires 4.5:1.",
+        "text": "LINES",
+        "fg": "rgb(116,131,154)",
+        "bg": "rgb(25,28,34)",
+        "ratio": 4.43,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(118,132,155)",
+        "large": false,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 786.8467407226562,
+          "y": 941.80224609375,
+          "width": 47.95294189453125,
+          "height": 24.8206787109375
+        },
+        "time": 8.277,
+        "times": [
+          8.277
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 2.79:1; WCAG AA requires 3:1.",
+        "text": "ATHENS",
+        "fg": "rgb(116,131,154)",
+        "bg": "rgb(58,62,68)",
+        "ratio": 2.79,
+        "requiredRatio": 3,
+        "suggestedColor": "rgb(123,137,159)",
+        "large": true,
+        "selector": "div > div:nth-of-type(2) > div > div > div:nth-of-type(6) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 229.05601501464844,
+          "y": 420.1263732910156,
+          "width": 99.52238464355469,
+          "height": 23.615997314453125
+        },
+        "time": 10.823,
+        "times": [
+          10.823
+        ]
+      }
+    ],
+    "enabled": true,
+    "samples": [
+      0.637,
+      3.183,
+      5.73,
+      8.277,
+      10.823
+    ],
+    "checked": 131,
+    "passed": 114
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 22 text elements stay under it for 0.5 s or more, the smallest \"Live\" at 13 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "Live",
+        "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/desk.html",
+        "bbox": {
+          "x": 729.81,
+          "y": 1090.97,
+          "width": 25.47,
+          "height": 21.03
+        },
+        "time": 0,
+        "times": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fontPx": 12.7,
+        "floorPx": 28,
+        "seconds": 8.969,
+        "elements": [
+          {
+            "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Live",
+            "fontPx": 12.7,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+            "text": "TM1",
+            "fontPx": 12.7,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Live",
+            "fontPx": 12.7,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "THESS.",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(4)",
+            "text": "then 11 min",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "LINES",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Line 1",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Line 2",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1)",
+            "text": "Line 3",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1)",
+            "text": "Tram T6",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-r > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > span:nth-of-type(1)",
+            "text": "Suburban",
+            "fontPx": 13.6,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Live",
+            "fontPx": 13.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1)",
+            "text": "Line 2",
+            "fontPx": 13.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "ATHENS",
+            "fontPx": 14.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(4)",
+            "text": "then 9 min, 14 min",
+            "fontPx": 14.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Line 1 → Kifissia",
+            "fontPx": 14.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Line 2 → Anthoupoli",
+            "fontPx": 14.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(5) > div:nth-of-type(3) > span:nth-of-type(1)",
+            "text": "Line 3 → Airport",
+            "fontPx": 14.94,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "div.dv-ui.lg > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "71 trains active",
+            "fontPx": 18.92,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "div.dv-ui.lg > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "ATHENS",
+            "fontPx": 19.92,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-leaf-l > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Voulgari",
+            "fontPx": 19.95,
+            "time": 0,
+            "seconds": 8.969
+          },
+          {
+            "selector": "#dv-phone > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Elliniko",
+            "fontPx": 21.91,
+            "time": 0,
+            "seconds": 8.969
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 92
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

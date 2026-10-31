@@ -1,0 +1,180 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #E8ECF2; overflow: hidden; }
+
+    /* Dark concrete room, rim-lit from the upper right. */
+    #dl-room { position: absolute; inset: 0; background: #121417; }
+    /* Full living-map backdrop: the real Map tab, drifting under a dark scrim. */
+    #dl-map { position: absolute; left: -100px; top: -80px; width: 2120px; height: 1240px; object-fit: cover; }
+    #dl-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 80% 70% at 50% 42%, rgba(10,14,22,0.28) 0%, rgba(10,14,22,0.68) 58%, rgba(8,11,17,0.93) 100%); }
+    #dl-rim {
+      position: absolute; left: 700px; top: -520px; width: 1700px; height: 1700px;
+      background: radial-gradient(circle at 42% 52%, rgba(200,220,248,0.34) 0%, rgba(132,160,198,0.13) 34%, rgba(18,20,23,0) 64%);
+    }
+    #dl-fill {
+      position: absolute; left: -520px; top: -300px; width: 1300px; height: 1500px;
+      background: radial-gradient(circle at 60% 50%, rgba(104,138,184,0.20) 0%, rgba(64,86,118,0.08) 38%, rgba(18,20,23,0) 66%);
+    }
+
+    /* The bench: one plane, read by its lit edge. */
+    #dl-bench { position: absolute; left: -300px; right: -300px; top: 712px; height: 520px; background: linear-gradient(180deg, #2E333A 0%, #202429 30%, #121519 100%); }
+    #dl-bench-edge { position: absolute; left: -300px; right: -300px; top: 712px; height: 2px; background: rgba(214,232,252,0.42); }
+    #dl-bench-sheen {
+      position: absolute; left: 160px; top: 716px; width: 1700px; height: 300px;
+      background: radial-gradient(ellipse at 44% 0%, rgba(196,220,252,0.20) 0%, rgba(196,220,252,0.06) 40%, rgba(16,18,21,0) 72%);
+    }
+
+    #dl-rig { position: absolute; inset: 0; }
+    .dl-dev { position: absolute; display: block; }
+    /* 1374x835 -> 1.6455 */
+    #dl-lap   { left: 453px;  top: 250px; width: 760px; height: 462px;
+                filter: drop-shadow(0 22px 26px rgba(0,0,0,0.55))
+                        drop-shadow(0 0 1px rgba(216,230,255,0.55)); }
+    /* 1412x2904 -> 0.4862 */
+    #dl-phone { left: 1273px; top: 312px; width: 194px; height: 400px;
+                filter: drop-shadow(0 18px 22px rgba(0,0,0,0.6))
+                        drop-shadow(0 0 1px rgba(216,230,255,0.6)); }
+    /* device-duo-flip 850x816 -> 1.042 (iPhone Duo, open-flip at an angle, with
+       a perspective-warped light map in its foldable screen). A soft glow lifts
+       it off the dark map backdrop. */
+    #dl-duo   { left: 1372px; top: 386px; width: 340px; height: 326px;
+                filter: drop-shadow(0 16px 22px rgba(0,0,0,0.62))
+                        drop-shadow(0 0 20px rgba(120,160,220,0.26)); }
+
+    .dl-refl { position: absolute; top: 714px; filter: blur(9px); opacity: 0.26; }
+    #dl-refl-lap   { left: 453px;  width: 760px; height: 210px; background: linear-gradient(180deg, rgba(120,160,215,0.45) 0%, rgba(16,18,21,0) 74%); border-radius: 0 0 14px 14px; }
+    #dl-refl-phone { left: 1273px; width: 194px; height: 150px; background: linear-gradient(180deg, rgba(120,160,215,0.42) 0%, rgba(16,18,21,0) 74%); border-radius: 0 0 24px 24px; }
+    #dl-refl-fold  { left: 1372px; width: 340px; height: 150px; background: linear-gradient(180deg, rgba(120,160,215,0.40) 0%, rgba(16,18,21,0) 74%); border-radius: 0 0 18px 18px; }
+
+    /* Laptop, centre. */
+
+    /* Upright handset, right of the laptop. */
+
+    /* Folding handset, opened flat into one wide inner display. */
+    #dl-crease { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(150,170,196,0.13); }
+    .dl-pane { flex: 1; position: relative; }
+
+    .dl-screen { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
+    .dl-ui { position: absolute; inset: 0; padding: 16px 15px; display: flex; flex-direction: column; gap: 10px; }
+    .dl-ui.lg { padding: 26px 28px; gap: 16px; }
+    .dl-top { display: flex; align-items: center; justify-content: space-between; }
+    .dl-city { font-size: 13px; font-weight: 700; letter-spacing: 0.16em; color: #74839A; }
+    .dl-ui.lg .dl-city { font-size: 18px; }
+    .dl-live { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #00E88A; }
+    .dl-ui.lg .dl-live { font-size: 17px; }
+    .dl-live i { width: 7px; height: 7px; border-radius: 999px; background: #00E88A; box-shadow: 0 0 9px #00E88A; display: block; }
+    .dl-big { font-size: 60px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: #FFFFFF; }
+    .dl-sub { font-size: 12px; color: #74839A; margin-top: -4px; }
+    .dl-pillrow { display: flex; align-items: center; gap: 7px; }
+    .dl-pill { font-size: 12px; font-weight: 700; color: #fff; background: #FF4B45; border-radius: 5px; padding: 3px 7px; }
+    .dl-stn { font-size: 17px; font-weight: 600; color: #E8ECF2; }
+    .dl-rows { display: flex; flex-direction: column; gap: 8px; }
+    .dl-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #8D9CB2; }
+    .dl-row i { width: 6px; height: 6px; border-radius: 999px; display: block; flex: none; }
+    .dl-netwrap { flex: 1; position: relative; }
+
+    .dl-glass { position: absolute; inset: 0; background: linear-gradient(112deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 24%, rgba(255,255,255,0) 46%); }
+
+    /* Shallow depth of field: the plane in front of the bench goes soft. */
+    #dl-fg {
+      position: absolute; left: -200px; right: -200px; top: 946px; height: 300px;
+      background: linear-gradient(180deg, rgba(10,11,13,0) 0%, rgba(10,11,13,0.72) 40%, rgba(10,11,13,0.96) 100%);
+      filter: blur(14px);
+    }
+    #dl-vig {
+      position: absolute; inset: -80px;
+      background: radial-gradient(ellipse 72% 76% at 50% 48%, rgba(18,20,23,0) 0%, rgba(18,20,23,0.28) 62%, rgba(18,20,23,0.80) 100%);
+    }
+
+    #dl-copy { position: absolute; left: 120px; top: 846px; width: 1000px; }
+    #dl-l1 { font-size: 54px; font-weight: 600; letter-spacing: -0.025em; color: #F1F5FA; }
+    #dl-l2 { margin-top: 16px; font-size: 30px; font-weight: 600; letter-spacing: 0.1em; color: #8FA8C6; }
+
+    #dl-end { position: absolute; left: 0; right: 0; top: 330px; text-align: center; z-index: 0; }
+    #dl-end-scrim { position: absolute; left: 160px; top: 100px; width: 1600px; height: 900px; background: radial-gradient(ellipse at 50% 50%, rgba(14,16,19,0.97) 0%, rgba(14,16,19,0.84) 40%, rgba(14,16,19,0) 72%); }
+    #dl-end img { width: 240px; height: 240px; border-radius: 52px; display: inline-block; box-shadow: 0 0 70px rgba(120,180,255,0.3); }
+    #dl-end-url { margin-top: 34px; font-size: 34px; font-weight: 600; color: #8FA8C6; }
+  </style>
+
+  <div id="root" data-composition-id="bench" data-width="1920" data-height="1080">
+    <div id="dl-stage" class="clip" data-start="0" data-duration="13.11" data-track-index="1" data-layout-allow-overflow>
+      <div id="dl-room"></div>
+      <img id="dl-map" src="assets/shots/bg-map-wide-dark.png" alt="Syrmos live map" />
+      <div id="dl-map-scrim"></div>
+      <div id="dl-fill"></div>
+      <div id="dl-rim"></div>
+      <div id="dl-bench"></div>
+      <div id="dl-bench-edge"></div>
+      <div id="dl-bench-sheen"></div>
+
+      <div id="dl-rig" data-layout-allow-overflow>
+        <div class="dl-refl" id="dl-refl-lap"></div>
+        <div class="dl-refl" id="dl-refl-phone"></div>
+        <!-- Real hardware mockups with real Syrmos captures composited into their
+             screens. See brag-output/MOCKUPS.md for sources and verification. -->
+        <img id="dl-lap"  class="dl-dev" src="assets/devices/device-macbook.png"   alt="Syrmos on MacBook Pro 16-inch" />
+        <img id="dl-phone" class="dl-dev" src="assets/devices/device-iphone17.png" alt="Syrmos on iPhone 17" />
+      </div>
+
+      <div id="dl-fg" data-layout-ignore></div>
+      <div id="dl-vig" data-layout-ignore></div>
+
+      <div id="dl-copy">
+        <div id="dl-l1"><span class="w">Free</span> <span class="w">on</span> <span class="w">every</span> <span class="w">platform.</span></div>
+        <div id="dl-l2">ATHENS &middot; THESSALONIKI &middot; PATRAS &middot; NATIONAL</div>
+      </div>
+
+      <div id="dl-end-scrim" data-layout-allow-occlusion></div>
+      <div id="dl-end" data-layout-allow-occlusion>
+        <img src="assets/img/syrmos-icon.png" alt="Syrmos" />
+        <div id="dl-end-url">syrmos.peterdsp.dev</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const D = 13.11;
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#dl-map", { scale: 1.07, x: 30, y: 22, transformOrigin: "50% 46%" },
+        { scale: 1.15, x: -32, y: -26, duration: D, ease: "none" }, 0);
+
+      // One slow slider pan, left to right, for the whole shot.
+      // The slider runs the whole shot; the framing steps on the cues.
+      tl.fromTo("#dl-rig", { x: 146, transformOrigin: "50% 66%" },
+        { x: -130, duration: D, ease: "none" }, 0);
+      tl.fromTo("#dl-rig", { scale: 1.3 }, { scale: 1.3, duration: 0.56, ease: "none" }, 0);
+      tl.to("#dl-rig", { scale: 1.14, duration: 0.4,  ease: "expo.out" }, 0.56);   // beat 0.56
+      tl.to("#dl-rig", { scale: 1.22, duration: 0.3,  ease: "expo.out" }, 3.82);   // beat 3.82
+      tl.to("#dl-rig", { scale: 1.12, duration: 0.34, ease: "expo.out" }, 7.64);   // beat 7.64
+      tl.to("#dl-rig", { scale: 1.19, duration: 0.3,  ease: "expo.out" }, 10.37);  // beat 10.37
+      // The room behind parallaxes slower, which is what sells the dolly.
+      tl.fromTo(["#dl-bench", "#dl-bench-edge", "#dl-bench-sheen"], { x: 120 },
+        { x: -110, duration: D, ease: "none" }, 0);
+      tl.fromTo("#dl-rim", { x: 70, opacity: 0.85 }, { x: -70, opacity: 1, duration: D, ease: "sine.inOut" }, 0);
+      tl.fromTo("#dl-fill", { x: 40 }, { x: -40, duration: D, ease: "none" }, 0);
+      // The soft foreground plane moves fastest: shallow depth of field.
+      tl.fromTo("#dl-fg", { x: 260 }, { x: -240, duration: D, ease: "none" }, 0);
+
+      // The claim, then the coverage. // beat-grid: 3.82 / 4.91s
+      gsap.set(["#dl-copy", "#dl-end", "#dl-end-scrim"], { opacity: 0 });
+      tl.to("#dl-copy", { opacity: 1, duration: 0.01, ease: "none" }, 3.81);
+      tl.fromTo("#dl-l1 .w", { opacity: 0, filter: "blur(7px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "expo.out", stagger: 0.05 }, 3.82);
+      tl.fromTo("#dl-l2", { opacity: 0, x: -22 },
+        { opacity: 1, x: 0, duration: 0.22, ease: "expo.out" }, 4.91);
+
+      // The bench recedes under the mark. // beat-grid: 10.37s
+      tl.to("#dl-copy", { opacity: 0, filter: "blur(8px)", duration: 0.35, ease: "power2.in" }, 9.8);
+      tl.to("#dl-rig", { opacity: 0.24, duration: 0.7, ease: "power2.inOut" }, 9.9);
+      tl.fromTo("#dl-end-scrim", { opacity: 0 }, { opacity: 1, duration: 0.65, ease: "power2.out" }, 10.0);
+      tl.fromTo("#dl-end", { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.42, ease: "expo.out" }, 10.37);
+
+      window.__timelines["bench"] = tl;
+    })();
+  </script>
+</template>

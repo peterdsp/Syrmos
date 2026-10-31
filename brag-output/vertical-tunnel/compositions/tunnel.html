@@ -1,0 +1,196 @@
+<template>
+  <style>
+    /* Real iPhone 17 frame (supplied mockup) over the live capture. The frame's
+       screen cutout is transparent, so the capture still moves behind the glass.
+       Frame 1530x3036; cutout x120..1409, y120..2915 -> the percentages below. */
+    .dev-phone { position: absolute; }
+    .dev-screen { position: absolute; left: 7.843%; top: 3.953%; width: 84.314%; height: 92.095%;
+                  overflow: hidden; border-radius: 13.6%/6.3%; background: #000; }
+    .dev-screen img { position: absolute; left: 0; width: 100%; height: auto; display: block; }
+    .dev-frame { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #E6ECF4; overflow: hidden; }
+    #tn-world { position: absolute; inset: 0; }
+    #tn-lights { position: absolute; inset: 0; }
+    #tn-rig { position: absolute; inset: 0; }
+
+    /* The tunnel's deep wall is the living map, tinted back so the platform reads. */
+    #tn-back { position: absolute; inset: 0; background: rgba(13,15,18,0.45); }
+    #tn-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #tn-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 62% at 50% 40%, rgba(10,14,22,0.20) 0%, rgba(10,14,22,0.58) 58%, rgba(8,11,17,0.85) 100%); }
+    /* Depth: a radial pool of light down the platform, never a full-frame linear ramp. */
+    #tn-depth {
+      position: absolute; left: 90px; top: 240px; width: 900px; height: 1400px;
+      background: radial-gradient(ellipse at 50% 38%, rgba(96,124,160,0.20) 0%, rgba(50,66,88,0.09) 38%, rgba(13,15,18,0) 70%);
+    }
+
+    .tn-pillar { position: absolute; top: -120px; height: 2160px; border-radius: 6px; }
+    #tn-p1 { left: -60px;  width: 260px; background: linear-gradient(90deg, #10141A 0%, #1E242D 58%, #0A0D11 100%); box-shadow: inset -2px 0 0 rgba(150,180,215,0.10); }
+    #tn-p2 { left: 236px;  width: 120px; background: linear-gradient(90deg, #1B222B 0%, #0E1217 72%, #080A0D 100%); box-shadow: inset 2px 0 0 rgba(150,180,215,0.14); }
+    #tn-p3 { left: 760px;  width: 150px; background: linear-gradient(90deg, #080A0D 0%, #0E1217 28%, #1B222B 100%); box-shadow: inset -2px 0 0 rgba(150,180,215,0.14); }
+    #tn-p4 { left: 942px;  width: 240px; background: linear-gradient(90deg, #0A0D11 0%, #1E242D 42%, #10141A 100%); box-shadow: inset 2px 0 0 rgba(150,180,215,0.10); }
+    .tn-seam { position: absolute; width: 2px; top: -120px; height: 2160px; background: rgba(150,175,205,0.07); }
+
+    /* Platform edge with its tactile strip. */
+    #tn-floor { position: absolute; left: 0; right: 0; top: 1392px; height: 528px; background: #0A0C0F; box-shadow: inset 0 26px 46px rgba(0,0,0,0.8); }
+    #tn-tactile { position: absolute; left: 0; right: 0; top: 1392px; height: 12px; background: rgba(214,160,40,0.55); box-shadow: 0 0 26px rgba(214,160,40,0.35); }
+
+    /* A train passing: a light with a flare, not a drawing of a train. */
+    #tn-head { position: absolute; left: -620px; top: 560px; width: 620px; height: 300px; }
+    #tn-head .core {
+      position: absolute; left: 330px; top: 110px; width: 230px; height: 80px; border-radius: 999px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255,250,235,1) 0%, rgba(255,238,200,0.8) 34%, rgba(255,220,160,0) 72%);
+      filter: blur(8px);
+    }
+    #tn-head .streak {
+      position: absolute; left: -60px; top: 142px; width: 740px; height: 14px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,230,180,0) 0%, rgba(255,240,205,0.85) 70%, rgba(255,255,255,0.95) 92%, rgba(255,255,255,0) 100%);
+      filter: blur(5px);
+    }
+    #tn-head .bloom {
+      position: absolute; left: 110px; top: -230px; width: 760px; height: 760px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,235,190,0.30) 0%, rgba(255,222,165,0.11) 26%, rgba(255,210,150,0.03) 42%, rgba(255,210,150,0) 55%);
+    }
+    #tn-head2 { position: absolute; left: -520px; top: 1180px; width: 520px; height: 220px; }
+    #tn-head2 .core {
+      position: absolute; left: 280px; top: 80px; width: 180px; height: 60px; border-radius: 999px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(230,245,255,1) 0%, rgba(190,225,255,0.75) 36%, rgba(160,205,255,0) 72%);
+      filter: blur(7px);
+    }
+    #tn-head2 .streak {
+      position: absolute; left: -40px; top: 102px; width: 600px; height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(190,225,255,0) 0%, rgba(215,238,255,0.8) 70%, rgba(255,255,255,0.92) 92%, rgba(255,255,255,0) 100%);
+      filter: blur(4px);
+    }
+
+    /* The subject: a generic handset, held. */
+    #tn-phone { left: 330px; top: 250px; width: 420px; height: 833px; filter: drop-shadow(0 0 calc(54px * var(--rim, 1)) rgba(150,190,240,0.22)) drop-shadow(0 40px 60px rgba(0,0,0,0.7)); }
+
+    #tn-copy { position: absolute; left: 70px; right: 70px; top: 1170px; text-align: center; }
+    #tn-line { font-size: 54px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.26; color: #E6ECF4; }
+    #tn-line .accent { color: #6FB4FF; }
+    #tn-scrim { position: absolute; left: -140px; top: 1050px; width: 1360px; height: 520px; background: radial-gradient(ellipse at 50% 46%, rgba(13,15,18,0.95) 0%, rgba(13,15,18,0.84) 42%, rgba(13,15,18,0) 74%); }
+
+    #tn-end { position: absolute; left: 0; right: 0; top: 560px; text-align: center; z-index: 0; }
+    #tn-end-scrim {
+      position: absolute; left: -110px; top: 300px; width: 1300px; height: 1060px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(13,15,18,0.96) 0%, rgba(13,15,18,0.8) 42%, rgba(13,15,18,0) 72%);
+    }
+    #tn-end img { width: 290px; height: 290px; border-radius: 64px; display: inline-block; box-shadow: 0 0 70px rgba(110,160,230,0.35); }
+    #tn-end-url { margin-top: 42px; font-size: 40px; font-weight: 600; color: #7E8DA1; }
+  </style>
+
+  <div id="root" data-composition-id="tunnel" data-width="1080" data-height="1920">
+    <div id="tn-stage" class="clip" data-start="0" data-duration="11.46" data-track-index="1" data-layout-allow-overflow>
+      <div id="tn-world" data-layout-allow-overflow>
+        <img id="tn-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+        <div id="tn-map-scrim"></div>
+        <div id="tn-back"></div>
+        <div id="tn-p1" class="tn-pillar"></div>
+        <div id="tn-p2" class="tn-pillar"></div>
+        <div id="tn-p3" class="tn-pillar"></div>
+        <div id="tn-p4" class="tn-pillar"></div>
+        <div class="tn-seam" style="left: 356px"></div>
+        <div class="tn-seam" style="left: 758px"></div>
+        <div id="tn-depth"></div>
+        <div id="tn-floor"></div>
+        <div id="tn-tactile"></div>
+
+      </div>
+
+      <div id="tn-lights" data-layout-allow-overflow>
+        <div id="tn-head"><div class="bloom"></div><div class="streak"></div><div class="core"></div></div>
+        <div id="tn-head2"><div class="streak"></div><div class="core"></div></div>
+      </div>
+
+      <div id="tn-rig" data-layout-allow-overflow>
+        <div id="tn-phone" class="dev-phone">
+          <!-- Real capture of the shipping Home screen in dark mode, behind the
+               supplied iPhone 17 frame's transparent screen cutout.
+               Source: docs/screenshots/release-3.0.0/ios/S01-home__C402__dark__en__default.png -->
+          <div class="dev-screen"><img id="tn-shot" src="assets/shots/ios-home-dark.png" alt="Syrmos Home in dark mode, running offline" /></div>
+          <img class="dev-frame" src="assets/devices/frame-iphone17.png" alt="iPhone 17" />
+        </div>
+      </div>
+
+      <div id="tn-scrim" data-layout-allow-occlusion></div>
+      <div id="tn-copy">
+        <div id="tn-line">
+          <span class="w">Works</span> <span class="w">offline,</span> <span class="w">underground,</span><br />
+          <span class="w accent">with</span> <span class="w accent">no</span> <span class="w accent">signal.</span>
+        </div>
+      </div>
+
+      <div id="tn-end-scrim" data-layout-allow-occlusion></div>
+      <div id="tn-end" data-layout-allow-occlusion>
+        <img src="assets/img/syrmos-icon.png" alt="Syrmos" />
+        <div id="tn-end-url">syrmos.peterdsp.dev</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const D = 11.46;
+      const phone = document.querySelector("#tn-phone");
+
+      // One slow push-in for the whole shot. The copy layer sits outside it.
+      tl.fromTo("#tn-world",
+        { scale: 1.0, transformOrigin: "50% 42%" },
+        { scale: 1.2, duration: D, ease: "none" }, 0);
+      // Same move, resolved about the handset's own centre so it tracks the world exactly.
+      tl.fromTo("#tn-rig",
+        { scale: 1.0, y: 0, transformOrigin: "50% 37.2%" },
+        { scale: 1.2, y: 0, duration: D, ease: "none" }, 0);
+      // The lights sit further down the platform and drift more slowly.
+      tl.fromTo("#tn-lights",
+        { scale: 1.0, transformOrigin: "50% 42%" },
+        { scale: 1.1, duration: D, ease: "none" }, 0);
+
+      // The depth pool breathes so the dark is never flat.
+      tl.fromTo("#tn-depth", { opacity: 0.7, scale: 0.97, transformOrigin: "50% 40%" },
+        { opacity: 1, scale: 1.08, duration: D, ease: "sine.inOut" }, 0);
+
+      // The real screen is lit at frame 0, framed on its countdown; the push-in then
+      // opens out to the offline chip that explains it. // beat-grid: 3.27s
+      // beat-grid: 1.64 / 3.27 / 5.34s - three framings, each held
+      gsap.set("#tn-phone", { transformOrigin: "34% 30%" });
+      tl.fromTo("#tn-phone", { scale: 2.1 }, { scale: 2.1, duration: 1.64, ease: "none" }, 0);
+      tl.to("#tn-phone", { scale: 1.58, duration: 0.34, ease: "expo.out" }, 1.64);
+      tl.to("#tn-phone", { scale: 1.22, duration: 0.34, ease: "expo.out" }, 3.27);
+      tl.to("#tn-phone", { scale: 1.0,  duration: 0.38, ease: "expo.out" }, 5.34);
+
+      // First train, far down the platform.
+      tl.fromTo("#tn-head", { x: 0 }, { x: 1760, duration: 1.5, ease: "power1.inOut" }, 1.64);
+      tl.fromTo("#tn-head", { opacity: 0 }, { opacity: 0.85, duration: 0.4, ease: "power2.out" }, 1.64);
+      tl.to("#tn-head", { opacity: 0, duration: 0.35, ease: "power2.in" }, 2.85);
+
+      // Second train, closer and brighter: it rim-lights the handset as it passes.
+      tl.fromTo("#tn-head2", { x: 0 }, { x: 1700, duration: 1.4, ease: "power1.inOut" }, 4.39);
+      tl.fromTo("#tn-head2", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 4.39);
+      tl.to("#tn-head2", { opacity: 0, duration: 0.35, ease: "power2.in" }, 5.5);
+      tl.fromTo(phone, { "--rim": 1 }, { "--rim": 3.2, duration: 0.5, ease: "power2.out" }, 4.6);
+      tl.to(phone, { "--rim": 1, duration: 0.9, ease: "power2.inOut" }, 5.2);
+
+      // The README's own line about what this actually is. // beat-grid: 6.00s
+      gsap.set(["#tn-copy", "#tn-scrim", "#tn-end", "#tn-end-scrim"], { opacity: 0 });
+      tl.fromTo("#tn-scrim", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 5.85);
+      tl.to("#tn-copy", { opacity: 1, duration: 0.01, ease: "none" }, 5.99);
+      tl.fromTo("#tn-line .w", { opacity: 0, filter: "blur(7px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "expo.out", stagger: 0.05 }, 6.0);
+
+      // Everything recedes under the mark.
+      tl.to(["#tn-copy", "#tn-scrim"], { opacity: 0, filter: "blur(8px)", duration: 0.35, ease: "power2.in" }, 8.5);
+      tl.to("#tn-phone", { opacity: 0, scale: 0.94, filter: "blur(10px)", duration: 0.5, ease: "power3.in", transformOrigin: "50% 50%" }, 8.4);
+      tl.to(["#tn-back", "#tn-p1", "#tn-p2", "#tn-p3", "#tn-p4", "#tn-depth", "#tn-floor", "#tn-tactile"],
+        { opacity: 0.34, duration: 0.6, ease: "power2.inOut" }, 8.5);
+      tl.fromTo("#tn-end-scrim", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 8.7);
+      tl.fromTo("#tn-end", { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.42, ease: "expo.out" }, 8.9);
+
+      window.__timelines["tunnel"] = tl;
+    })();
+  </script>
+</template>

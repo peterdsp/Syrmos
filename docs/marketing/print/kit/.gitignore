@@ -1,0 +1,5 @@
+# Downloaded fonts, derived icon and build output: regenerate with build_kit.py.
+.fonts/
+.cache/
+out/
+__pycache__/

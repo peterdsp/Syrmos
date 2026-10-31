@@ -1,0 +1,75 @@
+<template>
+  <style>
+    .dev-phone { position: absolute; }
+    .dev-screen { position: absolute; left: 7.843%; top: 3.953%; width: 84.314%; height: 92.095%;
+                  overflow: hidden; border-radius: 13.6%/6.3%; background: #F2F0EC; }
+    .dev-screen img { position: absolute; left: 0; width: 100%; height: auto; display: block; }
+    .dev-frame { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the handset and caption stay readable. */
+    #vp-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #vp-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+
+    /* Real capture of the shipping Map tab.
+       Source: docs/screenshots/release-3.0.0/ios/S09-map__C402__light__en__default.png */
+    #vp-phone { left: 290px; top: 205px; width: 500px; height: 992px; filter: drop-shadow(0 calc(22px * var(--pulse,1)) calc(40px * var(--pulse,1)) rgba(20,24,31,0.28)); }
+    #vp-caption {
+      position: absolute; left: 90px; right: 90px; top: 1272px; text-align: center;
+      font-size: 36px; font-weight: 600; letter-spacing: 0.1em; color: #9FB4CE;
+    }
+  </style>
+
+  <div id="root" data-composition-id="v-map" data-width="1080" data-height="1920">
+    <div id="vp-stage" class="clip" data-start="0" data-duration="3.4" data-track-index="1" data-layout-allow-overflow>
+      <img id="vp-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+      <div id="vp-map-scrim"></div>
+      <div id="vp-phone" class="dev-phone">
+        <div class="dev-screen"><img id="vp-shot" src="assets/shots/ios-map-light.png" alt="Syrmos" /></div>
+        <img class="dev-frame" src="assets/devices/frame-iphone17.png" alt="iPhone 17" />
+      </div>
+      <div id="vp-caption">LIVING MAP &middot; ATHENS</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const RMS = [0.115,0.349,0.284,0.221,0.216,0.31,0.343,0.28,0.258,0.318,0.293,0.262,0.163,0.246,0.304,0.225,0.151,0.239,0.383,0.331,0.279,0.181,0.08,0.08,0.067,0.051,0.492,0.436,0.396,0.336,0.334,0.262,0.239,0.217,0.132,0.06,0.039,0.044,0.276,0.324,0.288,0.252,0.182,0.126,0.089,0.077,0.312,0.393,0.317,0.246,0.331,0.293,0.264,0.262,0.263,0.276,0.269,0.193,0.074,0.359,0.319,0.26,0.217,0.177,0.154,0.124,0.406,0.897,0.778,0.538,0.362,0.429,0.449,0.452,0.364,0.369,0.342,0.307,0.331,0.399,0.353,0.331,0.317,0.768,0.775,0.565,0.396,0.318,0.264,0.275,0.286,0.333,0.328,0.28,0.262,0.324,0.352,0.334,0.335,0.635,0.896,0.637,0.442,0.273,0.456,0.473,0.427,0.36,0.301,0.305,0.298,0.307,0.443,0.381,0.385,0.469,0.732,0.743,0.579,0.352,0.336,0.336,0.289,0.237,0.381,0.449,0.458,0.464,0.403,0.398,0.399,0.372,0.792,0.845,0.652,0.372,0.356];
+      const phone = document.querySelector("#vp-phone");
+      const tl = gsap.timeline({ paused: true });
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#vp-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: 3.4, ease: "none" }, 0);
+
+      // entrance owns opacity/position only; the push below owns scale
+      tl.fromTo("#vp-phone",
+        { opacity: 0, y: 26, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.28, ease: "expo.out" }, 0);
+      tl.fromTo("#vp-caption", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.2, ease: "expo.out" }, 0.3);
+
+      // A slow push across the real map, toward the vehicles on the central interchange.
+      // beat-locked: 8.74s (strongCue 0.99)
+      // beat-grid: 6.00 / 7.09 / 8.19s (scene starts at 5.34)
+      gsap.set("#vp-phone", { transformOrigin: "50% 44%" });
+      tl.to("#vp-phone", { scale: 1.12, duration: 0.26, ease: "expo.out" }, 0.66);
+      tl.to("#vp-phone", { scale: 1.26, duration: 0.28, ease: "expo.out" }, 1.75);
+      tl.to("#vp-phone", { scale: 1.42, duration: 0.3,  ease: "expo.out" }, 2.85);
+
+      tl.to("#vp-stage", { opacity: 0, scale: 1.06, filter: "blur(10px)", duration: 0.2, ease: "power3.in", transformOrigin: "center center" }, 3.2);
+
+      tl.to({}, {
+        duration: 3.39, ease: "none",
+        onUpdate: function () {
+          const f = Math.min(RMS.length - 1, Math.max(0, Math.round(tl.time() * 30)));
+          phone.style.setProperty("--pulse", (0.8 + RMS[f] * 0.6).toFixed(3));
+        }
+      }, 0);
+
+      window.__timelines["v-map"] = tl;
+    })();
+  </script>
+</template>

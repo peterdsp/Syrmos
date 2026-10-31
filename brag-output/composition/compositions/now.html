@@ -1,0 +1,66 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+
+    /* A real capture of the shipping Home screen, framed and pushed into.
+       Source: docs/screenshots/release-3.0.0/ios/S01-home__C402__light__en__default.png
+       (iPhone 17 simulator, 402x874pt @3x, clock pinned, offline seed). */
+    /* Real iPhone 17 frame (supplied mockup); the capture moves behind its
+       transparent screen cutout. Frame 1530x3036, cutout x120..1409 y120..2915. */
+    #now-frame { position: absolute; left: 715px; top: 44px; width: 490px; height: 972px;
+      filter: drop-shadow(0 calc(20px * var(--lift, 1)) calc(44px * var(--lift, 1)) rgba(20, 24, 31, 0.26)); }
+    .dev-screen { position: absolute; left: 7.843%; top: 3.953%; width: 84.314%; height: 92.095%;
+                  overflow: hidden; border-radius: 13.6%/6.3%; background: #F2F0EC; }
+    .dev-screen img { position: absolute; left: 0; width: 100%; height: auto; display: block; }
+    .dev-frame { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+    #now-caption {
+      position: absolute; left: 460px; top: 1026px; width: 1000px; text-align: center;
+      font-size: 30px; font-weight: 600; letter-spacing: 0.1em; color: #C2CBD6;
+      text-shadow: 0 1px 12px rgba(8,11,17,0.55);
+    }
+  </style>
+
+  <div id="root" data-composition-id="now" data-width="1920" data-height="1080">
+    <div id="now-frame" class="clip" data-start="0" data-duration="3" data-track-index="1" data-layout-allow-overflow>
+      <div class="dev-screen"><img id="now-shot" src="assets/shots/ios-home-light.png" alt="Syrmos Home, running offline" /></div>
+      <img class="dev-frame" src="assets/devices/frame-iphone17.png" alt="iPhone 17" />
+    </div>
+    <div id="now-caption" class="clip" data-start="0" data-duration="3" data-track-index="2">SYRMOS ON iPHONE</div>
+  </div>
+
+  <script>
+    (function () {
+      // Per-frame music RMS for 0.00-3.05s, extracted from the bed with ffmpeg and
+      // inlined so the value stays a pure function of timeline time (no fetch, no clock).
+      const RMS = [0.406,0.464,0.444,0.462,0.4,0.339,0.32,0.216,0.28,0.251,0.2,0.109,0.304,0.275,0.142,0.085,0.328,0.316,0.269,0.239,0.175,0.086,0.039,0.033,0.177,0.246,0.154,0.14,0.179,0.289,0.239,0.225,0.2,0.12,0.072,0.059,0.052,0.383,0.301,0.255,0.221,0.153,0.091,0.076,0.087,0.347,0.324,0.301,0.309,0.367,0.327,0.275,0.287,0.279,0.262,0.237,0.055,0.213,0.319,0.275,0.244,0.214,0.154,0.08,0.118,0.335,0.288,0.242,0.221,0.275,0.351,0.28,0.249,0.29,0.299,0.27,0.164,0.212,0.311,0.225,0.171,0.211,0.371,0.331,0.278,0.19,0.088,0.085,0.071,0.048,0.446,0.465];
+      const frame = document.querySelector("#now-frame");
+
+      const tl = gsap.timeline({ paused: true });
+
+      // The frame is already on screen at frame 0 (it is the thumbnail); only its weight settles.
+      tl.fromTo("#now-caption", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.26, ease: "expo.out" }, 1.64);
+
+      // Three framings, each snapping on the beat then holding dead still.
+      // beat-grid: 0.56 / 1.64s
+      gsap.set("#now-frame", { transformOrigin: "30% 34%" });
+      tl.fromTo("#now-frame", { scale: 2.05 }, { scale: 2.05, duration: 0.56, ease: "none" }, 0);
+      tl.to("#now-frame", { scale: 1.46, duration: 0.34, ease: "expo.out" }, 0.56);
+      tl.to("#now-frame", { scale: 1.0,  duration: 0.38, ease: "expo.out" }, 1.64);
+
+      // Blur swap out: the ground never cuts.
+      tl.to(["#now-frame", "#now-caption"], { opacity: 0, scale: 0.955, filter: "blur(9px)", duration: 0.18, ease: "power3.in" }, 2.82);
+
+      // Audio-reactive: the frame's elevation breathes with the bed. Shadow only, never text.
+      tl.to({}, {
+        duration: 2.99,
+        ease: "none",
+        onUpdate: function () {
+          const f = Math.min(RMS.length - 1, Math.max(0, Math.round(tl.time() * 30)));
+          frame.style.setProperty("--lift", (0.82 + RMS[f] * 0.55).toFixed(3));
+        }
+      }, 0);
+
+      window.__timelines["now"] = tl;
+    })();
+  </script>
+</template>

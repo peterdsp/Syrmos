@@ -1,0 +1,72 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+    #name-stage { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+    #name-icon {
+      position: absolute; left: 810px; top: 240px; width: 300px; height: 300px;
+      border-radius: 66px; display: block;
+      box-shadow: 0 22px 50px rgba(20, 24, 31, 0.22);
+    }
+    #name-route { position: absolute; left: 560px; top: 596px; width: 800px; height: 60px; }
+    #name-line {
+      position: absolute; left: 192px; top: 712px; width: 1536px;
+      text-align: center; font-size: 60px; font-weight: 600; letter-spacing: -0.025em;
+      color: #EEF2F7; text-shadow: 0 2px 18px rgba(8,11,17,0.55);
+    }
+    #name-line .accent { color: #5AB0FF; }
+  </style>
+
+  <div id="root" data-composition-id="name" data-width="1920" data-height="1080">
+    <div id="name-stage" class="clip" data-start="0" data-duration="3.5" data-track-index="1">
+      <img id="name-icon" src="assets/img/syrmos-icon.png" alt="Syrmos" />
+
+      <svg id="name-route" viewBox="0 0 800 60" fill="none" data-layout-ignore>
+        <path id="name-track" d="M 30 30 H 770" stroke="#1466B8" stroke-width="9" stroke-linecap="round" />
+        <circle class="name-node" cx="30"  cy="30" r="15" fill="#F7F5F1" stroke="#1466B8" stroke-width="7" />
+        <circle class="name-node" cx="178" cy="30" r="15" fill="#F7F5F1" stroke="#1466B8" stroke-width="7" />
+        <circle class="name-node" cx="326" cy="30" r="15" fill="#F7F5F1" stroke="#1466B8" stroke-width="7" />
+        <circle class="name-node" cx="474" cy="30" r="17" fill="#1466B8" />
+        <circle class="name-node" cx="622" cy="30" r="15" fill="#F7F5F1" stroke="#1466B8" stroke-width="7" />
+        <circle class="name-node" cx="770" cy="30" r="15" fill="#F7F5F1" stroke="#1466B8" stroke-width="7" />
+      </svg>
+
+      <div id="name-line">
+        <span class="w">Your</span> <span class="w">next</span> <span class="w">connection.</span>
+        <span class="w accent">Beautifully</span> <span class="w accent">clear.</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // Blur swap in, continuing the ground from the Now card.
+      tl.fromTo("#name-icon",
+        { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "expo.out" }, 0);
+
+      // The linked-route motif draws itself, then the stations land along it.
+      const track = document.querySelector("#name-track");
+      const len = track.getTotalLength();
+      tl.fromTo(track,
+        { strokeDasharray: len, strokeDashoffset: len },
+        { strokeDashoffset: 0, duration: 0.62, ease: "power2.inOut" }, 0.35);
+
+      tl.fromTo(".name-node",
+        { opacity: 0, scale: 0.4, transformOrigin: "center center" },
+        { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.6)", stagger: 0.075 }, 0.5);
+
+      // The product's own line, word by word, then dead still.
+      tl.fromTo("#name-line .w",
+        { opacity: 0, filter: "blur(6px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.26, ease: "power4.out", stagger: 0.075 }, 1.39);
+
+      // Object becomes the world: the route motif grows past frame into the network.
+      tl.to("#name-route", { scaleX: 2.3, scaleY: 1.6, opacity: 0, duration: 0.4, ease: "power3.in", transformOrigin: "center center" }, 3.1);
+      tl.to(["#name-icon", "#name-line"], { opacity: 0, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, 3.14);
+
+      window.__timelines["name"] = tl;
+    })();
+  </script>
+</template>

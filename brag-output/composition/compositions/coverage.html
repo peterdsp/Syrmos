@@ -1,0 +1,52 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+    #cv-stage { position: absolute; inset: 0; }
+    #cv-row { position: absolute; left: 260px; right: 260px; top: 300px; display: flex; justify-content: space-between; }
+    .cv-stat { text-align: center; width: 380px; }
+    .cv-num { font-size: 116px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; color: #EEF2F7; text-shadow: 0 2px 18px rgba(8,11,17,0.55); }
+    .cv-word { font-size: 38px; font-weight: 600; color: #C2CBD6; margin-top: 14px; text-shadow: 0 1px 12px rgba(8,11,17,0.5); }
+    #cv-punch { position: absolute; left: 192px; right: 192px; top: 620px; text-align: center; }
+    #cv-punch-num { font-size: 178px; font-weight: 700; letter-spacing: -0.06em; line-height: 1; color: #5AB0FF; text-shadow: 0 2px 22px rgba(8,11,17,0.6); }
+    #cv-punch-word { font-size: 52px; font-weight: 600; color: #5AB0FF; margin-top: 10px; text-shadow: 0 2px 16px rgba(8,11,17,0.55); }
+  </style>
+
+  <div id="root" data-composition-id="coverage" data-width="1920" data-height="1080">
+    <div id="cv-stage" class="clip" data-start="0" data-duration="4.35" data-track-index="1">
+      <div id="cv-row">
+        <div class="cv-stat" id="cv-s1"><div class="cv-num">32</div><div class="cv-word">lines</div></div>
+        <div class="cv-stat" id="cv-s2"><div class="cv-num">4</div><div class="cv-word">regions</div></div>
+        <div class="cv-stat" id="cv-s3"><div class="cv-num">4</div><div class="cv-word">languages</div></div>
+      </div>
+      <div id="cv-punch">
+        <div id="cv-punch-num">0</div>
+        <div id="cv-punch-word">trackers</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // Three facts arrive, then all three hold together to the end of the scene,
+      // so each short label is readable as part of the set.
+      // beat-grid: 15.84 / 16.38 / 16.93s
+      gsap.set(["#cv-s1", "#cv-s2", "#cv-s3"], { opacity: 0, transformOrigin: "center center" });
+      tl.fromTo("#cv-s1", { opacity: 0, y: 24, filter: "blur(7px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0);
+      tl.fromTo("#cv-s2", { opacity: 0, y: 24, filter: "blur(7px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 0.54);
+      tl.fromTo("#cv-s3", { opacity: 0, y: 24, filter: "blur(7px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.2, ease: "expo.out" }, 1.09);
+
+      // A full bar of nothing, then the claim that is the point.
+      // beat-locked: 18.56s (strongCue 0.99)
+      gsap.set("#cv-punch", { opacity: 0 });
+      tl.fromTo("#cv-punch",
+        { opacity: 0, scale: 0.93, transformOrigin: "center top" },
+        { opacity: 1, scale: 1, duration: 0.28, ease: "expo.out" }, 2.72);
+
+      // No exit: the film cuts from the claim straight to the mark, on the beat at 20.19s.
+
+      window.__timelines["coverage"] = tl;
+    })();
+  </script>
+</template>

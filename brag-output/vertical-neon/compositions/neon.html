@@ -1,0 +1,161 @@
+<template>
+  <style>
+    /* Real iPhone 17 frame (supplied mockup) over the live capture. The frame's
+       screen cutout is transparent, so the capture still moves behind the glass.
+       Frame 1530x3036; cutout x120..1409, y120..2915 -> the percentages below. */
+    .dev-phone { position: absolute; }
+    .dev-screen { position: absolute; left: 7.843%; top: 3.953%; width: 84.314%; height: 92.095%;
+                  overflow: hidden; border-radius: 13.6%/6.3%; background: #000; }
+    .dev-screen img { position: absolute; left: 0; width: 100%; height: auto; display: block; }
+    .dev-frame { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #EAF2FF; overflow: hidden; }
+    #nx-camera { position: absolute; inset: 0; }
+
+    /* The plate is the shipping Map tab itself, captured in dark mode and treated
+       as the environment behind the handset.
+       Source: docs/screenshots/release-3.0.0/ios/S09-map__C402__dark__en__default.png */
+    #nx-plate-wrap { position: absolute; inset: 0; overflow: hidden; }
+    #nx-plate {
+      position: absolute; left: -175px; top: -620px; width: 1430px; height: auto; display: block;
+      filter: blur(1.6px) saturate(1.5) brightness(1.22) contrast(1.06);
+    }
+    #nx-tint { position: absolute; inset: 0; background: rgba(8, 16, 30, 0.30); }
+    #nx-vig {
+      position: absolute; inset: -60px;
+      background: radial-gradient(ellipse 68% 62% at 50% 44%, rgba(6,10,18,0) 0%, rgba(6,10,18,0.46) 58%, rgba(6,10,18,0.93) 100%);
+    }
+    #nx-glow {
+      position: absolute; left: -200px; top: 180px; width: 1480px; height: 1480px;
+      background: radial-gradient(circle at 50% 50%, rgba(47,168,255,0.24) 0%, rgba(47,168,255,0.09) 34%, rgba(6,10,18,0) 66%);
+    }
+    #nx-glow-2 {
+      position: absolute; left: 120px; top: 820px; width: 1100px; height: 1100px;
+      background: radial-gradient(circle at 50% 50%, rgba(0,232,138,0.15) 0%, rgba(0,232,138,0.05) 40%, rgba(6,10,18,0) 70%);
+    }
+
+    /* Trains passing: light, not drawing. */
+    #nx-streak {
+      position: absolute; left: -420px; top: 980px; width: 420px; height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(47,168,255,0) 0%, rgba(160,216,255,0.95) 62%, rgba(255,255,255,1) 92%, rgba(255,255,255,0) 100%);
+      filter: blur(2px);
+    }
+    #nx-streak-2 {
+      position: absolute; left: -380px; top: 1250px; width: 380px; height: 8px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0,232,138,0) 0%, rgba(150,255,210,0.9) 64%, rgba(255,255,255,1) 92%, rgba(255,255,255,0) 100%);
+      filter: blur(2px);
+    }
+
+    /* Handset: a generic frame around a real capture of the shipping Home screen.
+       Source: docs/screenshots/release-3.0.0/ios/S01-home__C402__dark__en__default.png */
+    #nx-phone { left: 300px; top: 230px; width: 480px; height: 952px; filter: drop-shadow(0 0 calc(70px * var(--lift, 1)) rgba(47,168,255,0.34)) drop-shadow(0 40px 70px rgba(0,0,0,0.6)); }
+
+    #nx-scrim {
+      position: absolute; left: -200px; top: 1046px; width: 1480px; height: 620px;
+      background: radial-gradient(ellipse at 50% 42%, rgba(6,10,18,0.99) 0%, rgba(6,10,18,0.97) 34%, rgba(6,10,18,0.80) 54%, rgba(6,10,18,0) 80%);
+    }
+    #nx-caption { position: absolute; left: 80px; right: 80px; top: 1136px; text-align: center; }
+    #nx-cap-title { font-size: 58px; font-weight: 700; letter-spacing: -0.02em; color: #EAF2FF; }
+    #nx-cap-sub { margin-top: 18px; font-size: 40px; font-weight: 600; color: #2FA8FF; }
+    #nx-regions { position: absolute; left: 60px; right: 60px; top: 1274px; text-align: center; font-size: 36px; font-weight: 600; letter-spacing: 0.06em; color: #7D8DA6; }
+
+    #nx-end { position: absolute; left: 0; right: 0; top: 560px; text-align: center; z-index: 0; }
+    #nx-end-scrim { position: absolute; left: -110px; top: 300px; width: 1300px; height: 1060px; background: radial-gradient(ellipse at 50% 50%, rgba(6,10,18,0.96) 0%, rgba(6,10,18,0.8) 42%, rgba(6,10,18,0) 72%); }
+    #nx-end img { width: 300px; height: 300px; border-radius: 66px; display: inline-block; box-shadow: 0 0 80px rgba(47,168,255,0.4); }
+    #nx-end-url { margin-top: 44px; font-size: 40px; font-weight: 600; color: #7D8DA6; letter-spacing: 0.02em; }
+  </style>
+
+  <div id="root" data-composition-id="neon" data-width="1080" data-height="1920">
+    <div id="nx-camera" class="clip" data-start="0" data-duration="11.46" data-track-index="1" data-layout-allow-overflow>
+      <div id="nx-plate-wrap">
+        <img id="nx-plate" src="assets/shots/ios-map-dark.png" alt="Syrmos live map, dark mode" />
+      </div>
+      <div id="nx-tint"></div>
+      <div id="nx-glow"></div>
+      <div id="nx-glow-2"></div>
+      <div id="nx-vig"></div>
+
+      <div id="nx-streak"></div>
+      <div id="nx-streak-2"></div>
+
+      <div id="nx-phone" class="dev-phone">
+        <div class="dev-screen"><img id="nx-shot" src="assets/shots/ios-home-dark.png" alt="Syrmos" /></div>
+        <img class="dev-frame" src="assets/devices/frame-iphone17.png" alt="iPhone 17" />
+      </div>
+
+      <div id="nx-scrim" data-layout-allow-occlusion></div>
+      <div id="nx-caption">
+        <div id="nx-cap-title">Living map</div>
+        <div id="nx-cap-sub">Athens, live and offline</div>
+      </div>
+      <div id="nx-regions">ATHENS &middot; THESSALONIKI &middot; PATRAS</div>
+
+      <div id="nx-end-scrim" data-layout-allow-occlusion></div>
+      <div id="nx-end" data-layout-allow-occlusion>
+        <img src="assets/img/syrmos-icon.png" alt="Syrmos" />
+        <div id="nx-end-url">syrmos.peterdsp.dev</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const D = 11.46;
+
+      // Camera boom over the real map plate: one slow continuous move.
+      // The plate drifts, but the camera steps: a new framing on each strong cue.
+      tl.fromTo("#nx-plate",
+        { scale: 1.0, x: 26, y: 22, transformOrigin: "50% 46%" },
+        { scale: 1.13, x: -34, y: -30, duration: D, ease: "none" }, 0);
+      gsap.set("#nx-camera", { transformOrigin: "50% 42%" });
+      tl.fromTo("#nx-camera", { scale: 1.0 }, { scale: 1.0, duration: 0.56, ease: "none" }, 0);
+      tl.to("#nx-camera", { scale: 1.08, duration: 0.3, ease: "expo.out" }, 0.56);   // beat 0.56
+      tl.to("#nx-camera", { scale: 1.0,  duration: 0.32, ease: "expo.out" }, 2.73);  // beat 2.73
+      tl.to("#nx-camera", { scale: 1.07, duration: 0.3, ease: "expo.out" }, 5.34);   // beat 5.34
+      tl.to("#nx-camera", { scale: 1.0,  duration: 0.34, ease: "expo.out" }, 7.09);  // beat 7.09
+
+      // The plate comes up out of the dark. // beat-grid: 0.56s
+      tl.fromTo("#nx-plate-wrap", { opacity: 0.22 }, { opacity: 1, duration: 1.3, ease: "power2.out" }, 0.56);
+      tl.fromTo("#nx-glow", { opacity: 0.5, scale: 0.96, transformOrigin: "50% 50%" },
+        { opacity: 1, scale: 1.1, duration: D, ease: "sine.inOut" }, 0);
+      tl.fromTo("#nx-glow-2", { opacity: 0.3, scale: 1.08, transformOrigin: "50% 50%" },
+        { opacity: 0.9, scale: 0.94, duration: D, ease: "sine.inOut" }, 0);
+
+      // The handset is lit at frame 0: this is the thumbnail and the hook.
+      tl.fromTo("#nx-phone", { opacity: 1, scale: 0.985, transformOrigin: "50% 50%" },
+        { opacity: 1, scale: 1, duration: 0.4, ease: "expo.out" }, 0);
+      // A slow pull back across the real Home screen behind the glass.
+      tl.fromTo("#nx-shot", { scale: 1.26, transformOrigin: "32% 36%" },
+        { scale: 1.26, duration: 1.09, ease: "none" }, 0);
+      tl.to("#nx-shot", { scale: 1.0, duration: 0.4, ease: "expo.out" }, 1.09);
+
+      // Two trains pass behind the glass.
+      tl.fromTo("#nx-streak", { x: 0 }, { x: 1600, duration: 1.2, ease: "power1.inOut" }, 2.73);
+      tl.fromTo("#nx-streak", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 2.73);
+      tl.to("#nx-streak", { opacity: 0, duration: 0.28, ease: "power2.in" }, 3.65);
+      tl.fromTo("#nx-streak-2", { x: 0 }, { x: 1560, duration: 1.3, ease: "power1.inOut" }, 6.0);
+      tl.fromTo("#nx-streak-2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 6.0);
+      tl.to("#nx-streak-2", { opacity: 0, duration: 0.28, ease: "power2.in" }, 7.02);
+
+      // The app's own name for this screen, then the regions it covers.
+      gsap.set(["#nx-caption", "#nx-regions", "#nx-end", "#nx-end-scrim", "#nx-scrim"], { opacity: 0 });
+      tl.fromTo("#nx-scrim", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 3.1);
+      tl.fromTo("#nx-caption", { opacity: 0, y: 26, filter: "blur(8px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.24, ease: "expo.out" }, 3.27);
+      tl.fromTo("#nx-regions", { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.22, ease: "expo.out" }, 5.34);
+
+      // Everything dims under the mark.
+      tl.to(["#nx-caption", "#nx-regions"], { opacity: 0, filter: "blur(8px)", duration: 0.35, ease: "power2.in" }, 8.55);
+      tl.to("#nx-scrim", { opacity: 0, duration: 0.45, ease: "power2.in" }, 8.55);
+      tl.to("#nx-phone", { opacity: 0, scale: 0.94, filter: "blur(10px)", duration: 0.45, ease: "power3.in" }, 8.6);
+      tl.to("#nx-plate-wrap", { opacity: 0.26, duration: 0.6, ease: "power2.inOut" }, 8.6);
+      tl.fromTo("#nx-end-scrim", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 8.7);
+      tl.fromTo("#nx-end", { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.42, ease: "expo.out" }, 9.0);
+
+      window.__timelines["neon"] = tl;
+    })();
+  </script>
+</template>

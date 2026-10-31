@@ -1,0 +1,1 @@
+Syrmos is live on iPhone, Android and web: a rail companion for Greece that still counts down your next train 40 metres underground with no signal. Live map of every vehicle, fares, and an offline assistant that answers in plain English, Greek or Albanian. 32 lines, 4 regions, 0 trackers.

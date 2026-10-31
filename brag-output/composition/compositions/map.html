@@ -1,0 +1,69 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+    #map-stage { position: absolute; inset: 0; }
+
+    /* The shipping web app, captured live.
+       Source: docs/screenshots/product-2026-09/web_desktop_now.png (2880x1800). */
+    #map-frame {
+      position: absolute; left: 210px; top: 74px; width: 1500px; height: 938px;
+      border-radius: 22px; overflow: hidden; background: #F2F0EC;
+      border: 1px solid #E0DACF;
+      box-shadow: 0 calc(22px * var(--pulse, 1)) calc(52px * var(--pulse, 1)) rgba(20, 24, 31, 0.16);
+    }
+    #map-shot { position: absolute; left: 0; top: 0; width: 1500px; height: auto; display: block; }
+    #map-caption {
+      position: absolute; left: 210px; top: 1026px; width: 1500px; text-align: center;
+      font-size: 30px; font-weight: 600; letter-spacing: 0.1em; color: #C2CBD6;
+      text-shadow: 0 1px 12px rgba(8,11,17,0.55);
+    }
+  </style>
+
+  <div id="root" data-composition-id="map" data-width="1920" data-height="1080">
+    <div id="map-stage" class="clip" data-start="0" data-duration="4.5" data-track-index="1" data-layout-allow-overflow>
+      <div id="map-frame">
+        <img id="map-shot" src="assets/shots/web-board-light.png" alt="Syrmos on the web, Athens live board" />
+      </div>
+      <div id="map-caption">SYRMOS ON THE WEB</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Per-frame music RMS for 6.50-11.05s of the bed, inlined so the frame's
+      // elevation stays a pure function of timeline time.
+      const RMS = [0.115,0.349,0.284,0.221,0.216,0.31,0.343,0.28,0.258,0.318,0.293,0.262,0.163,0.246,0.304,0.225,0.151,0.239,0.383,0.331,0.279,0.181,0.08,0.08,0.067,0.051,0.492,0.436,0.396,0.336,0.334,0.262,0.239,0.217,0.132,0.06,0.039,0.044,0.276,0.324,0.288,0.252,0.182,0.126,0.089,0.077,0.312,0.393,0.317,0.246,0.331,0.293,0.264,0.262,0.263,0.276,0.269,0.193,0.074,0.359,0.319,0.26,0.217,0.177,0.154,0.124,0.406,0.897,0.778,0.538,0.362,0.429,0.449,0.452,0.364,0.369,0.342,0.307,0.331,0.399,0.353,0.331,0.317,0.768,0.775,0.565,0.396,0.318,0.264,0.275,0.286,0.333,0.328,0.28,0.262,0.324,0.352,0.334,0.335,0.635,0.896,0.637,0.442,0.273,0.456,0.473,0.427,0.36,0.301,0.305,0.298,0.307,0.443,0.381,0.385,0.469,0.732,0.743,0.579,0.352,0.336,0.336,0.289,0.237,0.381,0.449,0.458,0.464,0.403,0.398,0.399,0.372,0.792,0.845,0.652,0.372,0.356];
+      const frame = document.querySelector("#map-frame");
+
+      const tl = gsap.timeline({ paused: true });
+
+      tl.fromTo("#map-frame",
+        { opacity: 0, y: 26, scale: 0.985, filter: "blur(10px)", transformOrigin: "center center" },
+        { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, 0);
+      tl.fromTo("#map-caption", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.22, ease: "expo.out" }, 0.3);
+
+      // Four framings, each landing on a beat then holding. The third is the
+      // strong cue. // beat-grid: 7.09 / 8.19 / 8.74 (strongCue) / 10.37s
+      gsap.set("#map-shot", { transformOrigin: "12% 44%" });
+      tl.fromTo("#map-shot", { scale: 1.0 }, { scale: 1.0, duration: 0.59, ease: "none" }, 0);
+      tl.to("#map-shot", { scale: 1.12, duration: 0.3, ease: "expo.out" }, 0.59);
+      tl.to("#map-shot", { scale: 1.26, duration: 0.3, ease: "expo.out" }, 1.69);
+      tl.to("#map-shot", { scale: 1.44, duration: 0.34, ease: "expo.out" }, 2.24);
+      tl.to("#map-shot", { scale: 1.18, duration: 0.42, ease: "expo.out" }, 3.87);
+
+      // Carry across: the board lifts and softens as the assistant takes the stage.
+      tl.to("#map-stage", { opacity: 0, scale: 1.05, filter: "blur(10px)", duration: 0.2, ease: "power3.in", transformOrigin: "center center" }, 4.3);
+
+      // Audio-reactive: only the frame's elevation breathes with the bed.
+      tl.to({}, {
+        duration: 4.49, ease: "none",
+        onUpdate: function () {
+          const f = Math.min(RMS.length - 1, Math.max(0, Math.round(tl.time() * 30)));
+          frame.style.setProperty("--pulse", (0.8 + RMS[f] * 0.6).toFixed(3));
+        }
+      }, 0);
+
+      window.__timelines["map"] = tl;
+    })();
+  </script>
+</template>

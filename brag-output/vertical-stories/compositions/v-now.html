@@ -1,0 +1,71 @@
+<template>
+  <style>
+    .dev-phone { position: absolute; }
+    .dev-screen { position: absolute; left: 7.843%; top: 3.953%; width: 84.314%; height: 92.095%;
+                  overflow: hidden; border-radius: 13.6%/6.3%; background: #F2F0EC; }
+    .dev-screen img { position: absolute; left: 0; width: 100%; height: auto; display: block; }
+    .dev-frame { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #14181F; }
+
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the handset and copy stay readable. */
+    #vn-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #vn-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+
+    /* Real capture of the shipping Home screen.
+       Source: docs/screenshots/release-3.0.0/ios/S01-home__C402__light__en__default.png */
+    #vn-phone { left: 290px; top: 205px; width: 500px; height: 992px; filter: drop-shadow(0 calc(22px * var(--lift,1)) calc(40px * var(--lift,1)) rgba(20,24,31,0.28)); }
+    #vn-caption {
+      position: absolute; left: 90px; right: 90px; top: 1272px; text-align: center;
+      font-size: 36px; font-weight: 600; letter-spacing: 0.1em; color: #9FB4CE;
+    }
+  </style>
+
+  <div id="root" data-composition-id="v-now" data-width="1080" data-height="1920">
+    <div id="vn-stage" class="clip" data-start="0" data-duration="2.73" data-track-index="1" data-layout-allow-overflow>
+      <img id="vn-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+      <div id="vn-map-scrim"></div>
+      <div id="vn-phone" class="dev-phone">
+        <div class="dev-screen"><img id="vn-shot" src="assets/shots/ios-home-light.png" alt="Syrmos" /></div>
+        <img class="dev-frame" src="assets/devices/frame-iphone17.png" alt="iPhone 17" />
+      </div>
+      <div id="vn-caption">SYRMOS ON iPHONE</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const RMS = [0.406,0.464,0.444,0.462,0.4,0.339,0.32,0.216,0.28,0.251,0.2,0.109,0.304,0.275,0.142,0.085,0.328,0.316,0.269,0.239,0.175,0.086,0.039,0.033,0.177,0.246,0.154,0.14,0.179,0.289,0.239,0.225,0.2,0.12,0.072,0.059,0.052,0.383,0.301,0.255,0.221,0.153,0.091,0.076,0.087,0.347,0.324,0.301,0.309,0.367,0.327,0.275,0.287,0.279,0.262,0.237,0.055,0.213,0.319,0.275,0.244,0.214,0.154,0.08,0.118,0.335,0.288,0.242,0.221,0.275,0.351,0.28,0.249,0.29,0.299,0.27,0.164,0.212,0.311,0.225,0.171,0.211,0.371,0.331,0.278,0.19,0.088,0.085,0.071,0.048,0.446,0.465];
+      const phone = document.querySelector("#vn-phone");
+      const tl = gsap.timeline({ paused: true });
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#vn-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: 2.73, ease: "none" }, 0);
+
+      // The screen is lit at frame 0: this is the thumbnail.
+      tl.fromTo("#vn-caption", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.22, ease: "expo.out" }, 1.64);
+
+      // Open framed on the countdown, pull back to the whole handset.
+      // beat-grid: 0.56 / 1.64s - snap, hold, snap, hold
+      gsap.set("#vn-phone", { transformOrigin: "32% 33%" });
+      tl.fromTo("#vn-phone", { scale: 2.0 }, { scale: 2.0, duration: 0.56, ease: "none" }, 0);
+      tl.to("#vn-phone", { scale: 1.44, duration: 0.32, ease: "expo.out" }, 0.56);
+      tl.to("#vn-phone", { scale: 1.0,  duration: 0.36, ease: "expo.out" }, 1.64);
+
+      tl.to(["#vn-phone", "#vn-caption"], { opacity: 0, scale: 0.96, filter: "blur(9px)", duration: 0.18, ease: "power3.in" }, 2.55);
+
+      tl.to({}, {
+        duration: 2.72, ease: "none",
+        onUpdate: function () {
+          const f = Math.min(RMS.length - 1, Math.max(0, Math.round(tl.time() * 30)));
+          phone.style.setProperty("--lift", (0.82 + RMS[f] * 0.55).toFixed(3));
+        }
+      }, 0);
+
+      window.__timelines["v-now"] = tl;
+    })();
+  </script>
+</template>

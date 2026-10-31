@@ -1,0 +1,163 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 2,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "overlapping_gsap_tweens",
+        "severity": "warning",
+        "message": "GSAP tweens overlap on \"#nx-streak\" for opacity between 3.50s and 3.68s.",
+        "selector": "#nx-streak",
+        "dataAttributes": {},
+        "sourceFile": "/Users/peterdsp/git/Syrmos/brag-output/vertical-neon/compositions/neon.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Shorten the earlier tween, move the later tween, or add `overwrite: \"auto\"`."
+      },
+      {
+        "code": "overlapping_gsap_tweens",
+        "severity": "warning",
+        "message": "GSAP tweens overlap on \"#nx-streak-2\" for opacity between 6.85s and 7.05s.",
+        "selector": "#nx-streak-2",
+        "dataAttributes": {},
+        "sourceFile": "/Users/peterdsp/git/Syrmos/brag-output/vertical-neon/compositions/neon.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Shorten the earlier tween, move the later tween, or add `overwrite: \"auto\"`."
+      }
+    ],
+    "filesScanned": 2
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 11.46,
+    "samples": [
+      0.637,
+      1.91,
+      3.183,
+      4.457,
+      5.73,
+      7.003,
+      8.277,
+      9.55,
+      10.823
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0.637,
+      3.183,
+      5.73,
+      8.277,
+      10.823
+    ],
+    "checked": 33,
+    "passed": 33
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 2 text elements stay under it for 0.5 s or more, the smallest \"Live\" at 26 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "Live",
+        "selector": "#nx-livechip > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/neon.html",
+        "bbox": {
+          "x": 670.61,
+          "y": 388.86,
+          "width": 52.35,
+          "height": 31
+        },
+        "time": 0,
+        "times": [
+          0,
+          0
+        ],
+        "fontPx": 25.99,
+        "floorPx": 28,
+        "seconds": 6.602,
+        "elements": [
+          {
+            "selector": "#nx-livechip > span:nth-of-type(1)",
+            "text": "Live",
+            "fontPx": 25.99,
+            "time": 0,
+            "seconds": 6.602
+          },
+          {
+            "selector": "#nx-then",
+            "text": "then 9 min, 14 min",
+            "fontPx": 25.99,
+            "time": 0,
+            "seconds": 6.602
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 92
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

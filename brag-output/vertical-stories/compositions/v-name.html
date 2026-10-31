@@ -1,0 +1,66 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; font-family: Inter, sans-serif; color: #F1F5FA; }
+    #vm-stage { position: absolute; inset: 0; }
+    /* Full living-map backdrop: the real Map tab, slowly drifting (Ken Burns)
+       under a dark scrim so the mark and copy stay readable. */
+    #vm-map { position: absolute; left: -60px; top: -80px; width: 1200px; height: 2080px; object-fit: cover; }
+    #vm-map-scrim { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 82% 60% at 50% 40%, rgba(10,14,22,0.30) 0%, rgba(10,14,22,0.70) 58%, rgba(8,11,17,0.94) 100%); }
+    #vm-icon { position: absolute; left: 330px; top: 520px; width: 420px; height: 420px; border-radius: 92px; display: block; box-shadow: 0 26px 60px rgba(0,0,0,0.5); }
+    #vm-route { position: absolute; left: 190px; top: 1010px; width: 700px; height: 60px; }
+    #vm-line { position: absolute; left: 90px; right: 90px; top: 1120px; text-align: center; font-size: 72px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.18; color: #F1F5FA; }
+    #vm-line .accent { color: #5AA7F0; }
+  </style>
+
+  <div id="root" data-composition-id="v-name" data-width="1080" data-height="1920">
+    <div id="vm-stage" class="clip" data-start="0" data-duration="2.61" data-track-index="1">
+      <img id="vm-map" src="assets/shots/ios-map-dark.png" alt="Syrmos live map" />
+      <div id="vm-map-scrim"></div>
+      <img id="vm-icon" src="assets/img/syrmos-icon.png" alt="Syrmos" />
+      <svg id="vm-route" viewBox="0 0 700 60" fill="none" data-layout-ignore>
+        <path id="vm-track" d="M 30 30 H 670" stroke="#1466B8" stroke-width="10" stroke-linecap="round" />
+        <circle class="vm-node" cx="30"  cy="30" r="16" fill="#F7F5F1" stroke="#1466B8" stroke-width="8" />
+        <circle class="vm-node" cx="190" cy="30" r="16" fill="#F7F5F1" stroke="#1466B8" stroke-width="8" />
+        <circle class="vm-node" cx="350" cy="30" r="18" fill="#1466B8" />
+        <circle class="vm-node" cx="510" cy="30" r="16" fill="#F7F5F1" stroke="#1466B8" stroke-width="8" />
+        <circle class="vm-node" cx="670" cy="30" r="16" fill="#F7F5F1" stroke="#1466B8" stroke-width="8" />
+      </svg>
+      <div id="vm-line">
+        <span class="w">Your</span> <span class="w">next</span> <span class="w">connection.</span><br />
+        <span class="w accent">Beautifully</span> <span class="w accent">clear.</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // Full-map backdrop: one slow continuous camera drift over the live map.
+      tl.fromTo("#vm-map", { scale: 1.08, x: 24, y: 28, transformOrigin: "50% 44%" },
+        { scale: 1.17, x: -28, y: -30, duration: 2.61, ease: "none" }, 0);
+
+      tl.fromTo("#vm-icon",
+        { opacity: 0, scale: 0.9, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 0);
+
+      const track = document.querySelector("#vm-track");
+      const len = track.getTotalLength();
+      tl.fromTo(track, { strokeDasharray: len, strokeDashoffset: len },
+        { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 0.3);
+      tl.fromTo(".vm-node", { opacity: 0, scale: 0.4, transformOrigin: "center center" },
+        { opacity: 1, scale: 1, duration: 0.26, ease: "back.out(1.6)", stagger: 0.06 }, 0.42);
+
+      // The product's own line, word by word, then dead still. // beat-grid: 3.82s
+      tl.fromTo("#vm-line .w", { opacity: 0, filter: "blur(6px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.24, ease: "power4.out", stagger: 0.06 }, 0.9);
+
+      // Object becomes the world: the route motif grows past frame into the network.
+      tl.to("#vm-route", { scaleX: 2.4, scaleY: 1.8, opacity: 0, duration: 0.34, ease: "power3.in", transformOrigin: "center center" }, 2.27);
+      tl.to(["#vm-icon", "#vm-line"], { opacity: 0, filter: "blur(8px)", duration: 0.28, ease: "power2.in" }, 2.3);
+
+      window.__timelines["v-name"] = tl;
+    })();
+  </script>
+</template>
