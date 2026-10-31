@@ -21,6 +21,22 @@ platform :ios do
     submit  = options.fetch(:submit,  ENV["SUBMIT"]  == "true")
     dry_run = options.fetch(:dry_run, ENV["DRY_RUN"] == "true")
 
+    # Which App Store version to write to. deliver only edits a version that is
+    # already sitting in "Prepare for Submission", and it does NOT invent one:
+    # with nothing editable it retried "Cannot find edit app store version"
+    # seven times over twenty minutes and then failed with "could not find an
+    # editable version for IOS". Naming the version makes deliver create it
+    # when the previous one is released or in review, which is exactly the
+    # state a release lands in. Read from the project so the lane cannot drift
+    # from the binary that was just uploaded.
+    app_version = options.fetch(:app_version, ENV["APP_VERSION"].to_s).strip
+    if app_version.empty?
+      pbxproj = File.expand_path("../iosApp/Syrmos.xcodeproj/project.pbxproj", __dir__)
+      app_version = File.read(pbxproj)[/MARKETING_VERSION = ([0-9][0-9.]*);/, 1].to_s
+    end
+    UI.user_error!("Could not determine MARKETING_VERSION for the App Store listing") if app_version.empty?
+    UI.message("App Store version: #{app_version}")
+
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("ASC_KEY_ID"),
       issuer_id: ENV.fetch("ASC_ISSUER_ID"),
@@ -32,6 +48,7 @@ platform :ios do
     deliver(
       api_key: api_key,
       app_identifier: "com.syrmosApp.ios",
+      app_version: app_version,
       metadata_path: "./fastlane/metadata/ios",
       skip_binary_upload: true,
       skip_screenshots: true,
