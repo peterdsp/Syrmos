@@ -38,9 +38,9 @@ test('web-ariadne.js: help / outOfScope / clarify all handle it', () => {
 
 test('web-map.js: notification + fare strings have Italian branches', () => {
   const js = read('web-map.js');
-  // what's-new modal
-  assert.match(js, /lang === "it" \? "Novità in Syrmos"/, "what's-new title missing it");
-  assert.match(js, /Sfoglia tutte le stazioni/, "what's-new bullets missing it");
+  // what's-new bar (strings come from the I18N table)
+  assert.match(js, /whatsnew_title: "Novita in Syrmos"/, "what's-new title missing it");
+  assert.match(js, /whatsnew_brief: "[^"]*Ariadne collega stazioni e linee[^"]*"/, "what's-new brief missing it");
   // severe-weather banner
   assert.match(js, /lang === "it" \? "Temporale in corso"/, 'severe-weather title missing it');
   assert.match(js, /NUMERI DI EMERGENZA/, 'severe-weather numbers header missing it');

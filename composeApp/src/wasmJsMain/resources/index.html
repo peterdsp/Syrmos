@@ -222,6 +222,17 @@
 
     <!-- ===== Context Rail (352px, second column) ===== -->
     <aside class="context-rail" id="contextRail">
+        <!-- Plain-language headline and the single primary action. The H1 says
+             what Syrmos is and the outcome (copy mirrors the store listing:
+             next departures across Greece, timetables that work offline). The
+             CTA goes to the download screen that carries both store links, so
+             there is one dominant action; the transit rows below stay secondary.
+             Both are localized via data-i18n. -->
+        <header class="rail-intro">
+            <h1 class="rail-intro__title" data-i18n="site_headline">Syrmos: your next train, tram or bus in Athens and across Greece, with timetables that work offline.</h1>
+            <a class="primary-button rail-intro__cta" href="/get-app/" data-i18n="download_app">Download the app</a>
+        </header>
+
         <section class="search-card">
             <div class="search-input-shell">
                 <svg class="ic search-icon" aria-hidden="true"><use href="#ic-search"/></svg>
@@ -276,6 +287,13 @@
                 <div id="infoLinksList" class="info-links-list"></div>
             </div>
         </div>
+
+        <!-- Support contact: the address published on /support/, /privacy and as
+             the App Store support URL. A plain mailto link so it works with the
+             keyboard and without JavaScript. -->
+        <footer class="rail-footer">
+            <a class="rail-footer__link" href="mailto:info@peterdsp.dev?subject=Syrmos%20support"><span data-i18n="support_label">Support</span>: info@peterdsp.dev</a>
+        </footer>
 
         <div class="context-spacer"></div>
 

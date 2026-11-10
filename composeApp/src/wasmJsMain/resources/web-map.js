@@ -117,6 +117,11 @@
             offline_snapshot: "Offline snapshot",
             get_the_app: "Get the free Syrmos app",
             dismiss: "Dismiss",
+            site_headline: "Syrmos: your next train, tram or bus in Athens and across Greece, with timetables that work offline.",
+            download_app: "Download the app",
+            support_label: "Support",
+            whatsnew_brief: "a fresh light-first design, Ariadne links to stations and lines, and web geolocation for stations near you.",
+            whatsnew_dismiss: "Dismiss what's new",
             ws_now: "Now",
             ws_plan: "Plan",
             ws_explore: "Explore",
@@ -259,6 +264,11 @@
             offline_snapshot: "Εκτός σύνδεσης",
             get_the_app: "Κατεβάστε τη δωρεάν εφαρμογή Syrmos",
             dismiss: "Κλείσιμο",
+            site_headline: "Syrmos: το επόμενο τρένο, τραμ ή λεωφορείο σου στην Αθήνα και σε όλη την Ελλάδα, με δρομολόγια που δουλεύουν και χωρίς σύνδεση.",
+            download_app: "Κατέβασε την εφαρμογή",
+            support_label: "Υποστήριξη",
+            whatsnew_brief: "νέος φωτεινός σχεδιασμός, η Αριάδνη συνδέεται με σταθμούς και γραμμές, και εντοπισμός τοποθεσίας στο web για κοντινούς σταθμούς.",
+            whatsnew_dismiss: "Κλείσιμο του «Τι νέο υπάρχει»",
             ws_now: "Τώρα",
             ws_plan: "Σχέδιο",
             ws_explore: "Εξερεύνηση",
@@ -401,6 +411,11 @@
             offline_snapshot: "Pa internet",
             get_the_app: "Merr aplikacionin falas Syrmos",
             dismiss: "Mbyll",
+            site_headline: "Syrmos: treni, tramvaji ose autobusi yt i radhës në Athinë dhe në gjithë Greqinë, me orare që punojnë edhe pa internet.",
+            download_app: "Shkarko aplikacionin",
+            support_label: "Mbështetje",
+            whatsnew_brief: "dizajn i ri i çelët, Ariadne lidhet me stacione dhe linja, dhe gjeolokalizim në web për stacionet pranë teje.",
+            whatsnew_dismiss: "Mbyll të rejat",
             ws_now: "Tani",
             ws_plan: "Plani",
             ws_explore: "Eksploro",
@@ -543,6 +558,11 @@
             offline_snapshot: "Snapshot offline",
             get_the_app: "Scarica l'app gratuita Syrmos",
             dismiss: "Chiudi",
+            site_headline: "Syrmos: il tuo prossimo treno, tram o autobus ad Atene e in tutta la Grecia, con orari che funzionano anche offline.",
+            download_app: "Scarica l'app",
+            support_label: "Assistenza",
+            whatsnew_brief: "un nuovo design chiaro, Ariadne collega stazioni e linee, e geolocalizzazione web per le stazioni vicine.",
+            whatsnew_dismiss: "Chiudi le novità",
             ws_now: "Ora",
             ws_plan: "Pianifica",
             ws_explore: "Esplora",
@@ -1403,7 +1423,7 @@
             return `
                 <article class="info-link">
                     <header class="info-link__head">
-                        <h4 class="info-link__title">${escapeHtml(pickLocalised(link, "title"))}</h4>
+                        <h2 class="info-link__title">${escapeHtml(pickLocalised(link, "title"))}</h2>
                         <span class="info-link__op">${escapeHtml(op)}</span>
                     </header>
                     ${summary}
@@ -6579,116 +6599,64 @@
     // deterministic; this block just routes its intents into the same web
     // primitives the map already uses (selectStation, Google Maps directions,
     // OASA fare panel).
-    // What's New modal for the web. Shows once per version tag via
-    // localStorage. Content mirrors the mobile popup minus the "clever
-    // Ariadne" bullet because the web build doesn't have an on-device LLM
-    // normalizer.
+    // What's New bar for the web. Shows once per version tag via localStorage
+    // (same key and value as the former full-screen modal, so a visitor who
+    // already dismissed it never sees it again). A slim strip above the app
+    // shell rather than a scrim: the map, the region chips and the primary
+    // action stay visible and usable on a fresh visit. Content mirrors the
+    // mobile popup minus the "clever Ariadne" bullet because the web build
+    // doesn't have an on-device LLM normalizer. Styles live in web-map.css
+    // (.whatsnew-bar), next to the store banner the bar stacks under.
     (function whatsNewWeb() {
         const key = "syrmos.whatsnew.version";
         const version = "2.0.0";
         try {
             if (localStorage.getItem(key) === version) return;
         } catch (_) { return; }
-        const lang = currentLang;
-        const title = lang === "el" ? "Τι νέο υπάρχει στο Syrmos"
-            : lang === "sq" ? "Çfarë ka të re në Syrmos"
-            : lang === "it" ? "Novità in Syrmos"
-            : "What's new in Syrmos";
-        const gotIt = lang === "el" ? "Εντάξει" : lang === "sq" ? "Në rregull" : lang === "it" ? "Ho capito" : "Got it";
-        const bullets = lang === "el" ? [
-            "Hellenic Rail Atlas: νέος σχεδιασμός με απαντήσεις στη μια ματιά.",
-            "Η Αριάδνη τώρα συνδέεται με σταθμούς και γραμμές: πάτα και πήγαινε κατευθείαν.",
-            "Περιήγηση σε όλους τους σταθμούς με χάρτη και ετικέτες γραμμών.",
-            "Ανανεωμένη Εξερεύνηση με κάρτες προορισμών και πρόσφατους σταθμούς.",
-            "Εντοπισμός τοποθεσίας στο web για κοντινούς σταθμούς.",
-        ] : lang === "sq" ? [
-            "Hellenic Rail Atlas: dizajn i ri me përgjigje në një shikim.",
-            "Ariadne tani lidhet me stacione dhe linja: prek dhe shko direkt.",
-            "Shfleto të gjitha stacionet me harta dhe etiketa linjash.",
-            "Kartela Eksploro e ridizajnuar me karta destinacionesh dhe stacione të fundit.",
-            "Gjeolokalizim në web për stacionet më të afërta.",
-        ] : lang === "it" ? [
-            "Hellenic Rail Atlas: un nuovo design chiaro con risposte a colpo d'occhio.",
-            "Ariadne ora collega stazioni e linee: tocca una risposta per andarci subito.",
-            "Sfoglia tutte le stazioni con mappe interattive ed etichette delle linee.",
-            "Scheda Esplora ridisegnata con schede destinazione e stazioni recenti.",
-            "Geolocalizzazione web per le stazioni vicine.",
-        ] : [
-            "Hellenic Rail Atlas: a fresh light-first design built around one-glance answers.",
-            "Ariadne now links to stations and lines: tap any answer to jump straight there.",
-            "Browse All Stations with interactive maps and line pills.",
-            "Redesigned Explore tab with actionable destination cards and recent stations.",
-            "Web geolocation for near-me stations.",
-        ];
+        const shell = document.querySelector(".app-shell");
+        if (!shell) return;
 
-        const scrim = document.createElement("div");
-        scrim.className = "whatsnew-scrim";
-        scrim.innerHTML = `
-            <div class="whatsnew-modal">
-                <div class="whatsnew-modal__head">
-                    <div class="whatsnew-modal__owl">🦉</div>
-                    <div class="whatsnew-modal__title">${title}</div>
-                </div>
-                <ul class="whatsnew-modal__list">
-                    ${bullets.map((b) => `<li>${b}</li>`).join("")}
-                </ul>
-                <button class="whatsnew-modal__button" type="button">${gotIt}</button>
-            </div>
+        const bar = document.createElement("aside");
+        bar.id = "whatsNewBar";
+        bar.className = "whatsnew-bar";
+        bar.setAttribute("data-i18n-aria", "whatsnew_title");
+        bar.setAttribute("aria-label", t("whatsnew_title"));
+        bar.innerHTML = `
+            <p class="whatsnew-bar__text">
+                <strong class="whatsnew-bar__title" data-i18n="whatsnew_title">${t("whatsnew_title")}</strong>:
+                <span data-i18n="whatsnew_brief">${t("whatsnew_brief")}</span>
+            </p>
+            <button class="whatsnew-bar__close" type="button"
+                    data-i18n-aria="whatsnew_dismiss" aria-label="${t("whatsnew_dismiss")}">
+                <svg class="ic" aria-hidden="true"><use href="#ic-close"/></svg>
+            </button>
         `;
-        document.body.appendChild(scrim);
+        document.body.insertBefore(bar, shell);
+
+        // The shell is pushed down by the bar's measured height (the text wraps
+        // in Greek and Albanian at narrow widths), so no map chrome ends up
+        // underneath it. Leaflet only watches window resizes, so tell it the
+        // canvas changed size.
+        const syncHeight = () => {
+            document.body.style.setProperty("--sy-whatsnew-bar-h", bar.offsetHeight + "px");
+            window.dispatchEvent(new Event("resize"));
+        };
+        document.body.classList.add("has-whatsnew-bar");
+        syncHeight();
+        const observer = window.ResizeObserver ? new ResizeObserver(syncHeight) : null;
+        if (observer) observer.observe(bar);
+        else window.addEventListener("resize", syncHeight);
 
         const dismiss = () => {
             try { localStorage.setItem(key, version); } catch (_) {}
-            scrim.remove();
+            if (observer) observer.disconnect();
+            else window.removeEventListener("resize", syncHeight);
+            bar.remove();
+            document.body.classList.remove("has-whatsnew-bar");
+            document.body.style.removeProperty("--sy-whatsnew-bar-h");
+            window.dispatchEvent(new Event("resize"));
         };
-        scrim.querySelector(".whatsnew-modal__button").addEventListener("click", dismiss);
-        scrim.addEventListener("click", (e) => {
-            if (e.target === scrim) dismiss();
-        });
-
-        const s = document.createElement("style");
-        s.textContent = `
-            .whatsnew-scrim {
-                position: fixed; inset: 0; z-index: 1000;
-                background: rgba(0,0,0,0.45);
-                display: flex; align-items: center; justify-content: center;
-                padding: 16px;
-            }
-            .whatsnew-modal {
-                width: min(440px, 100%);
-                background: linear-gradient(160deg, #F0F7FF, #FBFAEF);
-                color: #111;
-                border-radius: 22px;
-                padding: 24px;
-                box-shadow: 0 24px 60px rgba(0,0,0,0.35);
-            }
-            body.dark-mode .whatsnew-modal {
-                background: linear-gradient(160deg, #0d1420, #050810);
-                color: #f4f4f5;
-            }
-            .whatsnew-modal__head {
-                display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
-            }
-            .whatsnew-modal__owl {
-                width: 52px; height: 52px; border-radius: 50%;
-                background: rgba(0,114,206,0.14);
-                display: flex; align-items: center; justify-content: center;
-                font-size: 28px;
-            }
-            .whatsnew-modal__title { font-weight: 700; font-size: 18px; }
-            .whatsnew-modal__list {
-                margin: 4px 0 16px; padding-left: 20px;
-                display: flex; flex-direction: column; gap: 8px;
-                font-size: 14px; line-height: 1.4;
-            }
-            .whatsnew-modal__button {
-                width: 100%; padding: 12px 16px;
-                border: none; cursor: pointer;
-                border-radius: 14px; font: inherit; font-weight: 600; font-size: 15px;
-                background: var(--sy-brand); color: #fff;
-            }
-        `;
-        document.head.appendChild(s);
+        bar.querySelector(".whatsnew-bar__close").addEventListener("click", dismiss);
     })();
 
     // Severe-weather banner. Checks central Athens on page load; when the
@@ -6842,8 +6810,10 @@
             .ariadne-launcher {
                 position: fixed; z-index: 900;
                 /* Sits directly below the top-right dark-mode toggle, aligned to
-                   the same right edge — a fixed, deliberate spot on every screen. */
-                right: 16px; top: 64px; bottom: auto; left: auto;
+                   the same right edge - a fixed, deliberate spot on every screen.
+                   web-map.css sets --sy-launcher-top per breakpoint and
+                   --sy-bars-h for the fixed strips above the shell. */
+                right: 16px; top: calc(var(--sy-launcher-top, 64px) + var(--sy-bars-h, 0px)); bottom: auto; left: auto;
                 display: inline-flex; align-items: center; justify-content: center;
                 padding: 0; border: none; cursor: pointer;
                 width: 56px; height: 56px; border-radius: 50%;
@@ -6916,7 +6886,7 @@
                    the top-right dark-mode toggle and open the chat panel at the
                    bottom-right (standard), full normal width. */
                 .ariadne-launcher {
-                    left: auto; right: 16px; top: 64px; bottom: auto;
+                    left: auto; right: 16px; top: calc(var(--sy-launcher-top, 64px) + var(--sy-bars-h, 0px)); bottom: auto;
                 }
                 .ariadne-panel {
                     /* Sit above the bottom-right zoom/locate stack (~150px tall)
