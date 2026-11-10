@@ -103,6 +103,38 @@ body.dark-mode .nav-item--active {
 
 .context-spacer { flex: 1; min-height: 8px; }
 
+/* ===== Rail intro: headline + the one primary action ===== */
+.rail-intro {
+    display: flex; flex-direction: column;
+    gap: 10px;
+}
+.rail-intro__title {
+    margin: 0;
+    font-size: var(--sy-font-title-size); line-height: var(--sy-font-title-line);
+    font-weight: var(--sy-weight-semibold);
+    color: var(--sy-text-primary);
+    overflow-wrap: anywhere;
+}
+/* Scoped under .rail-intro so it outranks the shared .primary-button height. */
+.rail-intro .rail-intro__cta {
+    width: 100%;
+    height: var(--sy-space-min-touch-target);
+    font-size: var(--sy-font-body-size);
+}
+
+/* ===== Rail footer: support contact ===== */
+.rail-footer { padding: 0 4px; }
+.rail-footer__link {
+    display: inline-flex; align-items: center;
+    min-height: var(--sy-space-min-touch-target);
+    font-size: var(--sy-font-label-size); font-weight: var(--sy-weight-medium);
+    color: var(--sy-accent);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.rail-footer__link:hover { text-decoration: underline; }
+.rail-footer__link:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: 2px; }
+
 /* ===== Search ===== */
 .search-card { position: relative; }
 
@@ -983,6 +1015,7 @@ body.dark-mode .live-status-pill {
     transition: background var(--sy-duration-fast-ms) ease;
 }
 .primary-button:hover { background: var(--sy-accent-strong); }
+.primary-button:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: 2px; }
 
 /* ===== Hero Card (JS-created, kept for compatibility) ===== */
 .hero-card {
@@ -1455,7 +1488,8 @@ body.dark-mode .live-status-pill {
 /* ===== Ariadne Launcher ===== */
 .ariadne-launcher {
     position: fixed;
-    right: 16px; top: 64px; bottom: auto;
+    --sy-launcher-top: 64px;
+    right: 16px; top: calc(var(--sy-launcher-top) + var(--sy-bars-h, 0px)); bottom: auto;
     z-index: 1200;
     width: 56px; height: 56px;
     border: none; border-radius: 50%;
@@ -1860,7 +1894,7 @@ body.dark-mode .leaflet-tile-pane {
     /* Lift the zoom/locate controls + Ariadne clear of the bottom sheet. */
     .map-chrome--br { bottom: calc(44vh + 12px); right: 12px; }
     .map-chrome--bl { bottom: calc(44vh + 12px); left: 12px; }
-    .ariadne-launcher { top: 56px; right: 12px; }
+    .ariadne-launcher { --sy-launcher-top: 56px; top: calc(var(--sy-launcher-top) + var(--sy-bars-h, 0px)); right: 12px; }
 }
 
 /* ===== Compact (<600px): the rail becomes a bottom navigation bar =====
@@ -1921,7 +1955,25 @@ body.dark-mode .leaflet-tile-pane {
     }
     .map-chrome--br { bottom: calc(40vh + 64px + 12px); }
     .map-chrome--bl { bottom: calc(40vh + 64px + 12px); }
-    .ariadne-launcher { top: 12px; right: 12px; }
+    /* Top map chrome: the language/theme group shares the first row with the
+       Ariadne launcher, and the region chips move to their own full-width row
+       below. At this width the four chips and the language picker no longer
+       fit side by side, so National and Patras were sliding under the
+       top-right controls. The chip row scrolls sideways when the labels are
+       wider than the viewport (Greek and Albanian names); the 4px padding
+       keeps focus rings from being clipped. */
+    .map-chrome--tr { right: calc(12px + 56px + 8px); }
+    .map-chrome--tl {
+        top: calc(12px + 56px + 4px);
+        left: 8px; right: 8px;
+        padding: 4px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .map-chrome--tl::-webkit-scrollbar { display: none; }
+    .region-chip { flex: 0 0 auto; }
+    .ariadne-launcher { --sy-launcher-top: 12px; top: calc(var(--sy-launcher-top) + var(--sy-bars-h, 0px)); right: 12px; }
 }
 
 /* ===== Severe Weather Banner (JS-injected but base here) ===== */
@@ -1963,11 +2015,18 @@ body.dark-mode .leaflet-tile-pane {
    toggle needs this explicit rule to actually hide the strip (mirrors the
    .offline-pill[hidden] pattern used elsewhere in this file). */
 .store-banner[hidden] { display: none; }
-/* Reserve the strip's height only while it is actually shown (the controller
-   toggles this class in lockstep with the banner). */
-body.has-store-banner .app-shell {
-    margin-top: 48px;
-    height: calc(100dvh - 48px);
+/* Fixed strips above the app shell (store banner, what's new bar). The shell
+   and the viewport-fixed Ariadne launcher move down by their combined height,
+   reserved only while a strip is actually shown (the controllers toggle these
+   classes in lockstep with their strips). */
+body { --sy-bars-h: 0px; }
+body.has-store-banner { --sy-bars-h: 48px; }
+body.has-whatsnew-bar { --sy-bars-h: var(--sy-whatsnew-bar-h, 48px); }
+body.has-store-banner.has-whatsnew-bar { --sy-bars-h: calc(48px + var(--sy-whatsnew-bar-h, 48px)); }
+body.has-store-banner .app-shell,
+body.has-whatsnew-bar .app-shell {
+    margin-top: var(--sy-bars-h);
+    height: calc(100dvh - var(--sy-bars-h));
 }
 .store-banner__text {
     flex: 1 1 auto;
@@ -2012,6 +2071,51 @@ body.has-store-banner .app-shell {
     stroke-width: 1.75;
     stroke-linecap: round;
 }
+
+/* ===== What's new bar (JS-injected by web-map.js whatsNewWeb, base here) =====
+   Replaces the former full-screen modal. A slim strip above the app shell,
+   stacked under the store banner when both show. The script measures the bar
+   and sets --sy-whatsnew-bar-h on <body>, so the shell (map, region chips,
+   context rail) is pushed down rather than covered. Dismissal persists in
+   localStorage under the same key as before. */
+.whatsnew-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1300;
+    box-sizing: border-box;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 8px 2px 16px;
+    background: var(--sy-background-raised);
+    border-bottom: 1px solid var(--sy-border-subtle);
+    color: var(--sy-text-primary);
+    font-size: 13px;
+    line-height: 16px;
+}
+body.has-store-banner .whatsnew-bar { top: 48px; }
+.whatsnew-bar__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+.whatsnew-bar__title { font-weight: var(--sy-weight-semibold); }
+.whatsnew-bar__close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--sy-radius-md);
+    color: var(--sy-text-secondary);
+    cursor: pointer;
+}
+.whatsnew-bar__close:hover { background: var(--sy-background-subtle); color: var(--sy-text-primary); }
+.whatsnew-bar__close:focus-visible { outline: 2px solid var(--sy-accent); outline-offset: 2px; }
 
 /* ===== Plan workspace draft + results (3.0 Phase P) ===== */
 .plan-draft {
