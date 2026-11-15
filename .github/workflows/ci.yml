@@ -5,10 +5,27 @@ name: CI
 # every push to master and on pull requests.
 
 on:
+  # Skip pushes and pull requests that only touch documentation, store
+  # metadata, the iOS project or ops files: none of them change what CI builds
+  # here. Release workflows still call CI through workflow_call regardless.
   push:
     branches: [master]
+    paths-ignore:
+      - "docs/**"
+      - "fastlane/**"
+      - "iosApp/**"
+      - "ops/**"
+      - "artifacts/**"
+      - "**/*.md"
   pull_request:
     branches: [master]
+    paths-ignore:
+      - "docs/**"
+      - "fastlane/**"
+      - "iosApp/**"
+      - "ops/**"
+      - "artifacts/**"
+      - "**/*.md"
   workflow_call:
   workflow_dispatch:
 
