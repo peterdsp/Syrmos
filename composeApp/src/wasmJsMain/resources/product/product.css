@@ -517,6 +517,18 @@ section[id] { scroll-margin-top: calc(var(--header-h) + 16px); }
 .site-footer__links { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-left: -10px; }
 .site-footer__links a { color: var(--on-dark); text-decoration: none; padding: 10px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 8px; }
 .site-footer__links a:hover { text-decoration: underline; }
+/* From the same maker: one quiet card for Lidhra, set on the footer's midnight ground. */
+.lidhra-card { padding-bottom: 28px; margin-bottom: 4px; border-bottom: 1px solid var(--line-dark); }
+.lidhra-card__eyebrow { font-size: 0.82rem; color: var(--on-dark-muted); }
+.lidhra-card__body { margin-top: 14px; display: flex; gap: 16px; align-items: flex-start; }
+.lidhra-card__icon { width: 56px; height: 56px; flex: none; border-radius: 13px; }
+.lidhra-card__name { font-size: var(--type-title); color: #fff; letter-spacing: -0.01em; }
+.lidhra-card__text p { margin-top: 4px; max-width: 52ch; color: var(--on-dark); line-height: 1.5; }
+.lidhra-card__actions { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.lidhra-card__badge { display: inline-block; line-height: 0; border-radius: 8px; }
+.lidhra-card__badge img { height: 40px; width: auto; }
+.lidhra-card__site { color: var(--on-dark); padding: 10px 0; min-height: 44px; display: inline-flex; align-items: center; }
+.lidhra-card__site:hover { color: #fff; }
 .site-footer__legal { max-width: 820px; font-size: 0.82rem; line-height: 1.55; }
 .section--light .practical__item a { color: var(--brand-strong); }
 

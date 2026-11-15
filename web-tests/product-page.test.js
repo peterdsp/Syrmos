@@ -101,7 +101,7 @@ test('platform destinations are the verified store and web URLs', () => {
   assert.match(html, /class="btn btn--primary btn--lg web-only" href="\/">Open web app/);
   const external = [...html.matchAll(/href="(https:[^"]+)"/g)].map((m) => m[1]);
   for (const url of external) {
-    assert.ok(/^https:\/\/(apps\.apple\.com|play\.google\.com|syrmos\.peterdsp\.dev|peterdsp\.dev|github\.com\/peterdsp)/.test(url), `unexpected destination ${url}`);
+    assert.ok(/^https:\/\/(apps\.apple\.com|play\.google\.com|syrmos\.peterdsp\.dev|lidhra\.peterdsp\.dev|peterdsp\.dev|github\.com\/peterdsp)/.test(url), `unexpected destination ${url}`);
   }
 });
 
