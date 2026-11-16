@@ -7,7 +7,9 @@
     <meta name="description" content="Syrmos shows next departures, a network map and stored schedules for Athens, Thessaloniki, Patras and national rail. Free on iOS, Android and the web.">
     <meta name="author" content="Petros Dhespollari">
     <link rel="canonical" href="https://syrmos.peterdsp.dev/product/">
-    <meta name="theme-color" content="#07142B">
+    <meta name="theme-color" content="#F7F5F1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0F1216" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" type="image/png" sizes="48x48" href="/product/img/syrmos-icon-48.png">
     <link rel="apple-touch-icon" href="/product/img/syrmos-icon-180.png">
     <meta name="apple-itunes-app" content="app-id=6777650671">
@@ -97,37 +99,34 @@
             setTimeout(function () { if (!window.syrmosProductReady) root.classList.remove("motion"); }, 2500);
         })();
     </script>
-    <link rel="preload" as="image" href="/product/img/ios-home-420.webp" imagesrcset="/product/img/ios-home-420.webp 420w, /product/img/ios-home-720.webp 720w" imagesizes="(min-width: 1024px) 260px, 62vw">
+    <link rel="preload" as="image" href="/product/img/hero-map-light-1200.webp" imagesrcset="/product/img/hero-map-light-1200.webp 1200w, /product/img/hero-map-light-2020.webp 2020w" imagesizes="100vw" media="(prefers-color-scheme: light)">
     <link rel="stylesheet" href="/product/product.css">
     <script src="/product/product.js" defer></script>
 </head>
 <body class="product">
 <a class="skip-link" href="#main">Skip to content</a>
 
-<header class="site-header" id="top">
-    <div class="container site-header__inner">
-        <a class="brand" href="/product/" aria-label="Syrmos product home">
-            <img class="brand__icon" src="/product/img/syrmos-icon-96.webp" alt="" width="36" height="36">
-            <span class="brand__word">Syrmos</span>
+<header class="bar" id="top">
+    <div class="bar__inner">
+        <a class="bar__brand" href="/product/" aria-label="Syrmos product home">
+            <img src="/product/img/syrmos-icon-96.webp" alt="" width="36" height="36">
         </a>
-        <nav class="site-nav" aria-label="Product page">
-            <a href="#how">How it works</a>
-            <a href="#features">Features</a>
+        <nav class="bar__links" aria-label="Product page">
+            <a href="#app">The app</a>
             <a href="#coverage">Coverage</a>
+            <a href="#questions">Questions</a>
             <a href="#download">Download</a>
         </nav>
-        <div class="site-header__actions">
-            <a class="btn btn--ghost site-header__get" href="#download">Get the app</a>
+        <div class="bar__actions">
             <a class="btn btn--primary web-only" href="/">Open web app</a>
+            <a class="btn btn--primary handheld-only" href="#download">Get the app</a>
             <details class="menu">
-                <summary class="menu__toggle" aria-label="Menu">
-                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-                </summary>
+                <summary class="menu__toggle">Menu</summary>
                 <nav class="menu__panel" aria-label="Product page menu">
-                    <a href="#how">How it works</a>
-                    <a href="#features">Features</a>
+                    <a href="#app">The app</a>
                     <a href="#coverage">Coverage</a>
-                    <a href="#download">Get the app</a>
+                    <a href="#questions">Questions</a>
+                    <a href="#download">Download</a>
                 </nav>
             </details>
         </div>
@@ -136,449 +135,259 @@
 
 <main id="main">
 
-    <!-- ===== Hero ===== -->
+    <!-- Hero: the app's own network map, and the name standing under it like a station nameboard. -->
     <section class="hero" aria-labelledby="hero-title">
-        <div class="container hero__grid">
-            <div class="hero__copy">
-                <p class="eyebrow eyebrow--dark"><span class="node" aria-hidden="true"></span>Transit companion for Greece</p>
-                <h1 id="hero-title">Your next connection. <span>Beautifully clear.</span></h1>
-                <p class="hero__lead">Explore routes, check departures, and keep essential travel information close, with Syrmos for iOS, Android, and web.</p>
-                <div class="platforms" role="group" aria-label="Get Syrmos">
+        <figure class="hero__map" data-open>
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="/product/img/hero-map-dark-1200.webp 1200w, /product/img/hero-map-dark-2020.webp 2020w" sizes="100vw">
+                <img src="/product/img/hero-map-light-1200.webp"
+                     srcset="/product/img/hero-map-light-1200.webp 1200w, /product/img/hero-map-light-2020.webp 2020w"
+                     sizes="100vw" width="2020" height="730" fetchpriority="high" decoding="async"
+                     alt="The Syrmos network map of Athens: metro, tram and suburban lines in their own colours, with train markers moving along them.">
+            </picture>
+        </figure>
+        <div class="hero__band">
+            <div class="hero__row">
+                <p class="hero__lead" data-load style="--d:380ms">Next departures, a network map and offline timetables for trains, metro, tram and airport buses across Greece. Free.</p>
+                <div class="hero__get" data-load style="--d:460ms">
                     <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
-                    <a class="badge" href="https://apps.apple.com/app/id6777650671">
-                        <img src="/app-store.svg" alt="Download on the App Store" width="144" height="48">
-                    </a>
-                    <a class="badge" href="https://play.google.com/store/apps/details?id=com.syrmos.android">
-                        <img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48">
-                    </a>
+                    <a class="badge" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="144" height="48"></a>
+                    <a class="badge" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48"></a>
                 </div>
-                <p class="hero__note web-only">Free. On a laptop or desktop computer, the web app runs in your browser with no install.</p>
-                <p class="hero__note handheld-only">Free on the App Store and Google Play. The web app is for laptops and desktop computers.</p>
             </div>
-
-            <div class="hero__visual">
-                <svg class="hero__rail" viewBox="0 0 640 520" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="rail rail--blue" pathLength="1" d="M-20 470 C 90 470, 120 380, 190 330 S 330 250, 380 170 S 520 70, 660 60"/>
-                    <path class="rail rail--green" pathLength="1" d="M-20 500 C 110 500, 170 430, 240 400 S 420 360, 470 290 S 580 200, 660 190"/>
-                    <circle class="rail-node" cx="190" cy="330" r="7"/>
-                    <circle class="rail-node" cx="380" cy="170" r="7"/>
-                    <circle class="rail-node rail-node--green" cx="470" cy="290" r="7"/>
-                </svg>
-
-                <figure class="device browser hero__browser">
-                    <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
-                    <img src="/product/img/web-now-960.webp"
-                         srcset="/product/img/web-now-960.webp 960w, /product/img/web-now-1600.webp 1600w"
-                         sizes="(min-width: 1024px) 560px, 92vw"
-                         width="1600" height="1000" loading="lazy" decoding="async"
-                         alt="Syrmos web app on a desktop: the next Line 2 departure, a list of trains labelled Estimated, and the Athens network map with vehicle markers.">
-                </figure>
-
-                <figure class="device phone hero__phone">
-                    <img src="/product/img/ios-home-420.webp"
-                         srcset="/product/img/ios-home-420.webp 420w, /product/img/ios-home-720.webp 720w"
-                         sizes="(min-width: 1024px) 260px, 62vw"
-                         width="720" height="1565" fetchpriority="high"
-                         alt="Syrmos on iPhone: the Home screen with network status, a Living map strip and a list of live suburban trains.">
-                </figure>
-
-                <figure class="hero__detail">
-                    <img src="/product/img/departures-detail-420.webp"
-                         srcset="/product/img/departures-detail-420.webp 420w, /product/img/departures-detail-720.webp 720w"
-                         sizes="(min-width: 1024px) 300px, 70vw"
-                         width="720" height="569" decoding="async"
-                         alt="Syntagma station in the web app: Tram T6, Line 2 and Line 3, marked interchange and accessible, with next departures labelled Scheduled.">
-                </figure>
-            </div>
+            <h1 class="hero__name" id="hero-title"><span class="hero__word">Syrmos</span></h1>
         </div>
-        <p class="container hero__caption">Screens captured from the current web and iPhone apps, September 2026. Times change continuously.</p>
     </section>
 
-    <!-- ===== Story: everyday value ===== -->
-    <section class="section section--light railed" id="how" aria-labelledby="how-title">
-        <div class="container">
-            <header class="section-head" data-reveal>
-                <p class="eyebrow"><span class="node node--blue" aria-hidden="true"></span>How it works</p>
-                <h2 id="how-title">Built for the moment you need it.</h2>
-                <p class="section-lead">Three everyday questions, answered without digging through timetables.</p>
-            </header>
-
-            <div class="story" data-story>
-                <ol class="story__steps">
-                    <li class="story__step" data-step="0" data-reveal>
-                        <span class="story__node node--blue" aria-hidden="true"></span>
-                        <p class="story__index">01</p>
-                        <h3>See what’s next.</h3>
-                        <p>Search a station and see departures grouped by line and direction, with the next few times together. Interchanges and accessibility show at the top.</p>
-                        <ul class="status-key" aria-label="How departure times are labelled">
-                            <li><span class="dot dot--live" aria-hidden="true"></span><strong>Live</strong> comes from a real-time feed.</li>
-                            <li><span class="dot dot--scheduled" aria-hidden="true"></span><strong>Scheduled</strong> is the published timetable.</li>
-                            <li><span class="dot dot--estimated" aria-hidden="true"></span><strong>Estimated</strong> is a position projected from the timetable.</li>
-                            <li><span class="dot dot--offline" aria-hidden="true"></span><strong>Offline snapshot</strong> is stored data shown without a connection.</li>
-                        </ul>
-                        <figure class="story__media device browser">
-                            <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
-                            <img src="/product/img/web-station-960.webp" srcset="/product/img/web-station-960.webp 960w, /product/img/web-station-1600.webp 1600w" sizes="92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Syntagma station open in the web app, listing Tram T6, Line 3 and Line 2 departures in minutes and clock times, each labelled Scheduled.">
-                        </figure>
-                    </li>
-                    <li class="story__step" data-step="1" data-reveal>
-                        <span class="story__node node--green" aria-hidden="true"></span>
-                        <p class="story__index">02</p>
-                        <h3>See the bigger picture.</h3>
-                        <p>Metro, tram, suburban rail and airport buses share one map, each in its own line colour. Tap a station for its lines and connections.</p>
-                        <p class="fine">Vehicle markers use real-time positions where a feed exists. Other lines are estimated from the timetable and labelled that way.</p>
-                        <figure class="story__media story__media--phone">
-                            <div class="device phone">
-                                <img src="/product/img/android-map-420.webp" srcset="/product/img/android-map-420.webp 420w, /product/img/android-map-720.webp 720w" sizes="62vw" width="720" height="1600" loading="lazy" decoding="async" alt="Syrmos on Android: the Athens map with metro, tram and suburban lines in their line colours, vehicle markers and airport bus stops.">
-                            </div>
-                        </figure>
-                    </li>
-                    <li class="story__step" data-step="2" data-reveal>
-                        <span class="story__node node--purple" aria-hidden="true"></span>
-                        <p class="story__index">03</p>
-                        <h3>Keep the essentials with you.</h3>
-                        <p>Schedules and station information are stored with the app, so departures still appear when the signal drops underground.</p>
-                        <p class="fine">Live updates need a connection. On the web, offline use starts after one online visit and depends on your browser keeping the stored data.</p>
-                        <figure class="story__media device browser">
-                            <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
-                            <img src="/product/img/web-desktop-offline-960.webp" srcset="/product/img/web-desktop-offline-960.webp 960w, /product/img/web-desktop-offline-1600.webp 1600w" sizes="92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The web app on a desktop with no connection: Syntagma departures still listed, each labelled Offline snapshot.">
-                        </figure>
-                    </li>
-                </ol>
-
-                <div class="story__stage" aria-hidden="true">
-                    <div class="story__frame">
-                        <div class="story__slide is-active" data-slide="0">
-                            <div class="device browser">
-                                <div class="browser__bar"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
-                                <img src="/product/img/web-station-960.webp" srcset="/product/img/web-station-960.webp 960w, /product/img/web-station-1600.webp 1600w" sizes="600px" width="1600" height="1000" loading="lazy" decoding="async" alt="">
-                            </div>
-                        </div>
-                        <div class="story__slide" data-slide="1">
-                            <div class="device phone"><img src="/product/img/android-map-720.webp" width="720" height="1600" loading="lazy" decoding="async" alt=""></div>
-                        </div>
-                        <div class="story__slide" data-slide="2">
-                            <div class="device browser">
-                                <div class="browser__bar"><i></i><i></i><i></i><span>syrmos.peterdsp.dev</span></div>
-                                <img src="/product/img/web-desktop-offline-960.webp" srcset="/product/img/web-desktop-offline-960.webp 960w, /product/img/web-desktop-offline-1600.webp 1600w" sizes="600px" width="1600" height="1000" loading="lazy" decoding="async" alt="">
-                            </div>
-                        </div>
+    <!-- Showcase: one answer first, as the app shows it. -->
+    <section class="plate" id="app" aria-labelledby="app-title">
+        <div class="plate__grid">
+            <figure class="plate__picture" data-reveal>
+                <picture data-shot="0">
+                    <source media="(prefers-color-scheme: dark)" srcset="/product/img/plate-home-dark-640.webp 640w, /product/img/plate-home-dark-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw">
+                    <img src="/product/img/plate-home-light-640.webp" srcset="/product/img/plate-home-light-640.webp 640w, /product/img/plate-home-light-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw" width="1200" height="1200" loading="lazy" decoding="async" alt="Syrmos on iPhone: next train M2 to Anthoupoli in 1:00, then in 2 and 2 minutes, marked Scheduled, with Track buttons.">
+                </picture>
+                <picture data-shot="1" hidden>
+                    <source media="(prefers-color-scheme: dark)" srcset="/product/img/plate-journey-dark-640.webp 640w, /product/img/plate-journey-dark-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw">
+                    <img src="/product/img/plate-journey-light-640.webp" srcset="/product/img/plate-journey-light-640.webp 640w, /product/img/plate-journey-light-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw" width="1200" height="1200" loading="lazy" decoding="async" alt="Syrmos on iPhone: a planned journey of about 38 minutes, board M1 toward Omonia at 08:42, change to M2, arrive Syntagma.">
+                </picture>
+                <picture data-shot="2" hidden>
+                    <source media="(prefers-color-scheme: dark)" srcset="/product/img/plate-map-dark-640.webp 640w, /product/img/plate-map-dark-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw">
+                    <img src="/product/img/plate-map-light-640.webp" srcset="/product/img/plate-map-light-640.webp 640w, /product/img/plate-map-light-1200.webp 1200w" sizes="(min-width: 900px) 45vw, 92vw" width="1200" height="1200" loading="lazy" decoding="async" alt="Syrmos on iPhone: the map of central Athens around Syntagma and Monastiraki, metro lines in green, red and blue.">
+                </picture>
+            </figure>
+            <div class="plate__copy">
+                <div class="plate__tabs" role="tablist" aria-label="Screens">
+                    <button class="plate__tab" role="tab" type="button" id="shot-tab-0" aria-selected="true" aria-controls="shot-text-0">Next train</button>
+                    <button class="plate__tab" role="tab" type="button" id="shot-tab-1" aria-selected="false" aria-controls="shot-text-1" tabindex="-1">Journey</button>
+                    <button class="plate__tab" role="tab" type="button" id="shot-tab-2" aria-selected="false" aria-controls="shot-text-2" tabindex="-1">Map</button>
+                </div>
+                <div class="plate__text" data-reveal>
+                    <h2 id="app-title">The next train, first</h2>
+                    <div role="tabpanel" id="shot-text-0" aria-labelledby="shot-tab-0">
+                        <p>Open Syrmos and the answer is already there: the next departure from the station near you, how many minutes away, and the two after it.</p>
                     </div>
+                    <div role="tabpanel" id="shot-text-1" aria-labelledby="shot-tab-1" hidden>
+                        <p>Plan a trip from A to B, with every change and stop. Syrmos walks you through it and reminds you when to leave.</p>
+                    </div>
+                    <div role="tabpanel" id="shot-text-2" aria-labelledby="shot-tab-2" hidden>
+                        <p>Metro, tram, suburban rail and airport buses on one map, each in its own line colour, with trains moving along the track.</p>
+                    </div>
+                </div>
+                <div class="plate__cells">
+                    <a class="plate__cell plate__cell--ink" href="https://apps.apple.com/app/id6777650671"><span>iPhone, with widgets and Apple Watch</span><img src="/app-store.svg" alt="Download on the App Store" width="144" height="48" loading="lazy"></a>
+                    <a class="plate__cell" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><span>Android phones</span><img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48" loading="lazy"></a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ===== Feature explorer (dark) ===== -->
-    <section class="section section--dark railed" id="features" aria-labelledby="features-title">
-        <div class="container">
-            <header class="section-head" data-reveal>
-                <p class="eyebrow eyebrow--dark"><span class="node node--orange" aria-hidden="true"></span>Features</p>
-                <h2 id="features-title">Explore what’s inside.</h2>
-                <p class="section-lead">Choose a feature to see it in the current app and where it’s available.</p>
-            </header>
+    <!-- Features: small proof beside each claim, cut from the real app. -->
+    <section class="proofs" aria-labelledby="proofs-title">
+        <h2 class="proofs__title" id="proofs-title" data-reveal>What it does</h2>
 
-            <div class="explorer" data-tabs>
-                <div class="tablist" role="tablist" aria-label="Syrmos features">
-                    <button class="tab" role="tab" type="button" id="tab-departures" aria-controls="panel-departures" aria-selected="true">Departures</button>
-                    <button class="tab" role="tab" type="button" id="tab-map" aria-controls="panel-map" aria-selected="false" tabindex="-1">Network map</button>
-                    <button class="tab" role="tab" type="button" id="tab-fares" aria-controls="panel-fares" aria-selected="false" tabindex="-1">Fares</button>
-                    <button class="tab" role="tab" type="button" id="tab-ariadne" aria-controls="panel-ariadne" aria-selected="false" tabindex="-1">Ariadne</button>
-                </div>
+        <article class="proof" data-reveal>
+            <div class="proof__panel"><img src="/product/img/panel-departures-780.webp" width="780" height="550" loading="lazy" decoding="async" alt="Syntagma in the web app: Tram T6, Line 2 and Line 3, interchange and accessible, next tram to Syntagma in 2 minutes at 16:53."></div>
+            <div class="proof__text">
+                <h3>Departures by station</h3>
+                <p>Every line through a station, grouped by direction, in minutes and clock times. Interchanges and step-free access show at the top.</p>
+            </div>
+        </article>
 
-                <div class="panel" role="tabpanel" id="panel-departures" aria-labelledby="tab-departures" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-station-960.webp" srcset="/product/img/web-station-960.webp 960w, /product/img/web-station-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="Departures for Syntagma in the web app, grouped by line and destination with the next times side by side.">
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Departures</h3>
-                        <p>Every line through a station, grouped by destination, with minutes and clock times. Each time says whether it is live, scheduled or stored.</p>
-                        <ul class="availability" aria-label="Available on">
-                            <li>iOS</li><li>Android</li><li>Web</li>
-                        </ul>
-                    </div>
-                </div>
+        <article class="proof" data-reveal>
+            <div class="proof__panel proof__panel--ui" data-ui>
+                <ul class="trust" aria-label="How times are labelled">
+                    <li><span class="trust__chip trust__chip--live">Live</span></li>
+                    <li><span class="trust__chip trust__chip--scheduled">Scheduled</span></li>
+                    <li><span class="trust__chip trust__chip--estimated">Estimated</span></li>
+                    <li><span class="trust__chip trust__chip--offline">Offline snapshot</span></li>
+                </ul>
+            </div>
+            <div class="proof__text">
+                <h3>Every time says where it came from</h3>
+                <p>Live is a real-time feed. Scheduled is the published timetable. Estimated is projected from it. Offline snapshot is stored on your device.</p>
+            </div>
+        </article>
 
-                <div class="panel" role="tabpanel" id="panel-map" aria-labelledby="tab-map" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-now-960.webp" srcset="/product/img/web-now-960.webp 960w, /product/img/web-now-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The Athens network map in the web app with line colours, vehicle markers and a list of trains labelled Estimated.">
-                        <figcaption>Map data © OpenStreetMap contributors, tiles © Esri.</figcaption>
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Network map</h3>
-                        <p>Lines follow their track geometry, stations sit on their lines, and vehicles move along the network. Suspended and under-construction lines are drawn greyed out.</p>
-                        <ul class="availability" aria-label="Available on">
-                            <li>iOS</li><li>Android</li><li>Web</li>
-                        </ul>
-                    </div>
-                </div>
+        <article class="proof" data-reveal>
+            <div class="proof__panel"><img src="/product/img/panel-plan-800.webp" width="800" height="398" loading="lazy" decoding="async" alt="Two planned routes: about 38 minutes with one change from M1 to M2, marked Tight, and about 40 minutes from M1 to M3 with estimated times."></div>
+            <div class="proof__text">
+                <h3>Journeys, step by step</h3>
+                <p>Routes with their changes, how tight each one is, guidance on the way, and a reminder when it is time to leave.</p>
+            </div>
+        </article>
 
-                <div class="panel" role="tabpanel" id="panel-fares" aria-labelledby="tab-fares" tabindex="0">
-                    <figure class="panel__media panel__media--app" aria-hidden="true">
-                        <div class="appshot appshot--fares">
-                            <div class="appshot__bar">
-                                <span class="appshot__title">Fares</span>
-                                <span class="appshot__pill">Athens · OASA</span>
-                            </div>
-                            <div class="fare-grid">
-                                <div class="fare-card">
-                                    <span class="fare-card__name">90-minute ticket</span>
-                                    <span class="fare-card__price">€1.20</span>
-                                    <span class="fare-card__reduced">Reduced €0.60</span>
-                                </div>
-                                <div class="fare-card">
-                                    <span class="fare-card__name">24-hour ticket</span>
-                                    <span class="fare-card__price">€4.10</span>
-                                    <span class="fare-card__reduced">Reduced €2.00</span>
-                                </div>
-                                <div class="fare-card">
-                                    <span class="fare-card__name">5-day ticket</span>
-                                    <span class="fare-card__price">€8.20</span>
-                                    <span class="fare-card__reduced">Reduced €4.10</span>
-                                </div>
-                                <div class="fare-card">
-                                    <span class="fare-card__name">30-day pass</span>
-                                    <span class="fare-card__price">€27.00</span>
-                                    <span class="fare-card__reduced">Reduced €13.50</span>
-                                </div>
-                                <div class="fare-card fare-card--wide">
-                                    <span class="fare-card__name">Airport metro · Line 3</span>
-                                    <span class="fare-card__price">€9.00</span>
-                                    <span class="fare-card__reduced">Reduced €4.50</span>
-                                </div>
-                            </div>
-                        </div>
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Fares</h3>
-                        <p>Ticket prices for Athens, Thessaloniki, Patras suburban and suburban rail, with full and reduced prices, taken from official operator sources. Intercity fares are shown as priced at booking.</p>
-                        <p class="fine">Syrmos does not sell tickets. Purchase links open the operator’s own website.</p>
-                        <ul class="availability" aria-label="Available on">
-                            <li>iOS</li><li>Android</li><li>Web</li>
-                        </ul>
-                    </div>
-                </div>
+        <article class="proof" data-reveal>
+            <div class="proof__panel"><img src="/product/img/panel-offline-620.webp" width="620" height="440" loading="lazy" decoding="async" alt="Departures for Line 3 to the Airport and to Doukissis Plakentias, each labelled Offline snapshot."></div>
+            <div class="proof__text">
+                <h3>Still there underground</h3>
+                <p>Timetables and stations are stored with the app, so departures appear when the signal drops. Live updates need a connection.</p>
+            </div>
+        </article>
 
-                <div class="panel" role="tabpanel" id="panel-ariadne" aria-labelledby="tab-ariadne" tabindex="0">
-                    <figure class="panel__media panel__media--app" aria-hidden="true">
-                        <div class="appshot appshot--chat">
-                            <div class="appshot__bar">
-                                <span class="appshot__title">Ariadne</span>
-                                <span class="appshot__done">Done</span>
-                            </div>
-                            <div class="chat">
-                                <div class="chat__bubble chat__bubble--in">Hi, I'm Ariadne. Ask me about Athens transit: next departures, the last train tonight, a trip A to B, service alerts or ticket prices.</div>
-                                <div class="chat__bubble chat__bubble--out">How much from Syntagma to Airport?</div>
-                                <div class="chat__bubble chat__bubble--in">
-                                    Syntagma → Airport: €9.00 (Reduced €4.50). Airport Metro ticket, Line 3 · OASA.
-                                    <span class="chat__tag">Offline snapshot</span>
-                                </div>
-                            </div>
-                            <div class="chat__composer">
-                                <span class="chat__field">Ask Ariadne</span>
-                                <span class="chat__send">Send</span>
-                            </div>
-                        </div>
-                        <figcaption>Example conversation. Fares can change.</figcaption>
-                    </figure>
-                    <div class="panel__copy">
-                        <img class="ariadne-lockup" src="/ariadne-lockup.png" alt="Ariadne" width="120" height="79" loading="lazy">
-                        <h3>Ask in plain language</h3>
-                        <p>Ariadne answers transit questions such as next departures, the last train tonight, a trip from A to B, service alerts and ticket prices. Answers come from Syrmos schedule and fare data, not from guesswork.</p>
-                        <p class="fine">Ariadne is a transit assistant, not a general chatbot. It can misunderstand a question, so check important journeys.</p>
-                        <ul class="availability" aria-label="Available on">
-                            <li>iOS</li><li>Android</li><li>Web</li>
-                        </ul>
-                    </div>
+        <article class="proof" data-reveal>
+            <div class="proof__panel"><img src="/product/img/panel-fares-630.webp" width="630" height="550" loading="lazy" decoding="async" alt="The fares list: a 5-day ticket at 8.20 euros, the 3-day tourist ticket at 20 euros, and Thessaloniki OSETH tickets from 0.60 euros."></div>
+            <div class="proof__text">
+                <h3>Fares you can check</h3>
+                <p>Full and reduced prices from official operator sources. Syrmos sells no tickets; purchase links open the operator's site.</p>
+            </div>
+        </article>
+
+        <article class="proof" data-reveal>
+            <div class="proof__panel"><img src="/product/img/ariadne-fare-760.webp" width="760" height="772" loading="lazy" decoding="async" alt="Ariadne answering how much a ticket from Syntagma to the Airport costs: 9 euros, reduced 4.50, Line 3 airport metro ticket."></div>
+            <div class="proof__text">
+                <h3>Ask Ariadne</h3>
+                <p>Ask in plain words: the last train tonight, a trip from A to B, a ticket price. She answers from Syrmos timetables and fares, and never invents a time.</p>
+            </div>
+        </article>
+    </section>
+
+    <!-- Coverage: the live thing. Choose a region and see its real map. -->
+    <section class="coverage" id="coverage" aria-labelledby="coverage-title">
+        <h2 class="coverage__title" id="coverage-title" data-reveal>Where Syrmos runs</h2>
+        <div class="coverage__grid">
+            <figure class="coverage__map" aria-live="polite">
+                <img id="regionMap" src="/product/img/region-athens-480.webp" srcset="/product/img/region-athens-480.webp 480w, /product/img/region-athens-960.webp 960w" sizes="(min-width: 900px) 30vw, 60vw" width="960" height="1200" loading="lazy" decoding="async" alt="The Athens network on the Syrmos map.">
+                <figcaption>Map data © OpenStreetMap contributors, tiles © Esri.</figcaption>
+            </figure>
+            <div class="coverage__table">
+                <div class="region" data-region="athens">
+                    <h3><button type="button" class="region__name" aria-pressed="true">Athens</button></h3>
+                    <ul>
+                        <li><span class="region__kind">Metro</span><span class="lines"><span class="chip chip--m1">M1</span><span class="chip chip--m2">M2</span><span class="chip chip--m3">M3</span></span></li>
+                        <li><span class="region__kind">Tram</span><span class="lines"><span class="chip chip--tram">T6</span><span class="chip chip--tram">T7</span></span></li>
+                        <li><span class="region__kind">Suburban rail</span><span class="lines">A1 to A4, airport included</span></li>
+                        <li><span class="region__kind">Airport buses</span><span class="lines">X93, X95, X96, X97, live</span></li>
+                    </ul>
                 </div>
+                <div class="region" data-region="thessaloniki">
+                    <h3><button type="button" class="region__name" aria-pressed="false">Thessaloniki</button></h3>
+                    <ul>
+                        <li><span class="region__kind">Metro</span><span class="lines">Lines 1 and 2</span></li>
+                        <li><span class="region__kind">Suburban rail</span><span class="lines">Larisa, Florina, Sindos, Serres to Drama</span></li>
+                        <li><span class="region__kind">Airport buses</span><span class="lines">OSETH, connecting to the metro</span></li>
+                    </ul>
+                </div>
+                <div class="region" data-region="patras">
+                    <h3><button type="button" class="region__name" aria-pressed="false">Patras</button></h3>
+                    <ul>
+                        <li><span class="region__kind">Suburban rail</span><span class="lines">To Kaminia and to Rio</span></li>
+                        <li><span class="region__kind">Buses</span><span class="lines">Connecting buses and the University loop</span></li>
+                    </ul>
+                </div>
+                <div class="region" data-region="national">
+                    <h3><button type="button" class="region__name" aria-pressed="false">National rail</button></h3>
+                    <ul>
+                        <li><span class="region__kind">Intercity</span><span class="lines">Athens to Thessaloniki and regional lines</span></li>
+                        <li><span class="region__kind">Replacement buses</span><span class="lines">Kiato to Patra, Volos to Larisa</span></li>
+                        <li><span class="region__kind">Seasonal</span><span class="lines">The Pelion Railway</span></li>
+                    </ul>
+                </div>
+                <p class="coverage__note">Suspended and unfinished lines are drawn as such, never as running. Syrmos does not cover every service in Greece.</p>
             </div>
         </div>
     </section>
 
-    <!-- ===== Coverage ===== -->
-    <section class="section section--light railed" id="coverage" aria-labelledby="coverage-title">
-        <div class="container">
-            <header class="section-head" data-reveal>
-                <p class="eyebrow"><span class="node node--red" aria-hidden="true"></span>Coverage</p>
-                <h2 id="coverage-title">From the Athens metro to the national network.</h2>
-                <p class="section-lead">Syrmos covers these networks today. It doesn’t cover every transport service in Greece.</p>
-            </header>
-
-            <div class="regions" data-tabs>
-                <div class="tablist tablist--light" role="tablist" aria-label="Regions">
-                    <button class="tab" role="tab" type="button" id="tab-athens" aria-controls="panel-athens" aria-selected="true">Athens</button>
-                    <button class="tab" role="tab" type="button" id="tab-thessaloniki" aria-controls="panel-thessaloniki" aria-selected="false" tabindex="-1">Thessaloniki</button>
-                    <button class="tab" role="tab" type="button" id="tab-patras" aria-controls="panel-patras" aria-selected="false" tabindex="-1">Patras</button>
-                    <button class="tab" role="tab" type="button" id="tab-national" aria-controls="panel-national" aria-selected="false" tabindex="-1">National rail</button>
-                </div>
-
-                <div class="panel panel--light" role="tabpanel" id="panel-athens" aria-labelledby="tab-athens" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-now-960.webp" srcset="/product/img/web-now-960.webp 960w, /product/img/web-now-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The Athens region in the web app map.">
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Athens</h3>
-                        <ul class="lines">
-                            <li><span class="chip chip--m1">M1</span><span class="chip chip--m2">M2</span><span class="chip chip--m3">M3</span> Metro Lines 1, 2 and 3</li>
-                            <li><span class="chip chip--tram">T6</span><span class="chip chip--tram">T7</span> Tram</li>
-                            <li><span class="chip chip--sub">A1</span><span class="chip chip--sub">A4</span> Suburban Railway, lines A1 to A4</li>
-                            <li>Airport metro and suburban connections</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="panel panel--light" role="tabpanel" id="panel-thessaloniki" aria-labelledby="tab-thessaloniki" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-thessaloniki-960.webp" srcset="/product/img/web-thessaloniki-960.webp 960w, /product/img/web-thessaloniki-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The Thessaloniki region in the web app map, with suburban routes radiating from the city.">
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Thessaloniki</h3>
-                        <ul class="lines">
-                            <li>Metro Lines 1 and 2</li>
-                            <li>Suburban rail to Larisa, Florina, Sindos and Serres to Drama</li>
-                            <li>Airport buses X3 and 2X connecting to the metro</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="panel panel--light" role="tabpanel" id="panel-patras" aria-labelledby="tab-patras" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-patras-960.webp" srcset="/product/img/web-patras-960.webp 960w, /product/img/web-patras-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="The Patras region in the web app map.">
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>Patras</h3>
-                        <ul class="lines">
-                            <li>Suburban rail to Kaminia and to Rio</li>
-                            <li>Connecting buses, including the University loop</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="panel panel--light" role="tabpanel" id="panel-national" aria-labelledby="tab-national" tabindex="0">
-                    <figure class="panel__media">
-                        <img src="/product/img/web-national-960.webp" srcset="/product/img/web-national-960.webp 960w, /product/img/web-national-1600.webp 1600w" sizes="(min-width: 1024px) 760px, 92vw" width="1600" height="1000" loading="lazy" decoding="async" alt="National rail corridors across mainland Greece in the web app map, with rail-replacement buses drawn as dotted lines.">
-                    </figure>
-                    <div class="panel__copy">
-                        <h3>National rail</h3>
-                        <ul class="lines">
-                            <li>Intercity Athens to Thessaloniki and regional services</li>
-                            <li>Rail-replacement buses such as Kiato to Patra and Volos to Larisa</li>
-                            <li>The Pelion Railway, which runs seasonally</li>
-                        </ul>
-                        <p class="fine">Services that are suspended or under construction are marked that way on the map, never as running.</p>
-                    </div>
-                </div>
-                <p class="panel-attribution">Map data © OpenStreetMap contributors, tiles © Esri.</p>
-            </div>
-
-            <div class="practical">
-                <article class="practical__item" data-reveal>
-                    <h3>Four languages</h3>
-                    <p>English, Greek, Albanian and Italian.</p>
-                </article>
-                <article class="practical__item" data-reveal>
-                    <h3>Fares you can check</h3>
-                    <p>Prices come from official operator sources. Tickets are bought from the operator, not from Syrmos.</p>
-                </article>
-                <article class="practical__item" data-reveal>
-                    <h3>Privacy first</h3>
-                    <p>No account needed. Location is optional and only used on your device to find nearby stations. <a href="/privacy">Read the privacy policy</a>.</p>
-                </article>
+    <!-- Download: the page inverted. -->
+    <section class="close" id="download" aria-labelledby="download-title">
+        <h2 class="close__title" id="download-title" data-reveal>Free, on every platform</h2>
+        <div class="close__foot">
+            <p class="close__lead">iPhone with widgets and Apple Watch, Android, and a web app for laptops and desktop computers. No account.</p>
+            <div class="close__get">
+                <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
+                <a class="badge" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="144" height="48" loading="lazy"></a>
+                <a class="badge" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48" loading="lazy"></a>
+                <p class="choice__note handheld-only">The web app is for laptops and desktop computers. On this device, use the iPhone or Android app.</p>
             </div>
         </div>
     </section>
 
-    <!-- ===== Download ===== -->
-    <section class="section section--arrive railed railed--end" id="download" aria-labelledby="download-title">
-        <div class="container">
-            <header class="section-head section-head--center" data-reveal>
-                <p class="eyebrow eyebrow--dark"><span class="node node--terminus" aria-hidden="true"></span>Download</p>
-                <h2 id="download-title">Your journey starts here.</h2>
-                <p class="section-lead">Syrmos is free on every platform. Each one is designed for its own device.</p>
-            </header>
+    <section class="lidhra-promo" aria-labelledby="lidhra-promo-title" lang="en">
+      <div class="lidhra-promo__inner">
+      <div class="lidhra-promo__copy">
+        <h2 class="lidhra-promo__title" id="lidhra-promo-title">The debrid download manager for iPhone, Mac and Apple TV</h2>
+        <p class="lidhra-promo__text">Paste a magnet or a link and Lidhra fetches it through Real-Debrid, AllDebrid, TorBox or six other services, then downloads it natively and resumes where it stopped. Finished files wait in a library, ready to play or cast to a TV.</p>
+        <div class="lidhra-promo__facts">
+          <img class="lidhra-promo__icon" src="/product/img/lidhra/lidhra-icon.webp" width="44" height="44" alt="Lidhra app icon" loading="lazy" decoding="async">
+          <p><strong>For iPhone, iPad, Mac, Apple TV and Vision Pro</strong><br>One purchase, no subscription.</p>
+        </div>
+        <div class="lidhra-promo__actions">
+          <a class="lidhra-promo__badge" href="https://apps.apple.com/app/lidhra-debrid-downloader/id6790952504?ct=syrmos&mt=8" rel="noopener"><img src="/product/img/lidhra/app-store-badge-white.svg" width="120" height="40" alt="Download Lidhra on the App Store" loading="lazy" decoding="async"></a>
+          <a class="lidhra-promo__more" href="https://lidhra.peterdsp.dev/" rel="noopener">See how Lidhra works</a>
+        </div>
+      </div>
+      <figure class="lidhra-promo__shots">
+        <img class="lidhra-promo__library" src="/product/img/lidhra/lidhra-transfers-1200.webp" srcset="/product/img/lidhra/lidhra-transfers-640.webp 640w, /product/img/lidhra/lidhra-transfers-1200.webp 1200w" sizes="(min-width: 900px) 560px, 92vw" width="1200" height="600" alt="Lidhra on Mac: downloads coming to the device and files ready in the debrid cloud, with progress bars" loading="lazy" decoding="async">
+        <img class="lidhra-promo__phone" src="/product/img/lidhra/lidhra-add-360.webp" srcset="/product/img/lidhra/lidhra-add-240.webp 240w, /product/img/lidhra/lidhra-add-360.webp 360w" sizes="(min-width: 900px) 150px, 26vw" width="360" height="570" alt="Lidhra on iPhone: the Add a transfer sheet, with a field for a magnet or an https link" loading="lazy" decoding="async">
+      </figure>
+      </div>
+    </section>
 
-            <div class="choices">
-                <article class="choice" data-reveal>
-                    <div class="choice__device"><div class="device phone phone--sm"><img src="/product/img/ios-home-420.webp" width="420" height="913" loading="lazy" decoding="async" alt="Syrmos Home screen on iPhone."></div></div>
-                    <h3>iPhone</h3>
-                    <p>Departures, the network map and Ariadne, plus Home Screen widgets and an Apple Watch app.</p>
-                    <a class="badge" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="144" height="48" loading="lazy"></a>
-                </article>
-                <article class="choice" data-reveal>
-                    <div class="choice__device"><div class="device phone phone--sm"><img src="/product/img/android-map-420.webp" width="420" height="933" loading="lazy" decoding="async" alt="Syrmos map screen on Android."></div></div>
-                    <h3>Android</h3>
-                    <p>Departures, the network map and Ariadne, built natively for Android phones.</p>
-                    <a class="badge" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="162" height="48" loading="lazy"></a>
-                </article>
-                <article class="choice" data-reveal>
-                    <div class="choice__device"><div class="device laptop"><div class="laptop__screen"><img src="/product/img/web-now-960.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Syrmos web app on a laptop: the Athens network map with trains and the next Line 2 departure."></div><div class="laptop__base" aria-hidden="true"></div></div></div>
-                    <h3>Web</h3>
-                    <p>For laptops and desktop computers. Runs in your browser with nothing to install, and schedules stay available offline after one visit.</p>
-                    <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
-                    <p class="choice__note handheld-only">Open syrmos.peterdsp.dev on a laptop or desktop computer. On this device, use the iPhone or Android app.</p>
-                </article>
-            </div>
-
-
-            <section class="lidhra-promo" aria-labelledby="lidhra-promo-title" lang="en">
-              <div class="lidhra-promo__inner">
-              <div class="lidhra-promo__copy">
-                <h2 class="lidhra-promo__title" id="lidhra-promo-title">The debrid download manager for iPhone, Mac and Apple TV</h2>
-                <p class="lidhra-promo__text">Paste a magnet or a link and Lidhra fetches it through Real-Debrid, AllDebrid, TorBox or six other services, then downloads it natively and resumes where it stopped. Finished files wait in a library, ready to play or cast to a TV.</p>
-                <div class="lidhra-promo__facts">
-                  <img class="lidhra-promo__icon" src="/product/img/lidhra/lidhra-icon.webp" width="44" height="44" alt="Lidhra app icon" loading="lazy" decoding="async">
-                  <p><strong>Lidhra for iPhone, iPad, Mac, Apple TV and Vision Pro</strong><br>One purchase, no subscription.</p>
-                </div>
-                <div class="lidhra-promo__actions">
-                  <a class="lidhra-promo__badge" href="https://apps.apple.com/app/lidhra-debrid-downloader/id6790952504?ct=syrmos&mt=8" rel="noopener"><img src="/product/img/lidhra/app-store-badge-white.svg" width="120" height="40" alt="Download Lidhra on the App Store" loading="lazy" decoding="async"></a>
-                  <a class="lidhra-promo__more" href="https://lidhra.peterdsp.dev/" rel="noopener">See how Lidhra works</a>
-                </div>
-              </div>
-              <figure class="lidhra-promo__shots">
-                <img class="lidhra-promo__library" src="/product/img/lidhra/lidhra-transfers-1200.webp" srcset="/product/img/lidhra/lidhra-transfers-640.webp 640w, /product/img/lidhra/lidhra-transfers-1200.webp 1200w" sizes="(min-width: 900px) 560px, 92vw" width="1200" height="600" alt="Lidhra on Mac: downloads coming to the device and files ready in the debrid cloud, with progress bars" loading="lazy" decoding="async">
-                <img class="lidhra-promo__phone" src="/product/img/lidhra/lidhra-add-360.webp" srcset="/product/img/lidhra/lidhra-add-240.webp 240w, /product/img/lidhra/lidhra-add-360.webp 360w" sizes="(min-width: 900px) 150px, 26vw" width="360" height="570" alt="Lidhra on iPhone: the Add a transfer sheet, with a field for a magnet or an https link" loading="lazy" decoding="async">
-              </figure>
-              </div>
-            </section>
-            <div class="faq" aria-labelledby="faq-title">
-                <h2 id="faq-title" class="faq__title">Questions</h2>
-                <details>
-                    <summary>Does Syrmos work offline?</summary>
-                    <p>Yes, for stored information. Schedules and station details are stored with the iOS and Android apps. The web app for laptops and desktop computers stores them after your first online visit, as long as your browser keeps site data. Live updates, real-time positions and service alerts need a connection. Offline times are labelled so you can tell them apart.</p>
-                </details>
-                <details>
-                    <summary>Which regions are supported?</summary>
-                    <p>Athens metro, tram and suburban railway; Thessaloniki metro, suburban rail and airport buses; Patras suburban rail and buses; and national rail corridors, including rail-replacement buses. Syrmos doesn’t cover every transport service in Greece.</p>
-                </details>
-                <details>
-                    <summary>What is the difference between live and scheduled times?</summary>
-                    <p>Live times and positions come from real-time feeds where operators provide them. Scheduled times come from the published timetable. Estimated positions are projected from the timetable when no live feed is available. Every time in Syrmos carries its label.</p>
-                </details>
-                <details>
-                    <summary>Can I buy tickets in Syrmos?</summary>
-                    <p>No. Syrmos shows fare information and links to the relevant operator, such as Hellenic Train, where you complete the purchase.</p>
-                </details>
-            </div>
+    <!-- Questions: all open, questions large, answers beside. -->
+    <section class="faq" id="questions" aria-labelledby="faq-title">
+        <div class="faq__row faq__row--head">
+            <h2 id="faq-title">Questions</h2>
+        </div>
+        <div class="faq__row" data-reveal>
+            <h3>Does it work offline?</h3>
+            <p>Yes, for stored information. The iOS and Android apps carry the timetables and stations. The web app stores them after one online visit, as long as your browser keeps site data. Live positions and alerts need a connection.</p>
+        </div>
+        <div class="faq__row" data-reveal>
+            <h3>Live or scheduled?</h3>
+            <p>Live times come from operators' real-time feeds where they exist. Scheduled times are the published timetable. Estimated positions are projected from it. Every time carries its label.</p>
+        </div>
+        <div class="faq__row" data-reveal>
+            <h3>Can I buy tickets in Syrmos?</h3>
+            <p>No. Syrmos shows fares and links to the operator, such as Hellenic Train, where you buy the ticket.</p>
+        </div>
+        <div class="faq__row" data-reveal>
+            <h3>Which languages?</h3>
+            <p>English, Greek, Albanian and Italian, in the app and in Ariadne.</p>
+        </div>
+        <div class="faq__row" data-reveal>
+            <h3>What does it know about me?</h3>
+            <p>Nothing it sends anywhere. No account, no tracking. Location is optional and stays on your device to find nearby stations. <a href="/privacy">Read the privacy policy</a>.</p>
         </div>
     </section>
 </main>
 
-<footer class="site-footer">
-    <div class="container site-footer__inner">
-        <div class="site-footer__brand">
-            <img src="/product/img/syrmos-icon-96.webp" alt="" width="28" height="28" loading="lazy">
-            <span>Syrmos</span>
+<footer class="foot">
+    <div class="foot__top">
+        <div class="foot__invite">
+            <p class="foot__line">Where is your next train?</p>
+            <a class="btn btn--primary btn--lg web-only" href="/">Open web app</a>
+            <a class="btn btn--primary btn--lg handheld-only" href="#download">Get the app</a>
         </div>
-        <nav class="site-footer__links" aria-label="Footer">
-            <a class="web-only" href="/">Open web app</a>
+        <nav class="foot__links" aria-label="Footer">
             <a href="/privacy">Privacy policy</a>
             <a href="mailto:info@peterdsp.dev?subject=Syrmos%20support">Support: info@peterdsp.dev</a>
             <a href="/press.html">Press kit</a>
-            <a href="https://peterdsp.dev">Developer: Petros Dhespollari</a>
             <a href="https://github.com/peterdsp/Syrmos">Source code</a>
+            <a href="https://peterdsp.dev">Developer: Petros Dhespollari</a>
         </nav>
-        <p class="site-footer__legal">Syrmos is an independent app. It is not affiliated with, endorsed by or connected to STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE or Hellenic Train. Schedule and fare information comes from official operator sources and can change without notice.</p>
     </div>
+    <p class="foot__legal">Syrmos is an independent app, not affiliated with STASY, OASA, OSETH, OASTH, Thessaloniki Metro, OSE or Hellenic Train. Timetables and fares come from official operator sources and can change without notice. Map data © OpenStreetMap contributors, tiles © Esri.</p>
+    <p class="foot__word" aria-hidden="true">Syrmos</p>
 </footer>
 </body>
 </html>
