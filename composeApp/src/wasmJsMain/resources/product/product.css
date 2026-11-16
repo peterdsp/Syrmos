@@ -509,6 +509,172 @@ section[id] { scroll-margin-top: calc(var(--header-h) + 16px); }
 .faq details[open] summary::after { transform: rotate(-135deg); margin-top: -2px; }
 .faq details p { padding: 0 0 20px; color: var(--on-dark-muted); max-width: 720px; }
 
+/* ---------- Lidhra, from the same maker ---------- */
+/* Lidhra promo. A content-layer card: solid surface, no glass, no shadow.
+   Each site maps its own tokens onto the --lp-* roles below. */
+
+.lidhra-promo {
+  --lp-surface: #f2f2f4;
+  --lp-ink: #16161a;
+  --lp-muted: #55555c;
+  --lp-link: #1f5fd1;
+  --lp-ring: #1f5fd1;
+  --lp-radius: 22px;
+  --lp-pad: clamp(18px, 4vw, 32px);
+  --lp-font: inherit;
+  --lp-title-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem);
+  container-type: inline-size;
+  margin: 3rem 0;
+  padding: var(--lp-pad);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  font-family: var(--lp-font);
+  text-align: left;
+}
+
+.lidhra-promo__copy { min-width: 0; }
+
+.lidhra-promo__title {
+  margin: 0;
+  max-width: 18ch;
+  font-size: var(--lp-title-size);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 750;
+  text-wrap: balance;
+  color: var(--lp-ink);
+}
+
+.lidhra-promo__text {
+  margin: 14px 0 0;
+  max-width: 46ch;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--lp-ink);
+}
+
+.lidhra-promo__facts {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.lidhra-promo__facts p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--lp-muted);
+}
+
+.lidhra-promo__facts strong { color: var(--lp-ink); font-weight: 650; }
+
+/* Concentric with the card: the icon's radius is the platform's squircle approximation. */
+.lidhra-promo__icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.lidhra-promo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin-top: 22px;
+}
+
+.lidhra-promo__badge {
+  display: inline-block;
+  line-height: 0;
+  border-radius: 9px;
+}
+
+.lidhra-promo__badge img {
+  display: block;
+  width: auto;
+  height: 48px;
+}
+
+.lidhra-promo__more {
+  font-weight: 650;
+  color: var(--lp-link);
+  text-underline-offset: 3px;
+}
+
+.lidhra-promo a:focus-visible {
+  outline: 3px solid var(--lp-ring);
+  outline-offset: 3px;
+}
+
+/* Screens: the library on the big screen, the phone overlapping its corner.
+   Inner radii are the card radius minus the card padding, so the corners stay concentric. */
+.lidhra-promo__shots {
+  order: -1;
+  display: grid;
+  margin: 0 0 13%;
+  min-width: 0;
+}
+
+.lidhra-promo__library,
+.lidhra-promo__phone { grid-area: 1 / 1; display: block; height: auto; }
+
+.lidhra-promo__library {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: max(8px, calc(var(--lp-radius) - var(--lp-pad) + 4px));
+  background: #0d1424;
+}
+
+.lidhra-promo__phone {
+  justify-self: end;
+  align-self: end;
+  width: 27%;
+  aspect-ratio: 360 / 570;
+  margin: 0 5% -13% 0;
+  border-radius: 14px;
+  outline: 4px solid var(--lp-surface);
+  background: #e9ebf2;
+}
+
+.lidhra-promo__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px 40px;
+}
+
+@container (min-width: 700px) {
+  .lidhra-promo__inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; }
+  .lidhra-promo__shots { order: 0; margin-bottom: 9%; }
+  .lidhra-promo__phone { width: 25%; margin-bottom: -9%; }
+}
+
+@container (min-width: 480px) and (max-width: 699px) {
+  .lidhra-promo__shots { margin-bottom: 9%; }
+  .lidhra-promo__phone { width: 21%; margin-bottom: -9%; }
+}
+
+/* Syrmos tokens: the promo sits under the three download choices, on the same midnight ground. */
+.lidhra-promo {
+    --lp-surface: #0E1C36;
+    --lp-ink: #fff;
+    --lp-muted: var(--on-dark-muted);
+    --lp-link: var(--brand-light);
+    --lp-ring: var(--brand-light);
+    --lp-radius: 24px;
+    --lp-font: inherit;
+    --lp-title-size: var(--type-h4);
+    margin: 20px 0 0;
+    border: 1px solid var(--line-dark);
+}
+.lidhra-promo__title { font-family: var(--font-heading); }
+.lidhra-promo__text { color: var(--on-dark); }
+.lidhra-promo__badge img { box-shadow: 0 0 0 1px rgba(255,255,255,0.28); border-radius: 8px; }
+.lidhra-promo__phone { outline-color: #0E1C36; }
+
 /* ---------- Footer ---------- */
 .site-footer { background: #050E1F; color: var(--on-dark-muted); padding: 40px 0 48px; font-size: 0.9rem; }
 .site-footer__inner { display: grid; gap: 20px; }
@@ -517,18 +683,6 @@ section[id] { scroll-margin-top: calc(var(--header-h) + 16px); }
 .site-footer__links { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-left: -10px; }
 .site-footer__links a { color: var(--on-dark); text-decoration: none; padding: 10px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 8px; }
 .site-footer__links a:hover { text-decoration: underline; }
-/* From the same maker: one quiet card for Lidhra, set on the footer's midnight ground. */
-.lidhra-card { padding-bottom: 28px; margin-bottom: 4px; border-bottom: 1px solid var(--line-dark); }
-.lidhra-card__eyebrow { font-size: 0.82rem; color: var(--on-dark-muted); }
-.lidhra-card__body { margin-top: 14px; display: flex; gap: 16px; align-items: flex-start; }
-.lidhra-card__icon { width: 56px; height: 56px; flex: none; border-radius: 13px; }
-.lidhra-card__name { font-size: var(--type-title); color: #fff; letter-spacing: -0.01em; }
-.lidhra-card__text p { margin-top: 4px; max-width: 52ch; color: var(--on-dark); line-height: 1.5; }
-.lidhra-card__actions { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.lidhra-card__badge { display: inline-block; line-height: 0; border-radius: 8px; }
-.lidhra-card__badge img { height: 40px; width: auto; }
-.lidhra-card__site { color: var(--on-dark); padding: 10px 0; min-height: 44px; display: inline-flex; align-items: center; }
-.lidhra-card__site:hover { color: #fff; }
 .site-footer__legal { max-width: 820px; font-size: 0.82rem; line-height: 1.55; }
 .section--light .practical__item a { color: var(--brand-strong); }
 
