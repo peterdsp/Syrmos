@@ -537,7 +537,7 @@ section[id] { scroll-margin-top: calc(var(--header-h) + 16px); }
 
 .lidhra-promo__title {
   margin: 0;
-  max-width: 18ch;
+  max-width: 24ch;
   font-size: var(--lp-title-size);
   line-height: 1.08;
   letter-spacing: -0.025em;
