@@ -112,14 +112,15 @@ test('one H1, canonical URL, and no fabricated social proof', () => {
   assert.doesNotMatch(html, /google-analytics|gtag\(|plausible|matomo/i);
 });
 
-test('the web card shows the desktop web app, and no phone web screenshots remain', () => {
+test('the download close offers the desktop web app, and no phone web screenshots remain', () => {
   // The web app is desktop only, so the product page never shows it on a phone.
   assert.doesNotMatch(html, /web-mobile-/, 'phone captures of the web app must not be used');
-  assert.match(html, /<div class="device laptop"><div class="laptop__screen"><img src="\/product\/img\/web-now-960\.webp"/, 'web card shows a laptop');
-  assert.match(html, /For laptops and desktop computers\./);
-  assert.match(html, /class="choice__note handheld-only"/, 'handheld visitors get an app note instead of the web button');
-  // Every download-card device sits in the fixed stage, so no screenshot is cropped.
-  assert.equal((html.match(/<div class="choice__device">/g) || []).length, 3);
+  const close = html.slice(html.indexOf('id="download"'), html.indexOf('class="lidhra-promo"'));
+  assert.match(close, /laptops and desktop computers/, 'the web app is described as desktop only');
+  assert.match(close, /class="btn btn--primary btn--lg web-only" href="\/">Open web app/, 'web action hidden on handheld');
+  assert.match(close, /class="choice__note handheld-only"/, 'handheld visitors get an app note instead of the web button');
+  assert.match(close, /apps\.apple\.com\/app\/id6777650671/);
+  assert.match(close, /play\.google\.com\/store\/apps\/details\?id=com\.syrmos\.android/);
 });
 
 test('the product URL is in the sitemap', () => {

@@ -7,7 +7,9 @@
     <meta name="description" content="On phones and tablets, Syrmos is a free app for iOS and Android. The Syrmos web app is made for laptops and desktop computers.">
     <meta name="robots" content="noindex">
     <link rel="canonical" href="https://syrmos.peterdsp.dev/get-app/">
-    <meta name="theme-color" content="#07142B">
+    <meta name="theme-color" content="#F7F5F1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0F1216" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" type="image/png" sizes="48x48" href="/product/img/syrmos-icon-48.png">
     <link rel="apple-touch-icon" href="/product/img/syrmos-icon-180.png">
     <meta name="apple-itunes-app" content="app-id=6777650671">
@@ -17,64 +19,94 @@
       registers the service worker and never loads the transit app.
     -->
     <style>
+        /* Calm Signal, as in the app: station white, one Aegean blue, the system face.
+           Values mirror /design-tokens.css; dark values are the app's dark theme. */
         :root {
-            --midnight: #07142B;
-            --midnight-2: #0C1E3F;
-            --brand: #1466B8;
-            --brand-light: #8ECAFF;
-            --on-dark: #E9EFF8;
-            --on-dark-muted: #A9B7CC;
-            --line-dark: rgba(255, 255, 255, 0.14);
-            color-scheme: dark;
+            --ground: #F7F5F1; --ground-2: #EFEBE4; --ink: #14181F; --muted: #5B636E;
+            --brand: #1466B8; --brand-strong: #0F4E8C; --on-brand: #FFFFFF;
+            --radius: 16px; --pill: 999px; --margin: 20px;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+            --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+            color-scheme: light;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { --ground: #0F1216; --ground-2: #171B21; --ink: #E6ECF5; --muted: #9AA3AF; --brand: #8ECAFF; --brand-strong: #B9DEFF; --on-brand: #0F1216; color-scheme: dark; }
         }
         *, *::before, *::after { box-sizing: border-box; }
-        body {
-            margin: 0; min-height: 100vh; min-height: 100dvh;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-            font-size: 17px; line-height: 1.55; color: var(--on-dark);
-            background:
-                radial-gradient(700px 420px at 80% 0%, rgba(20, 102, 184, 0.38), transparent 70%),
-                radial-gradient(600px 360px at 0% 100%, rgba(111, 45, 168, 0.25), transparent 70%),
-                var(--midnight);
-        }
+        body { margin: 0; min-height: 100dvh; background: var(--ground); color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.55; overflow-x: clip; }
         img { max-width: 100%; height: auto; display: block; }
-        a { color: var(--brand-light); text-underline-offset: 3px; }
-        :focus-visible { outline: 3px solid var(--brand-light); outline-offset: 3px; border-radius: 8px; }
-        .wrap {
-            max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
-            padding: max(20px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
-            display: flex; flex-direction: column; gap: 24px;
+        picture { display: block; }
+        h1, p { margin: 0; }
+        a { color: inherit; text-underline-offset: 0.2em; }
+        :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+        .page { max-width: 640px; margin: 0 auto; }
+        .map { position: relative; height: 34dvh; min-height: 200px; max-height: 360px; overflow: hidden; background: var(--ground-2); }
+        .map picture { height: 100%; }
+        .map img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; }
+        /* The bar over the map is the page's one glass surface. */
+        .top {
+            position: absolute; left: var(--margin); right: var(--margin); top: max(12px, env(safe-area-inset-top));
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 6px; border-radius: var(--pill);
+            background: color-mix(in srgb, var(--ground) 72%, transparent);
+            -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
+            isolation: isolate;
         }
-        .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; text-decoration: none; min-height: 44px; }
-        .brand img { width: 36px; height: 36px; border-radius: 9px; }
-        .langs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--line-dark); background: rgba(255,255,255,0.05); }
+        /* specular rim: a 1px highlight along the top edge of the glass bar, drawn as a fill */
+        .top::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 1px; background: rgba(255, 255, 255, 0.7); border-radius: 1px; z-index: -1; } /* taste-skill-ignore: the specular rim of the functional glass bar */
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .top { background: var(--ground); } }
+        @media (prefers-reduced-transparency: reduce) { .top { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+        @media (prefers-contrast: more) { .top { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; outline: 2px solid var(--ink); } .top::before { display: none; } }
+        .brand { display: inline-flex; border-radius: 10px; }
+        .brand img { width: 38px; height: 38px; border-radius: 10px; } /* concentric with the 50px bar */
+        .langs { display: flex; gap: 2px; }
         .langs button {
-            font: inherit; font-size: 0.8rem; font-weight: 700; min-width: 44px; min-height: 38px; border: 0; border-radius: 999px;
-            color: var(--on-dark-muted); background: transparent; cursor: pointer;
+            font: 600 0.875rem/1 var(--font); min-width: 44px; min-height: 38px; border: 0; border-radius: var(--pill);
+            color: var(--ink); background: transparent; cursor: pointer; transition: background-color 180ms ease;
         }
-        .langs button[aria-pressed="true"] { background: #fff; color: var(--midnight); }
-        .hero { text-align: center; display: grid; justify-items: center; gap: 14px; }
-        h1 { margin: 8px 0 0; font-size: clamp(1.9rem, 1.2rem + 3.6vw, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; color: #fff; }
-        .lead { margin: 0; color: var(--on-dark-muted); max-width: 460px; }
-        .phone {
-            width: min(46vw, 200px); background: #0B0F17; padding: 7px; border-radius: 34px;
-            box-shadow: 0 0 0 1px var(--line-dark), 0 26px 60px rgba(0,0,0,0.5);
+        .langs button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+        .wrap { max-width: 640px; margin: 0 auto; padding: 0 var(--margin) max(28px, env(safe-area-inset-bottom)); }
+        @media (min-width: 680px) { .map { margin: 20px 20px 0; border-radius: var(--radius); } }
+        .name { margin: 12px 0 0; font-family: var(--font-display); font-weight: 800; font-size: min(28vw, 172px); line-height: 0.86; letter-spacing: -0.055em; white-space: nowrap; }
+        .title { margin-top: 20px; font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 26px; margin-top: 28px; border-radius: var(--pill); background: var(--brand); color: var(--on-brand); font-weight: 600; text-decoration: none; transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background-color 180ms ease; }
+        .btn:active { transform: scale(0.97); }
+        @media (hover: hover) and (pointer: fine) { .btn:hover { background: var(--brand-strong); } }
+        .lead { margin-top: 16px; max-width: 40ch; }
+        .stores { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+        .stores a { display: inline-flex; border-radius: 9px; transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1); }
+        .stores a:active { transform: scale(0.97); }
+        .stores img { height: 52px; width: auto; }
+        .shots { margin: 48px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .shot { margin: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); background: var(--ground-2); }
+        .shot--wide { grid-column: 1 / -1; }
+        .shot img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; }
+        .shot picture { height: 100%; }
+        .more { margin-top: 32px; display: grid; gap: 8px; }
+        .more a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--brand-strong); }
+        footer { margin-top: 40px; font-size: 0.875rem; color: var(--muted); }
+        footer a { display: inline-flex; align-items: center; min-height: 44px; }
+        @media (prefers-reduced-motion: no-preference) {
+            .name, .title, .lead, .btn, .stores { animation: rise 520ms cubic-bezier(0.16, 1, 0.30, 1) both; }
+            .title { animation-delay: 60ms; } .lead { animation-delay: 120ms; } .btn { animation-delay: 160ms; } .stores { animation-delay: 200ms; }
+            @supports (animation-timeline: view()) {
+                .shot, .more, footer { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+            }
+            .map img { animation: settle 1100ms cubic-bezier(0.16, 1, 0.30, 1) both; }
         }
-        .phone img { border-radius: 27px; }
-        .stores { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-        .stores a { display: inline-flex; border-radius: 10px; }
-        .stores img { height: 52px; width: auto; border-radius: 8px; box-shadow: 0 0 0 1px rgba(255,255,255,0.28); }
-        .more { display: grid; gap: 10px; text-align: center; font-size: 0.95rem; color: var(--on-dark-muted); }
-        .more a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font-weight: 600; }
-        footer { margin-top: auto; text-align: center; font-size: 0.78rem; color: #8494AC; }
-        footer a { color: #C3D0E2; }
+        @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+        @keyframes settle { from { transform: scale(1.06); } to { transform: none; } }
     </style>
 </head>
 <body>
-<main class="wrap">
+<div class="page">
+<div class="map">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="/product/img/hero-map-dark-1200.webp">
+        <img src="/product/img/hero-map-light-1200.webp" width="1200" height="434" alt="" fetchpriority="high">
+    </picture>
     <div class="top">
-        <a class="brand" href="/product/"><img src="/product/img/syrmos-icon-96.webp" alt="" width="36" height="36"><span>Syrmos</span></a>
+        <a class="brand" href="/product/" aria-label="Syrmos"><img src="/product/img/syrmos-icon-96.webp" alt="" width="38" height="38"></a>
         <div class="langs" role="group" aria-label="Language" data-i18n-aria="language">
             <button type="button" data-lang="en" aria-pressed="true" aria-label="English">EN</button>
             <button type="button" data-lang="el" aria-pressed="false" aria-label="Ελληνικά">EL</button>
@@ -82,28 +114,36 @@
             <button type="button" data-lang="it" aria-pressed="false" aria-label="Italiano">IT</button>
         </div>
     </div>
-
-    <section class="hero" aria-labelledby="title">
-        <div class="phone">
+</div>
+<main class="wrap">
+    <h1 class="name" id="title">Syrmos</h1>
+    <p class="title" data-i18n="title_h1">On phones and tablets, Syrmos is an app</p>
+    <p class="lead" data-i18n="lead">The Syrmos web app is made for laptops and desktop computers. Download the free app for next departures, the network map and Ariadne on your phone or tablet.</p>
+    <a class="btn" id="storePrimary" href="https://apps.apple.com/app/id6777650671" data-i18n="get">Get the free app</a>
+    <div class="stores" id="stores">
+        <a id="storeIos" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="156" height="52"></a>
+        <a id="storeAndroid" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="176" height="52"></a>
+    </div>
+    <div class="shots">
+        <figure class="shot shot--wide">
             <img id="shot" src="/product/img/ios-home-420.webp" width="420" height="913" alt="Syrmos on iPhone: the Home screen with network status and live trains." data-i18n-alt="shot_alt_ios">
-        </div>
-        <h1 id="title" data-i18n="title_h1">On phones and tablets, Syrmos is an app</h1>
-        <p class="lead" data-i18n="lead">The Syrmos web app is made for laptops and desktop computers. Download the free app for next departures, the network map and Ariadne on your phone or tablet.</p>
-        <div class="stores" id="stores">
-            <a id="storeIos" href="https://apps.apple.com/app/id6777650671"><img src="/app-store.svg" alt="Download on the App Store" width="156" height="52"></a>
-            <a id="storeAndroid" href="https://play.google.com/store/apps/details?id=com.syrmos.android"><img src="/google-play.svg" alt="Get it on Google Play" width="176" height="52"></a>
-        </div>
-    </section>
-
+        </figure>
+        <figure class="shot">
+            <picture><source media="(prefers-color-scheme: dark)" srcset="/product/img/plate-journey-dark-640.webp"><img src="/product/img/plate-journey-light-640.webp" width="640" height="640" loading="lazy" alt="" data-i18n-alt="shot_alt_journey"></picture>
+        </figure>
+        <figure class="shot">
+            <picture><source media="(prefers-color-scheme: dark)" srcset="/product/img/plate-map-dark-640.webp"><img src="/product/img/plate-map-light-640.webp" width="640" height="640" loading="lazy" alt="" data-i18n-alt="shot_alt_map"></picture>
+        </figure>
+    </div>
     <div class="more">
         <a href="/product/" data-i18n="learn">See what Syrmos does</a>
         <p data-i18n="desktop">On a computer? Open syrmos.peterdsp.dev in your browser.</p>
     </div>
-
     <footer>
         <a href="/privacy" data-i18n="privacy">Privacy policy</a>
     </footer>
 </main>
+</div>
 
 <script>
 (function () {
@@ -118,7 +158,10 @@
             privacy: "Privacy policy",
             language: "Language",
             shot_alt_ios: "Syrmos on iPhone: the Home screen with network status and live trains.",
-            shot_alt_android: "Syrmos on Android: the Athens map with metro, tram and suburban lines."
+            shot_alt_android: "Syrmos on Android: the Athens map with metro, tram and suburban lines.",
+            get: "Get the free app",
+            shot_alt_journey: "A planned journey in Syrmos: board M1 toward Omonia, change to M2.",
+            shot_alt_map: "The Syrmos map of central Athens with metro lines in their colours."
         },
         el: {
             doc_title: "Κατέβασε την εφαρμογή Syrmos",
@@ -129,7 +172,10 @@
             privacy: "Πολιτική απορρήτου",
             language: "Γλώσσα",
             shot_alt_ios: "Το Syrmos σε iPhone: η αρχική οθόνη με την κατάσταση του δικτύου και τα ζωντανά τρένα.",
-            shot_alt_android: "Το Syrmos σε Android: ο χάρτης της Αθήνας με μετρό, τραμ και προαστιακό."
+            shot_alt_android: "Το Syrmos σε Android: ο χάρτης της Αθήνας με μετρό, τραμ και προαστιακό.",
+            get: "Κατέβασε τη δωρεάν εφαρμογή",
+            shot_alt_journey: "Ένα σχεδιασμένο ταξίδι στο Syrmos: επιβίβαση στη Γραμμή 1 προς Ομόνοια, αλλαγή στη Γραμμή 2.",
+            shot_alt_map: "Ο χάρτης του Syrmos για το κέντρο της Αθήνας, με τις γραμμές του μετρό στα χρώματά τους."
         },
         sq: {
             doc_title: "Shkarko aplikacionin Syrmos",
@@ -140,7 +186,10 @@
             privacy: "Politika e privatësisë",
             language: "Gjuha",
             shot_alt_ios: "Syrmos në iPhone: ekrani kryesor me gjendjen e rrjetit dhe trenat në kohë reale.",
-            shot_alt_android: "Syrmos në Android: harta e Athinës me metro, tramvaj dhe hekurudhë periferike."
+            shot_alt_android: "Syrmos në Android: harta e Athinës me metro, tramvaj dhe hekurudhë periferike.",
+            get: "Shkarko aplikacionin falas",
+            shot_alt_journey: "Një udhëtim i planifikuar në Syrmos: hip në M1 drejt Omonias, ndërro në M2.",
+            shot_alt_map: "Harta e Syrmos për qendrën e Athinës, me linjat e metrosë në ngjyrat e tyre."
         },
         it: {
             doc_title: "Scarica l'app Syrmos",
@@ -151,7 +200,10 @@
             privacy: "Informativa sulla privacy",
             language: "Lingua",
             shot_alt_ios: "Syrmos su iPhone: la schermata Home con lo stato della rete e i treni in tempo reale.",
-            shot_alt_android: "Syrmos su Android: la mappa di Atene con metro, tram e ferrovia suburbana."
+            shot_alt_android: "Syrmos su Android: la mappa di Atene con metro, tram e ferrovia suburbana.",
+            get: "Scarica l'app gratuita",
+            shot_alt_journey: "Un viaggio pianificato in Syrmos: sali sulla M1 verso Omonia, cambia sulla M2.",
+            shot_alt_map: "La mappa di Syrmos del centro di Atene, con le linee della metro nei loro colori."
         }
     };
     // Same key the web app uses, so a language chosen in either place carries over.
@@ -177,6 +229,7 @@
         document.title = t.doc_title;
         document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t[el.getAttribute("data-i18n")]; });
         document.querySelectorAll("[data-i18n-aria]").forEach(function (el) { el.setAttribute("aria-label", t[el.getAttribute("data-i18n-aria")]); });
+        document.querySelectorAll("[data-i18n-alt]").forEach(function (el) { el.alt = t[el.getAttribute("data-i18n-alt")]; });
         var shot = document.getElementById("shot");
         shot.alt = isAndroid ? t.shot_alt_android : t.shot_alt_ios;
         document.querySelectorAll(".langs button").forEach(function (b) {
@@ -212,6 +265,7 @@
     var urls = storeUrls(campaignSource(location.search));
     document.getElementById("storeIos").href = urls.ios;
     document.getElementById("storeAndroid").href = urls.android;
+    document.getElementById("storePrimary").href = isAndroid ? urls.android : urls.ios;
 
     // Lead with the store for this device, and show that platform's real screen.
     if (isAndroid) {
